@@ -1,0 +1,31 @@
+Pattern 2: Fast & Slow (Chasing / In-Place Modification)
+1. The Interview Triggers
+*. Requirements specifying In-Place manipulation with $O(1)$ space constraints.
+* Separating, removing, or filtering array elements based on a dynamic criteria.
+* Circular loop dependencies or cyclic generation (e.g., Linked List cycles or math variations).
+
+2. Core Mechanics
+Both pointers start moving from the same side of the array structure. The fast pointer iterates systematically through the whole array. The slow pointer acts as a persistent anchor or placeholder, advancing only when a distinct target condition evaluates to true.
+
+3. Production Java Blueprint
+public int fastSlowTemplate(int[] nums) {
+    if (nums == null || nums.length == 0) return 0;
+    
+    int slow = 0; // Tracks the write-index location
+    
+    for (int fast = 0; fast < nums.length; fast++) {
+        // Example Condition: Keep elements that meet your condition
+        if (isValidElement(nums[fast])) {
+            nums[slow] = nums[fast]; // Overwrite data in-place
+            slow++; // Advance write-position
+        }
+    }
+    return slow; // 'slow' usually denotes the new length of the modified array
+}
+
+4. Corner Cases & Interview Pitfalls
+*. Lookbacks: If comparing elements backward (e.g., nums[fast] == nums[fast - 2]), verify the baseline limits (fast >= 2) explicitly to prevent a java.lang.ArrayIndexOutOfBoundsException.
+
+5. Essential Interview Questions
+Easy: LeetCode 26 - Remove Duplicates from Sorted Array, LeetCode 283 - Move Zeroes
+Medium: LeetCode 80 - Remove Duplicates from Sorted Array II, LeetCode 287 - Find the Duplicate Number
