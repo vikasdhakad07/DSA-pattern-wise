@@ -1,0 +1,30 @@
+Pattern 4: Sliding Window (Two-Pointer Variant)
+1. The Interview Triggers
+*). Working with continuous/contiguous subarrays or substrings.
+*). Questions containing the words: "maximum window", "minimum length matching condition", or "longest subarray".
+
+2. Core Mechanics
+*). The right pointer expands the boundary of a dynamic sub-segment window to introduce elements. If a constraint or condition is breached, the left pointer contracts the sub-segment window from the back to restore state compliance.
+
+3. Production Java Blueprint
+public int slidingWindowTemplate(int[] nums, int target) {
+    int left = 0;
+    int minLength = Integer.MAX_VALUE;
+    int currentSum = 0;
+    
+    for (int right = 0; right < nums.length; right++) {
+        currentSum += nums[right]; // Expand the window
+        
+        // Contract the window while condition is valid
+        while (currentSum >= target) {
+            minLength = Math.min(minLength, right - left + 1); // Track solution
+            currentSum -= nums[left]; // Drop element from left
+            left++; // Shrink window
+        }
+    }
+    return minLength == Integer.MAX_VALUE ? 0 : minLength;
+}
+
+5. Essential Interview Questions
+Medium: LeetCode 209 - Minimum Size Subarray Sum, LeetCode 3 - Longest Substring Without Repeating Characters
+Hard: LeetCode 992 - Subarrays with K Different Integers
