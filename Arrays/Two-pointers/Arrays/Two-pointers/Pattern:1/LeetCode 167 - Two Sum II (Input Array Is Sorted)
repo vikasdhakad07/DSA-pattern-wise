@@ -1,0 +1,56 @@
+LeetCode 167 - Two Sum II (Input Array Is Sorted): 
+*). If the pointer sum is too small, move left++. If too large, move right--.
+
+1). Brute Force Approach:
+nums[] = [2,7,11,15] and target=9
+using 2 for loops: 
+Time Complexitity: O(n-1) X O(n-1)
+for(int i=0;i<n;i++){
+for(int j=i+1;j<n;j++){
+int sum=nums[i]+nums[j];
+if(sum==target){
+return [i,j];
+}
+}
+}
+
+2). Two Pointer Approach:
+nums[] = [2,7,11,15] and target=9
+
+*). left pointer starts from left end of array i.e. from arr[0]=2 and right pointer start from right end of array i.e. from arr[n-1]=15
+
+CODE:
+left=0;
+right=n-1;
+while(left<right){
+int sum=nums[left]+nums[right];
+if(sum==target){
+return new int[]{left, right};
+} else if(sum>target){
+right--;
+} else {
+left++;
+}
+}
+
+*). Two pointers Approach only used when array is sorted. If array is not sorted then we can use Hashmap(Hashing) concept.
+
+CODE:
+class Solution {
+public int[] twoSum(int numbers[], int target){
+int n=numbers.length;
+int left=0;
+int right=n-1;
+while(left<right){
+int sum = numbers[left] + numbers[right];
+if(sum==target){
+return new int[]{left, right};
+} else if(sum>target){
+right--;
+} else {
+left++;
+}
+}
+return new int[]{-1, -1};
+}
+}
