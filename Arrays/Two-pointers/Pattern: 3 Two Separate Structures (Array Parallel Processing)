@@ -1,0 +1,40 @@
+Pattern: 3 Two Separate Structures (Array Parallel Processing)
+1. The Interview Triggers
+* Evaluating intersections, differences, or combinations across two distinct collections.
+*. Merging, joining, or validating sub-sequence properties between strings or arrays.
+
+2. Core Mechanics
+Assign one standalone pointer to each separate array or string (p1 = 0, p2 = 0). Move each pointer independently based on the comparison of the elements they are targeting.
+
+3. Production Java Blueprint
+public List<Integer> twoArraysTemplate(int[] arr1, int[] arr2) {
+    List<Integer> result = new ArrayList<>();
+    int p1 = 0;
+    int p2 = 0;
+    
+    // Loop only while BOTH pointers are safely inside bounds
+    while (p1 < arr1.length && p2 < arr2.length) {
+        if (arr1[p1] < arr2[p2]) {
+            p1++;
+        } else if (arr1[p1] > arr2[p2]) {
+            p2++;
+        } else {
+            result.add(arr1[p1]); // Common element identified
+            p1++;
+            p2++;
+        }
+    }
+    
+    // Optional: Clean-up loops if trailing elements must be processed
+    while (p1 < arr1.length) { /* process arr1 */ p1++; }
+    while (p2 < arr2.length) { /* process arr2 */ p2++; }
+    
+    return result;
+}
+
+4. Corner Cases & Interview Pitfalls
+Asymmetric Lengths: One list will naturally terminate before the second one. If you use an && condition inside your main while statement, ensure you handle remaining elements in your trailing logic arrays if the problem statement requires full coverage (like Merge Sorted Array).
+
+5. Essential Interview Questions
+Easy: LeetCode 88 - Merge Sorted Array, LeetCode 392 - Is Subsequence
+Medium: LeetCode 986 - Interval List Intersections, LeetCode 844 - Backspace String Compare
