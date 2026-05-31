@@ -1,0 +1,48 @@
+The Two-Pointer Mastery Notes (Java)
+📌 Foundational Checklist for Interviews
+Space Complexity: Almost all two-pointer problems expect $O(1)$ auxiliary space. If you are creating new arrays or lists unnecessarily, it’s an interview red flag.
+Primitive Types: When running additions or computations on array values (e.g., 3Sum, 4Sum), look out for Integer Overflow. Cast your operations to long.
+Array Bounds: Always verify if arrays can be empty or have a length of 1 at the beginning of your method execution.
+
+Pattern 1: Opposite Ends (Collision Course)
+1. The Interview Triggers
+*. The input array is sorted (or can be sorted without disrupting the required result indexes).
+*. Finding pairs, triplets, or combinations matching a target value.
+*. Operations processing elements from the outside moving inward (e.g., Reversals, Palindromes).
+
+2. Core Mechanics
+Two pointers are placed at opposite boundaries (left = 0 and right = array.length - 1). They move inward dynamically toward one another based on conditional checks until they meet or cross paths.
+
+3. Production Java Blueprint
+public int[] oppositeEndsTemplate(int[] nums, int target) {
+    // 1. Handle base/edge cases
+    if (nums == null || nums.length < 2) return new int[]{-1, -1};
+    
+    int left = 0;
+    int right = nums.length - 1;
+    
+    // 2. Loop condition: Pointers must not cross
+    while (left < right) {
+        // Prevent overflow by casting to long if elements can be large
+        long currentSum = (long) nums[left] + nums[right];
+        
+        if (currentSum == target) {
+            return new int[]{left, right}; // Found target
+        } else if (currentSum < target) {
+            left++; // Sum is too small, move to a larger value
+        } else {
+            right--; // Sum is too large, move to a smaller value
+        }
+    }
+    return new int[]{-1, -1};
+}
+
+4. Corner Cases & Interview Pitfalls
+Duplicates Handling: In problems returning multiple combinations (like 3Sum), you must bypass matching elements sequentially to avoid duplicate sub-arrays:
+while (left < right && nums[left] == nums[left + 1]) left++;
+while (left < right && nums[right] == nums[right - 1]) right--;
+
+5. Essential Interview Questions
+Easy: LeetCode 167 - Two Sum II (Input Array Is Sorted), LeetCode 125 - Valid Palindrome
+Medium: LeetCode 15 - 3Sum, LeetCode 11 - Container With Most Water
+Hard: LeetCode 42 - Trapping Rain Water
