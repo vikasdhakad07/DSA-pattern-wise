@@ -1,0 +1,27 @@
+LeetCode 26 - Remove Duplicates from Sorted Array: 
+fast scans for new unique values; slow marks the write-destination for unique values.
+
+Input: nums = [0,0,1,1,1,2,2,3,3,4]
+Output: 5 -> [0,1,2,3,4, , , , , , ]
+
+*). i'th index inialise to 0'th position and j'th index inialise to 1'th position.
+*). if i'th index value not equal to j'th index value, then we increase i'th index by 1 and store j'th index value to i'th index.
+*). We return i'th + 1 beacause index start from 0'th index.
+
+Two - Pointer's :
+CODE:
+class Solution {
+public int removeDuplicates(int nums[]){
+int n=nums.length;
+int i=0, j=1;
+while(j<n){
+if(nums[i]!=nums[j]){
+i++;
+nums[i]=nums[j];
+}
+j++;
+}
+return i+1;
+}
+}
+
