@@ -1,0 +1,78 @@
+80. Remove Duplicates from Sorted Array II
+Problem
+
+Given a sorted array nums, remove duplicates in-place such that each unique element appears at most twice.
+
+Return the number of elements k after removal.
+
+Example
+
+Input:
+nums = [1,1,1,2,2,3]
+
+Output:
+k = 5
+nums = [1,1,2,2,3]
+
+Intuition:
+
+Since the array is sorted, duplicates are adjacent.
+
+Keep a pointer k for the position where the next valid element should be placed.
+
+An element is valid if:
+
+We have placed fewer than 2 elements so far (k < 2), or
+Current element is different from the element at nums[k-2].
+
+This ensures no number appears more than twice.
+
+Algorithm
+Initialize k = 0.
+Traverse each number num in nums.
+If k < 2 or num != nums[k-2]:
+Place num at nums[k].
+Increment k.
+Return k.
+
+Java Solution
+class Solution {
+    public int removeDuplicates(int[] nums) {
+        int k = 0;
+
+        for (int num : nums) {
+            if (k < 2 || num != nums[k - 2]) {
+                nums[k++] = num;
+            }
+        }
+
+        return k;
+    }
+}
+
+Dry Run
+Input:
+[1,1,1,2,2,3]
+
+| num | k | Condition      | Array after placement |
+| --- | - | -------------- | --------------------- |
+| 1   | 0 | k < 2 ✓        | [1]                   |
+| 1   | 1 | k < 2 ✓        | [1,1]                 |
+| 1   | 2 | 1 == nums[0] ✗ | skip                  |
+| 2   | 2 | 2 != nums[0] ✓ | [1,1,2]               |
+| 2   | 3 | 2 != nums[1] ✓ | [1,1,2,2]             |
+| 3   | 4 | 3 != nums[2] ✓ | [1,1,2,2,3]           |
+
+
+Final:
+k = 5
+nums = [1,1,2,2,3]
+
+Complexity
+Time: O(n)
+Space: O(1)
+Key Trick
+
+Compare current element with nums[k-2].
+
+If they are equal, adding the current element would create a third occurrence, so skip it. Otherwise, keep it.
