@@ -1,0 +1,100 @@
+986. Interval List Intersections
+Problem
+
+Given two lists of sorted, non-overlapping intervals, return their intersections.
+
+Example
+firstList  = [[0,2],[5,10],[13,23],[24,25]]
+secondList = [[1,5],[8,12],[15,24],[25,26]]
+
+Output:
+[[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+
+Intuition
+
+Use Two Pointers:
+
+i → firstList
+j → secondList
+
+For each pair of intervals:
+A = [startA, endA]
+B = [startB, endB]
+
+Intersection exists if:
+max(startA, startB) <= min(endA, endB)
+
+Intersection:
+[max(startA, startB), min(endA, endB)]
+
+After processing, move the interval that ends first.
+
+Algorithm
+1). Initialize i = 0, j = 0.
+2). While both lists have intervals:
+Find overlap start and end.
+If overlap exists, add it to answer.
+Move the pointer whose interval ends first.
+3). Return answer.
+
+Java Solution
+class Solution {
+    public int[][] intervalIntersection(int[][] firstList, int[][] secondList) {
+        List<int[]> result = new ArrayList<>();
+
+        int i = 0, j = 0;
+
+        while (i < firstList.length && j < secondList.length) {
+
+            int start = Math.max(firstList[i][0], secondList[j][0]);
+            int end = Math.min(firstList[i][1], secondList[j][1]);
+
+            if (start <= end) {
+                result.add(new int[]{start, end});
+            }
+
+            if (firstList[i][1] < secondList[j][1]) {
+                i++;
+            } else {
+                j++;
+            }
+        }
+
+        return result.toArray(new int[result.size()][]);
+    }
+}
+
+Dry Run:
+firstList  = [[0,2],[5,10],[13,23],[24,25]]
+secondList = [[1,5],[8,12],[15,24],[25,26]]
+
+| Interval A | Interval B | Intersection | Move |
+| ---------- | ---------- | ------------ | ---- |
+| [0,2]      | [1,5]      | [1,2]        | i++  |
+| [5,10]     | [1,5]      | [5,5]        | j++  |
+| [5,10]     | [8,12]     | [8,10]       | i++  |
+| [13,23]    | [8,12]     | No           | j++  |
+| [13,23]    | [15,24]    | [15,23]      | i++  |
+| [24,25]    | [15,24]    | [24,24]      | j++  |
+| [24,25]    | [25,26]    | [25,25]      | i++  |
+
+Result:
+[[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+
+Complexity
+*). Time: O(m + n)
+*). Each interval is visited once.
+*). Space: O(1) (excluding output list)
+
+Interview Trick
+For two intervals:
+[a,b] and [c,d]
+
+Overlap:
+start = max(a,c)
+end   = min(b,d)
+
+If:
+start <= end
+then intersection exists.
+Move the interval with the smaller end point, because it cannot overlap with future intervals anymore.
