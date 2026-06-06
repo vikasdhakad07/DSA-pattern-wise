@@ -1,0 +1,78 @@
+392. Is Subsequence
+Problem
+Given two strings s and t, return true if s is a subsequence of t, otherwise return false.
+
+A subsequence can be formed by deleting some (or no) characters without changing the order of the remaining characters.
+
+Example
+s = "abc"
+t = "ahbgdc"
+
+Output: true
+s = "axc"
+t = "ahbgdc"
+
+Output: false
+Intuition
+
+Use Two Pointers:
+
+i → traverses s
+j → traverses t
+
+Whenever characters match, move i.
+Always move j.
+
+If i reaches the end of s, all characters were found in order.
+
+Algorithm
+Initialize i = 0, j = 0.
+While i < s.length() and j < t.length():
+If s.charAt(i) == t.charAt(j), increment i.
+Increment j.
+Return i == s.length().
+
+Java Solution
+class Solution {
+    public boolean isSubsequence(String s, String t) {
+        int i = 0, j = 0;
+
+        while (i < s.length() && j < t.length()) {
+            if (s.charAt(i) == t.charAt(j)) {
+                i++;
+            }
+            j++;
+        }
+
+        return i == s.length();
+    }
+}
+
+Dry Run
+Example
+s = "abc"
+t = "ahbgdc"
+
+| i | j | s[i] | t[j] | Match? | i After |
+| - | - | ---- | ---- | ------ | ------- |
+| 0 | 0 | a    | a    | Yes    | 1       |
+| 1 | 1 | b    | h    | No     | 1       |
+| 1 | 2 | b    | b    | Yes    | 2       |
+| 2 | 3 | c    | g    | No     | 2       |
+| 2 | 4 | c    | d    | No     | 2       |
+| 2 | 5 | c    | c    | Yes    | 3       |
+
+i == s.length() → true
+
+Complexity
+Time: O(|t|)
+Space: O(1)
+Key Trick
+Match → move both pointers
+No Match → move only t pointer
+
+When all characters of s are matched in order:
+
+i == s.length()
+
+⇒ s is a subsequence of t.
