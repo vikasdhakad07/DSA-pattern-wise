@@ -1,0 +1,172 @@
+844. Backspace String Compare
+Problem
+
+Given two strings s and t containing lowercase letters and '#' (backspace), return true if they are equal after processing all backspaces.
+
+Example
+s = "ab#c"
+t = "ad#c"
+
+Output: true
+
+After processing:
+
+s → "ac"
+t → "ac"
+
+Approach 1: Brute Force (Stack/StringBuilder)
+Intuition
+
+Simulate typing in an editor:
+
+Character → add it.
+# → remove last character (if exists).
+Compare the final processed strings.
+
+Java Solution:
+class Solution {
+    private String build(String str) {
+        StringBuilder sb = new StringBuilder();
+
+        for (char ch : str.toCharArray()) {
+            if (ch != '#') {
+                sb.append(ch);
+            } else if (sb.length() > 0) {
+                sb.deleteCharAt(sb.length() - 1);
+            }
+        }
+
+        return sb.toString();
+    }
+
+    public boolean backspaceCompare(String s, String t) {
+        return build(s).equals(build(t));
+    }
+}
+
+Dry Run
+s = "ab#c"
+
+| Char | Result |
+| ---- | ------ |
+| a    | a      |
+| b    | ab     |
+| #    | a      |
+| c    | ac     |
+
+Processed s = "ac"
+
+Similarly,
+
+t = "ad#c" → "ac"
+
+Compare:
+
+"ac" == "ac" → true
+Complexity
+Time: O(n + m)
+Space: O(n + m)
+
+
+Approach 2: Optimal (Two Pointers)
+
+Intuition
+Traverse both strings from right to left.
+
+# means skip a character.
+Maintain a skip count for each string.
+Find the next valid character in both strings and compare them.
+
+This avoids building new strings or using stacks.
+
+Algorithm
+Set i = s.length()-1, j = t.length()-1.
+Find the next valid character in s.
+Find the next valid character in t.
+Compare characters:
+If different → return false.
+Move both pointers left.
+If traversal finishes successfully → return true.
+
+Java Solution
+class Solution {
+    public boolean backspaceCompare(String s, String t) {
+        int i = s.length() - 1;
+        int j = t.length() - 1;
+
+        int skipS = 0, skipT = 0;
+
+        while (i >= 0 || j >= 0) {
+
+            while (i >= 0) {
+                if (s.charAt(i) == '#') {
+                    skipS++;
+                    i--;
+                } else if (skipS > 0) {
+                    skipS--;
+                    i--;
+                } else {
+                    break;
+                }
+            }
+
+            while (j >= 0) {
+                if (t.charAt(j) == '#') {
+                    skipT++;
+                    j--;
+                } else if (skipT > 0) {
+                    skipT--;
+                    j--;
+                } else {
+                    break;
+                }
+            }
+
+            if (i >= 0 && j >= 0 &&
+                s.charAt(i) != t.charAt(j)) {
+                return false;
+            }
+
+            if ((i >= 0) != (j >= 0)) {
+                return false;
+            }
+
+            i--;
+            j--;
+        }
+
+        return true;
+    }
+}
+
+Dry Run
+Example
+s = "ab#c"
+t = "ad#c"
+
+Processed strings:
+
+ab#c → ac
+ad#c → ac
+
+Pointer traversal:
+| s ptr       | t ptr       | Valid Char S | Valid Char T |
+| ----------- | ----------- | ------------ | ------------ |
+| c           | c           | c            | c            |
+| # removes b | # removes d | a            | a            |
+
+
+All characters match.
+
+Result = true
+Complexity
+Time: O(n + m)
+Space: O(1)
+Key Trick
+
+Process from right to left.
+
+'#'  -> increase skip count
+char -> skip if skip count > 0
+
+Compare only the next valid characters of both strings. This achieves O(1) extra space without using a stack.
