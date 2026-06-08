@@ -1,0 +1,30 @@
+Pattern 1: Fixed-Size Sliding Window
+The window width remains constant. You maintain a running state by adding the incoming element on the right and dropping the outgoing element on the left.
+
+1. Easy: Maximum Average Subarray I (LeetCode 643)
+The Concept: Find a contiguous subarray of a fixed length k that has the maximum average value.
+
+The Shortcut: Calculate the sum of the first k elements. Then slide the window across the array: add nums[i] and subtract nums[i - k]. Track the maximum sum found, then divide by k at the very end to avoid floating-point errors during the loop.
+
+Code:
+class Solution {
+    public double findMaxAverage(int[] nums, int k) {
+        int sum=0;
+        double max=Integer.MIN_VALUE;
+        int n=nums.length;
+        int j=0;
+        for(int i=0;i<n;i++){
+            sum+=nums[i];
+
+            if(sum>max&&i-j+1==k){
+                    max=sum;
+            } 
+
+            while(i-j+1>=k){
+                    sum=sum-nums[j];
+                j++;
+            }
+        }
+        return (double)max/k;
+    }
+}
