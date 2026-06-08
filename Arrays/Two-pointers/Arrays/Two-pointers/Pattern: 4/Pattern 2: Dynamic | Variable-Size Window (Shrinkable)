@@ -1,0 +1,25 @@
+Pattern 2: Dynamic / Variable-Size Window (Shrinkable)
+The window size expands dynamically until a condition is broken, then shrinks from the left until the condition becomes valid again.
+
+1. Easy: Minimum Size Subarray Sum (LeetCode 209) 
+The Concept: 
+Find the minimal length of a contiguous subarray of which the sum is >=target.
+
+Java Code Blueprint:
+public int minSubArrayLen(int target, int[] nums) {
+    int left = 0;
+    int currentSum = 0;
+    int minLength = Integer.MAX_VALUE;
+    
+    for (int right = 0; right < nums.length; right++) {
+        currentSum += nums[right]; // 1. Expand window
+        
+        // 2. Shrink window from the left as long as condition is met
+        while (currentSum >= target) {
+            minLength = Math.min(minLength, right - left + 1);
+            currentSum -= nums[left]; 
+            left++; 
+        }
+    }
+    return minLength == Integer.MAX_VALUE ? 0 : minLength;
+}
