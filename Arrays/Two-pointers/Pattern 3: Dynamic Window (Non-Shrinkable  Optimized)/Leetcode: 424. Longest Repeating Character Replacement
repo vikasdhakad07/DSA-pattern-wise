@@ -1,0 +1,179 @@
+LeetCode 424. Longest Repeating Character Replacement
+Problem
+Given a string s and an integer k, you can replace at most k characters. Find the length of the longest substring that can be transformed into a string with all identical characters.
+
+Example:
+s = "ABAB", k = 2
+Output = 4
+
+Replace both 'A's with 'B' (or vice versa).
+1. Brute Force
+
+For every starting index i, extend the substring to the right. Keep track of the frequency of characters and the maximum frequency (maxFreq) in the current substring.
+
+A substring is valid if:
+
+windowLength - maxFreq <= k
+
+because all characters except the most frequent one need to be replaced.
+
+Time Complexity
+Outer loop: O(n)
+Inner loop: O(n)
+Update frequency: O(1)
+
+Total: O(n²)
+
+Code
+class Solution {
+    public int characterReplacement(String s, int k) {
+
+        int n = s.length();
+        int ans = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            int[] freq = new int[26];
+            int maxFreq = 0;
+
+            for (int j = i; j < n; j++) {
+
+                freq[s.charAt(j) - 'A']++;
+                maxFreq = Math.max(maxFreq,
+                                   freq[s.charAt(j) - 'A']);
+
+                int windowLength = j - i + 1;
+
+                if (windowLength - maxFreq <= k) {
+                    ans = Math.max(ans, windowLength);
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+2. Optimal: Dynamic Sliding Window
+Key Observation
+
+For any window:
+
+windowLength = j - i + 1
+maxFreq = frequency of the most common character
+
+The number of replacements needed is:
+
+replacements = windowLength - maxFreq
+
+If:
+
+windowLength - maxFreq > k
+
+then the window is invalid, so shrink it from the left.
+
+Algorithm
+Expand the window by moving j.
+Update the frequency of s[j].
+Update maxFreq.
+While (windowLength - maxFreq) > k, shrink the window by moving i.
+Keep track of the maximum valid window length.
+Code (Optimal)
+class Solution {
+    public int characterReplacement(String s, int k) {
+
+        int[] freq = new int[26];
+
+        int i = 0;
+        int maxFreq = 0;
+        int ans = 0;
+
+        for (int j = 0; j < s.length(); j++) {
+
+            freq[s.charAt(j) - 'A']++;
+
+            maxFreq = Math.max(maxFreq,
+                               freq[s.charAt(j) - 'A']);
+
+            while ((j - i + 1) - maxFreq > k) {
+                freq[s.charAt(i) - 'A']--;
+                i++;
+            }
+
+            ans = Math.max(ans, j - i + 1);
+        }
+
+        return ans;
+    }
+}
+Dry Run
+s = "AABABBA"
+k = 1
+Window	Frequencies	maxFreq	Window Size	Replacements Needed	Valid?
+A	A=1	1	1	0	✓
+AA	A=2	2	2	0	✓
+AAB	A=2,B=1	2	3	1	✓
+AABA	A=3,B=1	3	4	1	✓
+AABAB	A=3,B=2	3	5	2	✗ (shrink)
+ABAB	A=2,B=2	3*	4	1	✓
+BABB	A=1,B=3	3	4	1	✓
+
+Maximum valid window length = 4.
+
+Note: maxFreq is never decreased when the left pointer moves. This is intentional and still gives the correct answer because it only delays shrinking; it never causes us to miss the optimal window.
+
+Why This Formula Works
+
+Suppose the current window is:
+
+A A B A B
+
+Frequency:
+
+A = 3
+B = 2
+
+To make all characters the same:
+
+Convert both Bs into As.
+Required replacements = 2.
+
+This equals:
+
+windowLength - maxFreq
+= 5 - 3
+= 2
+
+So the validity condition is:
+
+(windowLength - maxFreq) <= k
+Pattern Recognition
+Property	Value
+Sliding Window Type	Dynamic (Variable Size)
+Data Structure	Frequency Array (int[26])
+Window Condition	(windowSize - maxFreq) <= k
+Time Complexity	O(n)
+Space Complexity	O(26) = O(1)
+Interview Progression
+Approach	Idea	Time	Space
+Brute Force	Check every substring	O(n²)	O(26)
+Dynamic Sliding Window (Optimal)	Maintain frequency array and maxFreq	O(n)	O(26)
+Pattern to Remember
+
+Many dynamic sliding window problems follow this structure:
+
+for (int j = 0; j < n; j++) {
+    // include nums[j] / s.charAt(j)
+
+    while (window is invalid) {
+        // remove nums[i] / s.charAt(i)
+        i++;
+    }
+
+    // update answer
+}
+
+For LeetCode 424, the window is invalid when:
+
+(window size - maximum frequency character in window) > k
+
+This is the core idea to remember.
