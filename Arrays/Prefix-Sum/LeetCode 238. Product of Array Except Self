@@ -1,26 +1,15 @@
 LeetCode 238. Product of Array Except Self
-Problem:
-Given an integer array nums, return an array answer such that:
+Approach 1: Brute Force
+Idea
 
-answer[i] = product of all elements of nums except nums[i]
+For every index i, iterate through the entire array and multiply all elements except nums[i].
 
-Constraints:
-
-Do not use division (optimal solution).
-Solve in O(n) time.
-Example
-nums = [1,2,3,4]
-
-answer[0] = 2×3×4 = 24
-answer[1] = 1×3×4 = 12
-answer[2] = 1×2×4 = 8
-answer[3] = 1×2×3 = 6
-Output = [24,12,8,6]
-
-1. Brute Force
-
-For every index i, multiply all elements except nums[i].
-
+Algorithm
+For each index i:
+Initialize product = 1.
+Traverse the whole array.
+If j != i, multiply product *= nums[j].
+Store product in the answer array.
 Time Complexity
 Outer loop: O(n)
 Inner loop: O(n)
@@ -53,15 +42,22 @@ class Solution {
     }
 }
 
-2. Better Approach (Using Division)
+Approach 2: Using Division
 Idea
-Compute the product of all elements.
+Find the product of all elements.
 For each index:
-answer[i] = totalProduct / nums[i].
-Problem
+answer[i] = totalProduct / nums[i]
+Example
+nums = [1,2,3,4]
 
-This approach fails when the array contains zeros, and the problem explicitly asks not to use division.
+totalProduct = 24
 
+answer[0] = 24 / 1 = 24
+answer[1] = 24 / 2 = 12
+answer[2] = 24 / 3 = 8
+answer[3] = 24 / 4 = 6
+
+Output = [24,12,8,6]
 Time Complexity
 O(n)
 Space Complexity
@@ -86,41 +82,95 @@ class Solution {
         return ans;
     }
 }
+Limitation: This solution fails when the array contains zeros and the original problem explicitly disallows division.
 
-3. Optimal Approach (Prefix + Suffix Products)
+Approach 3: Division + Zero Handling
 Idea
 
-For every index i:
+Handle three cases:
 
-answer[i] = (product of elements to the left)
-            ×
-            (product of elements to the right)
+More than one zero → all answers are 0.
+Exactly one zero → only the zero index gets the product of non-zero elements.
+No zeros → use product / nums[i].
+Time Complexity
+O(n)
+Space Complexity
+O(1)
+Code
+class Solution {
+    public int[] productExceptSelf(int[] nums) {
 
-Instead of recomputing these products, precompute:
+        int n = nums.length;
+        int[] ans = new int[n];
 
-prefix[i] = product of all elements before i
-suffix[i] = product of all elements after i
+        int zeroCount = 0;
+        int product = 1;
+
+        for (int num : nums) {
+            if (num == 0) {
+                zeroCount++;
+            } else {
+                product *= num;
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+
+            if (zeroCount > 1) {
+                ans[i] = 0;
+            }
+            else if (zeroCount == 1) {
+
+                if (nums[i] == 0) {
+                    ans[i] = product;
+                } else {
+                    ans[i] = 0;
+                }
+            }
+            else {
+                ans[i] = product / nums[i];
+            }
+        }
+
+        return ans;
+    }
+}
+Note:
+Although this works correctly even with zeros, LeetCode 238 specifically asks you not to use division, so this is still not considered the intended optimal approach.
+
+Approach 4: Prefix and Suffix Arrays
+Idea
+
+For every index:
+
+answer[i] =
+(product of all elements to the left)
+×
+(product of all elements to the right)
+
+Maintain:
+
+prefix[i] = product of elements before i.
+suffix[i] = product of elements after i.
 
 Then:
 
 answer[i] = prefix[i] * suffix[i]
 Example
-nums = [1,2,3,4]
+nums   = [1,2,3,4]
 
 prefix = [1,1,2,6]
 suffix = [24,12,4,1]
 
-answer:
+answer =
 1×24 = 24
 1×12 = 12
 2×4  = 8
 6×1  = 6
-
 Time Complexity
 O(n)
 Space Complexity
-O(n) (for prefix and suffix arrays)
-
+O(n)
 Code
 class Solution {
     public int[] productExceptSelf(int[] nums) {
@@ -149,44 +199,45 @@ class Solution {
     }
 }
 
-4. Most Optimal (O(1) Extra Space)
+Approach 5: Optimal (Prefix Product + Running Suffix)
 Idea
 
-Instead of storing separate prefix[] and suffix[] arrays:
+Instead of using separate prefix[] and suffix[] arrays:
 
-Use the answer array itself to store prefix products.
-Traverse from right to left while maintaining a variable suffix.
-Steps
+Store prefix products directly in the answer array.
+Traverse from right to left while maintaining a running suffix product.
+Algorithm
 First Pass (Left → Right)
-
-Store prefix products in ans.
-
-nums = [1,2,3,4]
-
-ans:
-[1,1,2,6]
+ans[i] = product of all elements before i
 Second Pass (Right → Left)
 
 Maintain:
 
+suffix = product of all elements after i
+
+Then:
+
+ans[i] = ans[i] * suffix
+Dry Run
+nums = [1,2,3,4]
+
+After first pass:
+ans = [1,1,2,6]
+
 suffix = 1
 
-Multiply ans[i] by suffix, then update suffix.
+i=3 → ans[3]=6×1=6, suffix=4
+i=2 → ans[2]=2×4=8, suffix=12
+i=1 → ans[1]=1×12=12, suffix=24
+i=0 → ans[0]=1×24=24
 
-i	suffix before	ans[i]	New ans[i]	suffix after
-3	1	6	6	4
-2	4	2	8	12
-1	12	1	12	24
-0	24	1	24	24
-
-Final answer:
-
-[24,12,8,6]
+Final Answer = [24,12,8,6]
 Time Complexity
 O(n)
 Space Complexity
 O(1) (excluding output array)
-Code (Optimal)
+
+Code
 class Solution {
     public int[] productExceptSelf(int[] nums) {
 
@@ -195,12 +246,14 @@ class Solution {
 
         // Store prefix products
         ans[0] = 1;
+
         for (int i = 1; i < n; i++) {
             ans[i] = ans[i - 1] * nums[i - 1];
         }
 
-        // Multiply by suffix products
+        // Multiply with suffix products
         int suffix = 1;
+
         for (int i = n - 1; i >= 0; i--) {
             ans[i] *= suffix;
             suffix *= nums[i];
@@ -210,46 +263,26 @@ class Solution {
     }
 }
 
-Dry Run
-nums = [1,2,3,4]
-Step 1: Build Prefix in ans
-i	ans
-0	[1,0,0,0]
-1	[1,1,0,0]
-2	[1,1,2,0]
-3	[1,1,2,6]
-Step 2: Traverse from Right
-i	suffix	ans[i] after multiplication
-3	1	6
-2	4	8
-1	12	12
-0	24	24
+Summary Table
+Approach	Idea	Time	Space	Accepted
+1. Brute Force	Multiply all elements except current index	O(n²)	O(1)	✅
+2. Using Division	totalProduct / nums[i]	O(n)	O(1)	❌ (fails with zeros, division not allowed)
+3. Division + Zero Handling	Count zeros and handle separately	O(n)	O(1)	✅ (but uses division)
+4. Prefix + Suffix Arrays	prefix[i] × suffix[i]	O(n)	O(n)	✅
+5. Prefix + Running Suffix (Optimal)	Store prefix in answer array + one suffix variable	O(n)	O(1)	✅ (Best Solution)
 
-Final:
+Interview Flow
+Brute Force
+     ↓
+Using Division
+     ↓
+Division + Zero Handling
+     ↓
+Prefix + Suffix Arrays
+     ↓
+Prefix + Running Suffix (Optimal, O(n) Time & O(1) Extra Space)
 
-[24,12,8,6]
-Special Case: Zeros
-Example 1
-nums = [1,2,0,4]
+Key Formula:
+answer[i] = (product of all elements to the left of i) × (product of all elements to the right of i)
 
-Output = [0,0,8,0]
-Example 2
-nums = [0,2,0,4]
-
-Output = [0,0,0,0]
-
-The prefix-suffix approach automatically handles zeros, which is another reason it is preferred over the division method.
-
-Approach Comparison
-Approach	Idea	Time	Space
-Brute Force	Multiply all except current	O(n²)	O(1)
-Division	Total product ÷ current element	O(n)	O(1)
-Prefix + Suffix Arrays	Store left and right products	O(n)	O(n)
-Prefix + Running Suffix (Optimal)	Use answer array + one suffix variable	O(n)	O(1)
-Pattern Recognition
-Category: Prefix Sum / Prefix-Suffix Product.
-
-Key Idea: For each index,
-
-answer[i] = (product of left side) × (product of right side)
-Most Optimal Trick: Store prefix products directly in the answer array and compute suffix products using a single running variable. This achieves O(n) time and O(1) extra space.
+The optimal solution simply computes these left and right products without using extra arrays.
