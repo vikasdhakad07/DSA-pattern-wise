@@ -1,0 +1,202 @@
+1. Basic Prefix Sum
+Pattern
+Used for:
+Range Sum Query
+Pivot Index
+Running Sum
+Formula
+prefix[i] = prefix[i-1] + nums[i]
+
+sum(l...r) = prefix[r] - prefix[l-1]
+Template
+int n = nums.length;
+int[] prefix = new int[n];
+
+prefix[0] = nums[0];
+
+for (int i = 1; i < n; i++) {
+    prefix[i] = prefix[i - 1] + nums[i];
+}
+
+// Sum from l to r
+int rangeSum = prefix[r] - (l > 0 ? prefix[l - 1] : 0);
+
+Problems
+LC 303: Range Sum Query
+LC 724: Find Pivot Index
+LC 1480: Running Sum of 1D Array
+
+2. Prefix Sum + HashMap (Subarray Sum = K)
+Pattern
+
+Count the number of subarrays having sum exactly k.
+
+Formula
+currSum - prevSum = k
+
+prevSum = currSum - k
+Template
+HashMap<Integer, Integer> map = new HashMap<>();
+
+map.put(0, 1);
+
+int sum = 0;
+int count = 0;
+
+for (int num : nums) {
+
+    sum += num;
+
+    if (map.containsKey(sum - k)) {
+        count += map.get(sum - k);
+    }
+
+    map.put(sum, map.getOrDefault(sum, 0) + 1);
+}
+
+return count;
+
+Problems
+LC 560: Subarray Sum Equals K
+LC 930: Binary Subarrays With Sum
+
+3. Prefix Sum + Modulo HashMap
+Pattern
+
+Subarray sum divisible by k.
+
+Formula
+(prefix[j] - prefix[i]) % k == 0
+
+⇒ prefix[j] % k == prefix[i] % k
+Template (Existence)
+HashMap<Integer, Integer> map = new HashMap<>();
+
+map.put(0, -1);
+
+int sum = 0;
+
+for (int i = 0; i < nums.length; i++) {
+
+    sum += nums[i];
+    int mod = sum % k;
+
+    if (mod < 0) mod += k;
+
+    if (map.containsKey(mod)) {
+        if (i - map.get(mod) > 1) {
+            return true;
+        }
+    } else {
+        map.put(mod, i);
+    }
+}
+
+return false;
+Problems
+LC 523: Continuous Subarray Sum
+
+4. Prefix Sum + Modulo Frequency Count
+Pattern
+
+Count subarrays whose sum is divisible by k.
+
+Formula
+If same remainder appears before,
+then their difference is divisible by k.
+Template
+HashMap<Integer, Integer> map = new HashMap<>();
+
+map.put(0, 1);
+
+int sum = 0;
+int count = 0;
+
+for (int num : nums) {
+
+    sum += num;
+    int mod = sum % k;
+
+    if (mod < 0) mod += k;
+
+    count += map.getOrDefault(mod, 0);
+
+    map.put(mod, map.getOrDefault(mod, 0) + 1);
+}
+return count;
+
+Problems
+LC 974: Subarray Sums Divisible by K
+
+5. Prefix Sum + Equal 0s and 1s
+Pattern
+
+Longest subarray having equal number of 0s and 1s.
+
+Trick
+0 → -1
+1 → +1
+
+Now find the longest subarray with sum = 0.
+
+Template
+HashMap<Integer, Integer> map = new HashMap<>();
+
+map.put(0, -1);
+
+int sum = 0;
+int maxLen = 0;
+
+for (int i = 0; i < nums.length; i++) {
+
+    if (nums[i] == 0)
+        sum += -1;
+    else
+        sum += 1;
+
+    if (map.containsKey(sum)) {
+        maxLen = Math.max(maxLen, i - map.get(sum));
+    } else {
+        map.put(sum, i);
+    }
+}
+
+return maxLen;
+Problems
+LC 525: Contiguous Array
+6. 2D Prefix Sum
+Pattern
+
+Answer rectangle sum queries efficiently.
+
+Formula
+prefix[i][j] =
+matrix[i][j]
++ top
++ left
+- overlap
+Template
+int m = matrix.length;
+int n = matrix[0].length;
+
+int[][] prefix = new int[m + 1][n + 1];
+
+for (int i = 1; i <= m; i++) {
+    for (int j = 1; j <= n; j++) {
+
+        prefix[i][j] =
+            matrix[i - 1][j - 1]
+            + prefix[i - 1][j]
+            + prefix[i][j - 1]
+            - prefix[i - 1][j - 1];
+    }
+}
+
+// Query:
+int sum = prefix[r2 + 1][c2 + 1]
+        - prefix[r1][c2 + 1]
+        - prefix[r2 + 1][c1]
+        + prefix[r1][c1];
+Problems
+LC 304: Range Sum Query 2D
+LC 363: Max Sum Rectangle No Larger Than K
