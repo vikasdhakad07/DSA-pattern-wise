@@ -1,0 +1,181 @@
+LeetCode 724. Find Pivot Index
+
+Problem
+Find the index where:
+
+sum of elements on left == sum of elements on right
+
+Return the leftmost pivot index, else return -1.
+
+1. Brute Force
+Idea
+
+For every index i:
+
+compute left sum
+compute right sum
+compare
+Time Complexity
+O(n²)
+Space Complexity
+O(1)
+Code
+class Solution {
+    public int pivotIndex(int[] nums) {
+
+        int n = nums.length;
+
+        for (int i = 0; i < n; i++) {
+
+            int leftSum = 0;
+            int rightSum = 0;
+
+            for (int j = 0; j < i; j++) {
+                leftSum += nums[j];
+            }
+
+            for (int j = i + 1; j < n; j++) {
+                rightSum += nums[j];
+            }
+
+            if (leftSum == rightSum) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+}
+
+2. Prefix Sum Array (Better)
+Idea
+
+Build prefix array:
+
+prefix[i] = sum of nums[0..i]
+
+Then:
+
+leftSum = prefix[i-1]
+rightSum = prefix[n-1] - prefix[i]
+Time Complexity
+O(n)
+Space Complexity
+O(n)
+Code
+class Solution {
+    public int pivotIndex(int[] nums) {
+
+        int n = nums.length;
+        int[] prefix = new int[n];
+
+        prefix[0] = nums[0];
+
+        for (int i = 1; i < n; i++) {
+            prefix[i] = prefix[i - 1] + nums[i];
+        }
+
+        int total = prefix[n - 1];
+
+        for (int i = 0; i < n; i++) {
+
+            int leftSum = (i == 0) ? 0 : prefix[i - 1];
+            int rightSum = total - prefix[i];
+
+            if (leftSum == rightSum) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+}
+
+3. Optimal (Running Sum)
+Idea (Most Important)
+
+Instead of prefix array:
+
+keep leftSum
+compute rightSum using total sum
+rightSum = totalSum - leftSum - nums[i]
+Algorithm
+Compute total sum
+Traverse array
+Check pivot condition
+Update left sum
+Time Complexity
+O(n)
+Space Complexity
+O(1)
+Code (Optimal)
+class Solution {
+    public int pivotIndex(int[] nums) {
+
+        int totalSum = 0;
+
+        for (int num : nums) {
+            totalSum += num;
+        }
+
+        int leftSum = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+
+            int rightSum = totalSum - leftSum - nums[i];
+
+            if (leftSum == rightSum) {
+                return i;
+            }
+
+            leftSum += nums[i];
+        }
+
+        return -1;
+    }
+}
+
+4. “Product-style Thinking” Variant (NOT ACTUAL PIVOT, BUT INTERVIEW INSIGHT)
+
+Sometimes students try to apply:
+
+product / nums[i]
+
+This does NOT work for pivot index, because pivot is based on SUM, not PRODUCT.
+
+But here is the correct “product-style analogy”:
+
+Equivalent transformation idea
+
+We use:
+
+totalSum = leftSum + nums[i] + rightSum
+
+So:
+
+rightSum = totalSum - leftSum - nums[i]
+
+This is the SUM equivalent of prefix/suffix logic used in product problems.
+
+Dry Run
+nums = [1,7,3,6,5,6]
+total = 28
+i	leftSum	rightSum	Pivot
+0	0	27	❌
+1	1	20	❌
+2	8	17	❌
+3	11	11	✅
+Final Summary
+Approach	Time	Space	Idea
+Brute Force	O(n²)	O(1)	recompute sums
+Prefix Array	O(n)	O(n)	precompute sums
+Running Sum (Optimal)	O(n)	O(1)	totalSum - leftSum - nums[i]
+Key Pattern
+
+Pivot Index = Prefix Sum Problem
+
+Core identity:
+
+leftSum == totalSum - leftSum - nums[i]
+
+👉 This is the fastest and most interview-preferred solution.
