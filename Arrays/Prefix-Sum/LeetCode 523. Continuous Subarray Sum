@@ -1,0 +1,199 @@
+LeetCode 523. Continuous Subarray Sum
+Problem
+
+Given an integer array nums and an integer k, return true if there exists a subarray of size at least 2 whose sum is a multiple of k, otherwise return false.
+
+1. Brute Force
+Idea
+
+Check every subarray and compute sum.
+
+If:
+
+sum % k == 0
+
+and subarray length ≥ 2 → return true.
+
+Time Complexity
+O(n²)
+Space Complexity
+O(1)
+Code
+class Solution {
+    public boolean checkSubarraySum(int[] nums, int k) {
+
+        int n = nums.length;
+
+        for (int i = 0; i < n; i++) {
+
+            int sum = 0;
+
+            for (int j = i; j < n; j++) {
+
+                sum += nums[j];
+
+                if (j - i + 1 >= 2 && sum % k == 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+
+2. Prefix Sum (Better but still O(n²))
+Idea
+
+Use prefix sums to compute subarray sum in O(1).
+
+Formula
+sum(i..j) = prefix[j] - prefix[i-1]
+
+Check:
+
+(prefix[j] - prefix[i]) % k == 0
+Time Complexity
+O(n²)
+Space Complexity
+O(n)
+
+Code
+class Solution {
+    public boolean checkSubarraySum(int[] nums, int k) {
+
+        int n = nums.length;
+        int[] prefix = new int[n];
+
+        prefix[0] = nums[0];
+
+        for (int i = 1; i < n; i++) {
+            prefix[i] = prefix[i - 1] + nums[i];
+        }
+
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+
+                int sum = prefix[j] - (i > 0 ? prefix[i - 1] : 0);
+
+                if (sum % k == 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+
+3. Optimal (Prefix Sum + HashMap of Modulo)
+⭐ Key Insight
+
+We don’t need full sums.
+
+We only care about:
+
+(prefix[j] - prefix[i]) % k == 0
+
+This means:
+
+prefix[j] % k == prefix[i] % k
+Idea
+
+If two prefix sums have the same remainder, their difference is divisible by k.
+
+Important Trick
+
+We store:
+
+(remainder → first index where it occurred)
+
+We also ensure subarray length ≥ 2.
+
+Algorithm
+Create map: {0 : -1}
+Maintain running sum
+Compute mod = sum % k
+If mod already exists:
+check index distance ≥ 2 → return true
+Else store mod with index
+Time Complexity
+O(n)
+Space Complexity
+O(k) or O(n)
+
+Code (Optimal)
+class Solution {
+    public boolean checkSubarraySum(int[] nums, int k) {
+
+        HashMap<Integer, Integer> map = new HashMap<>();
+
+        map.put(0, -1);
+
+        int sum = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+
+            sum += nums[i];
+
+            int mod = (k != 0) ? sum % k : sum;
+
+            if (map.containsKey(mod)) {
+
+                if (i - map.get(mod) > 1) {
+                    return true;
+                }
+
+            } else {
+                map.put(mod, i);
+            }
+        }
+
+        return false;
+    }
+}
+
+Dry Run
+nums = [23,2,4,6,7], k = 6
+i	num	sum	mod (sum%6)	map	result
+0	23	23	5	{0:-1,5:0}	
+1	2	25	1	{1:1}	
+2	4	29	5	exists at 0 → length=2 → TRUE	
+Why This Works
+
+From prefix sum identity:
+
+(sum[j] - sum[i]) % k = 0
+→ sum[j] % k == sum[i] % k
+
+So we only track remainder repetition, not full sums.
+
+Edge Cases
+Case 1: k = 0
+
+We directly check:
+
+sum == 0
+
+Handled separately in code.
+
+Case 2: Negative numbers
+
+Java handles % with negatives, so mod normalization may be needed in strict implementations.
+
+Pattern Recognition
+This is a:
+👉 Prefix Sum + Modulo + HashMap Pattern
+Core Insight
+Concept	Meaning
+Prefix Sum	track running sum
+Modulo k	reduce problem complexity
+Same remainder	divisible subarray
+Final Pattern Formula
+if prefix[j] % k == prefix[i] % k AND (j - i ≥ 2)
+→ valid subarray exists
+Approach Summary
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+Prefix Sum	O(n²)	O(n)
+Prefix + HashMap (Optimal)	O(n)	O(n)
