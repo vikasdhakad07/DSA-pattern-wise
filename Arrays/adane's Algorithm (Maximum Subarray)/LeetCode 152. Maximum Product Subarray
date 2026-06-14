@@ -1,0 +1,226 @@
+LeetCode 152. Maximum Product Subarray
+Problem
+
+Given an integer array nums, find the contiguous non-empty subarray that has the largest product, and return the product.
+
+Example
+nums = [2,3,-2,4]
+
+Subarrays:
+[2] = 2
+[2,3] = 6
+[2,3,-2] = -12
+[3,-2,4] = -24
+[4] = 4
+...
+
+Maximum Product = 6
+1. Brute Force
+Idea
+
+Generate all possible subarrays and calculate their product.
+
+Algorithm
+Fix start index i.
+Extend end index j.
+Maintain running product.
+Update maximum product.
+Time Complexity
+O(n²)
+Space Complexity
+O(1)
+
+Code
+class Solution {
+    public int maxProduct(int[] nums) {
+
+        int n = nums.length;
+        int maxProduct = Integer.MIN_VALUE;
+
+        for (int i = 0; i < n; i++) {
+
+            int product = 1;
+
+            for (int j = i; j < n; j++) {
+
+                product *= nums[j];
+                maxProduct = Math.max(maxProduct, product);
+            }
+        }
+
+        return maxProduct;
+    }
+}
+
+2. Prefix and Suffix Product (Better)
+Idea
+
+A negative number can flip the sign of the product.
+
+To handle this, compute:
+
+Prefix product from left to right.
+Suffix product from right to left.
+
+The answer is the maximum value seen among all prefix and suffix products.
+
+If the running product becomes 0, reset it to 1.
+
+Example
+nums = [2,3,-2,4]
+
+Prefix Products:
+2, 6, -12, -48
+
+Suffix Products:
+4, -8, -24, -48
+
+Maximum = 6
+Time Complexity
+O(n)
+Space Complexity
+O(1)
+
+Code
+class Solution {
+    public int maxProduct(int[] nums) {
+
+        int n = nums.length;
+
+        int prefix = 1;
+        int suffix = 1;
+        int ans = Integer.MIN_VALUE;
+
+        for (int i = 0; i < n; i++) {
+
+            if (prefix == 0) prefix = 1;
+            if (suffix == 0) suffix = 1;
+
+            prefix *= nums[i];
+            suffix *= nums[n - 1 - i];
+
+            ans = Math.max(ans, Math.max(prefix, suffix));
+        }
+
+        return ans;
+    }
+}
+
+3. Optimal (Kadane Variant: Track Max and Min)
+⭐ Key Insight
+
+Unlike Maximum Subarray Sum, multiplication by a negative number swaps maximum and minimum.
+
+Example:
+
+Current Max = 6
+Current Min = -3
+
+Multiply by -2:
+
+New Max = (-3) × (-2) = 6
+New Min = 6 × (-2) = -12
+
+So we must maintain:
+
+maxProdEndingHere
+minProdEndingHere
+Formula
+
+If current number is negative, swap maxProd and minProd.
+
+Then:
+
+maxProd=max(nums[i], maxProd×nums[i])
+
+minProd=min(nums[i], minProd×nums[i])
+
+Algorithm
+Initialize:
+maxProd = nums[0]
+minProd = nums[0]
+answer = nums[0]
+Traverse array.
+If current number is negative, swap max and min.
+Update max and min products.
+Update answer.
+Time Complexity
+O(n)
+Space Complexity
+O(1)
+
+Code (Optimal)
+class Solution {
+    public int maxProduct(int[] nums) {
+
+        int maxProd = nums[0];
+        int minProd = nums[0];
+        int ans = nums[0];
+
+        for (int i = 1; i < nums.length; i++) {
+
+            if (nums[i] < 0) {
+                int temp = maxProd;
+                maxProd = minProd;
+                minProd = temp;
+            }
+
+            maxProd = Math.max(nums[i], maxProd * nums[i]);
+            minProd = Math.min(nums[i], minProd * nums[i]);
+
+            ans = Math.max(ans, maxProd);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+nums = [2,3,-2,4]
+i	num	maxProd	minProd	ans
+0	2	2	2	2
+1	3	6	3	6
+2	-2	-2	-12	6
+3	4	4	-48	6
+
+Final Answer:
+
+6
+Why Do We Need minProd?
+
+Consider:
+
+nums = [-2, 3, -4]
+
+Without tracking the minimum:
+
+-2 × 3 = -6
+-6 × (-4) = 24 ✅
+
+The minimum negative product becomes the maximum positive product after multiplying by another negative.
+
+Pattern Recognition
+This is a Kadane's Algorithm Variant.
+Standard Kadane
+
+Track:
+
+Current Maximum Sum
+Maximum Product Kadane
+
+Track:
+
+Current Maximum Product
+Current Minimum Product
+Related Problems
+Maximum Product Subarray
+Maximum Subarray
+Maximum Sum Circular Subarray
+Approach Summary
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+Prefix + Suffix Product	O(n)	O(1)
+Kadane Variant (Optimal)	O(n)	O(1)
+One-Line Interview Intuition
+
+For maximum product, a negative number can turn the smallest product into the largest one. Therefore, maintain both the maximum and minimum product ending at each index.
