@@ -1,0 +1,278 @@
+347. Top K Frequent Elements
+Problem
+
+Given an integer array nums and an integer k, return the k most frequent elements.
+
+Example
+Input: nums = [1,1,1,2,2,3], k = 2
+Output: [1,2]
+
+Approach 1: Brute Force (Repeated Maximum Frequency Scan)
+Intuition
+Count frequency using HashMap.
+Repeat k times:
+Find the element with maximum frequency.
+Add it to answer.
+Mark its frequency as 0.
+Java Solution
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+
+        HashMap<Integer, Integer> map = new HashMap<>();
+
+        for (int x : nums) {
+            map.put(x, map.getOrDefault(x, 0) + 1);
+        }
+
+        int[] ans = new int[k];
+
+        for (int i = 0; i < k; i++) {
+
+            int maxFreq = 0;
+            int maxElement = 0;
+
+            for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+
+                if (entry.getValue() > maxFreq) {
+                    maxFreq = entry.getValue();
+                    maxElement = entry.getKey();
+                }
+            }
+
+            ans[i] = maxElement;
+            map.put(maxElement, 0);
+        }
+
+        return ans;
+    }
+}
+Dry Run
+nums = [1,1,1,2,2,3]
+
+Frequency Map:
+
+1 → 3
+2 → 2
+3 → 1
+
+Iteration 1:
+
+Max Frequency = 3 → Pick 1
+
+Iteration 2:
+
+Max Frequency = 2 → Pick 2
+
+Answer:
+
+[1,2]
+Complexity
+Time: O(n + k·m)
+Space: O(m)
+
+m = number of unique elements
+
+Approach 2: Sorting by Frequency
+Intuition
+Count frequencies.
+Convert map entries into a list.
+Sort descending by frequency.
+Pick first k elements.
+Java Solution
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+
+        Map<Integer, Integer> freq = new HashMap<>();
+
+        for (int num : nums) {
+            freq.put(num, freq.getOrDefault(num, 0) + 1);
+        }
+
+        List<Map.Entry<Integer, Integer>> list =
+                new ArrayList<>(freq.entrySet());
+
+        list.sort((a, b) -> b.getValue() - a.getValue());
+
+        int[] ans = new int[k];
+
+        for (int i = 0; i < k; i++) {
+            ans[i] = list.get(i).getKey();
+        }
+
+        return ans;
+    }
+}
+Complexity
+Time: O(n log n)
+Space: O(n)
+
+Approach 3: Min Heap
+Intuition
+
+Maintain a Min Heap of size k.
+
+Store elements according to frequency.
+If heap size exceeds k, remove smallest frequency.
+Remaining elements are top k frequent.
+Java Solution
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+
+        Map<Integer, Integer> freq = new HashMap<>();
+
+        for (int num : nums) {
+            freq.put(num, freq.getOrDefault(num, 0) + 1);
+        }
+
+        PriorityQueue<Integer> pq =
+                new PriorityQueue<>((a, b) ->
+                        freq.get(a) - freq.get(b));
+
+        for (int num : freq.keySet()) {
+
+            pq.offer(num);
+
+            if (pq.size() > k) {
+                pq.poll();
+            }
+        }
+
+        int[] ans = new int[k];
+
+        for (int i = k - 1; i >= 0; i--) {
+            ans[i] = pq.poll();
+        }
+
+        return ans;
+    }
+}
+Dry Run
+
+Frequency Map:
+
+1 → 3
+2 → 2
+3 → 1
+
+Heap Operations:
+
+Add 1 → [1]
+Add 2 → [2,1]
+Add 3 → [3,1,2]
+
+Size > k
+Remove 3
+
+Remaining:
+
+[1,2]
+Complexity
+Time: O(n log k)
+Space: O(n)
+
+Approach 4: Bucket Sort (Optimal)
+Intuition
+
+Maximum frequency of any element can be at most n.
+
+Create buckets:
+
+bucket[i] = elements appearing i times
+
+Traverse buckets from highest frequency to lowest.
+
+Java Solution
+class Solution {
+    public int[] topKFrequent(int[] nums, int k) {
+
+        Map<Integer, Integer> freq = new HashMap<>();
+
+        for (int num : nums) {
+            freq.put(num, freq.getOrDefault(num, 0) + 1);
+        }
+
+        List<Integer>[] bucket =
+                new ArrayList[nums.length + 1];
+
+        for (int num : freq.keySet()) {
+
+            int f = freq.get(num);
+
+            if (bucket[f] == null) {
+                bucket[f] = new ArrayList<>();
+            }
+
+            bucket[f].add(num);
+        }
+
+        int[] ans = new int[k];
+        int idx = 0;
+
+        for (int i = bucket.length - 1;
+             i >= 0 && idx < k;
+             i--) {
+
+            if (bucket[i] != null) {
+
+                for (int num : bucket[i]) {
+
+                    ans[idx++] = num;
+
+                    if (idx == k) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+Dry Run
+
+Input:
+
+nums = [1,1,1,2,2,3]
+k = 2
+
+Frequency Map:
+
+1 → 3
+2 → 2
+3 → 1
+
+Buckets:
+
+bucket[1] = [3]
+bucket[2] = [2]
+bucket[3] = [1]
+
+Traverse from end:
+
+bucket[3] → add 1
+bucket[2] → add 2
+
+Answer:
+
+[1,2]
+Complexity
+Time: O(n)
+Space: O(n)
+Interview Summary
+Approach	Time	Space
+Repeated Max Scan	O(n + k·m)	O(m)
+Sorting	O(n log n)	O(n)
+Min Heap	O(n log k)	O(n)
+Bucket Sort (Optimal)	O(n)	O(n)
+Interview Flow
+1. HashMap + Repeated Scan (Brute Force)
+
+2. HashMap + Sorting
+
+3. HashMap + Min Heap
+
+4. HashMap + Bucket Sort (Optimal)
+Key Takeaway
+Use HashMap to count frequencies.
+If asked for the best solution, use Bucket Sort (O(n)).
+If k is very small compared to n, Min Heap (O(n log k)) is also an excellent choice.
