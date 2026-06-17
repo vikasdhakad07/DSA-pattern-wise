@@ -1,0 +1,21 @@
+Pattern 1: Frequency Based (Counting)
+You need to know exactly how many times an element appears. This is the most common use case for a HashMap.
+
+The Concept: Iterate through the array/string. Store the element as the key, and increment its count as the value.
+
+Java Blueprint:
+
+Java
+
+Map<Integer, Integer> freqMap = new HashMap<>();
+for (int num : nums) {
+    // getOrDefault prevents NullPointerExceptions if the key doesn't exist yet
+    freqMap.put(num, freqMap.getOrDefault(num, 0) + 1);
+}
+Essential Interview Questions:
+
+Easy: Valid Anagram (LeetCode 242) - Count frequencies of String A, subtract frequencies using String B. If all values are 0, it's an anagram.
+
+Medium: Top K Frequent Elements (LeetCode 347) - Build the frequency map, then pass the map's keys into a PriorityQueue (Min-Heap) to find the top K.
+
+Medium: Sort Characters By Frequency (LeetCode 451)
