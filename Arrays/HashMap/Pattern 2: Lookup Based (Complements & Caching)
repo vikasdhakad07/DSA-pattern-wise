@@ -1,0 +1,27 @@
+Pattern 2: Lookup Based (Complements & Caching)
+You are searching for a specific pairing or mathematical relationship between two numbers.
+
+The Concept: As you process an element, calculate what its "perfect partner" would be. Ask the map if you've already seen that partner in the past. If not, save the current element into the map for future numbers to look back at.
+
+Java Blueprint:
+
+Java
+Map<Integer, Integer> map = new HashMap<>();
+for (int i = 0; i < nums.length; i++) {
+    int complement = target - nums[i]; 
+    
+    // Check if the perfect partner is already in our memory
+    if (map.containsKey(complement)) {
+        return new int[] { map.get(complement), i }; 
+    }
+    // Save current number and its index for the future
+    map.put(nums[i], i); 
+}
+
+Essential Interview Questions:
+
+Easy: Two Sum (LeetCode 1) - The absolute classic.
+
+Medium: Max Number of K-Sum Pairs (LeetCode 1679)
+
+Medium: Number of Pairs With Absolute Difference K (LeetCode 2006)
