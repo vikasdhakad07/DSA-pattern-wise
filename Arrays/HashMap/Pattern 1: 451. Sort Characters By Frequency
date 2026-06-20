@@ -1,0 +1,267 @@
+451. Sort Characters By Frequency
+Problem
+
+Given a string s, sort it in decreasing order based on character frequency.
+
+Example
+Input: s = "tree"
+Output: "eert"
+
+Explanation:
+
+e -> 2 times
+r -> 1 time
+t -> 1 time
+
+So characters with higher frequency come first.
+
+Approach 1: Brute Force (Repeated Max Frequency Scan)
+Intuition
+Count frequencies using HashMap.
+Repeatedly find the character with maximum frequency.
+Append it frequency times.
+Mark its frequency as 0.
+
+Java
+class Solution {
+    public String frequencySort(String s) {
+
+        HashMap<Character, Integer> map = new HashMap<>();
+
+        for(char ch : s.toCharArray()) {
+            map.put(ch, map.getOrDefault(ch, 0) + 1);
+        }
+
+        StringBuilder ans = new StringBuilder();
+
+        while(!map.isEmpty()) {
+
+            char maxChar = ' ';
+            int maxFreq = 0;
+
+            for(Map.Entry<Character, Integer> entry : map.entrySet()) {
+                if(entry.getValue() > maxFreq) {
+                    maxFreq = entry.getValue();
+                    maxChar = entry.getKey();
+                }
+            }
+
+            for(int i = 0; i < maxFreq; i++) {
+                ans.append(maxChar);
+            }
+
+            map.remove(maxChar);
+        }
+
+        return ans.toString();
+    }
+}
+Complexity
+Time: O(n²)
+Space: O(n)
+Approach 2: Sorting by Frequency
+Intuition
+Count frequencies.
+Store characters in a list.
+Sort based on frequency descending.
+Build answer.
+
+Java
+class Solution {
+    public String frequencySort(String s) {
+
+        HashMap<Character, Integer> map = new HashMap<>();
+
+        for(char ch : s.toCharArray()) {
+            map.put(ch, map.getOrDefault(ch, 0) + 1);
+        }
+
+        List<Character> list = new ArrayList<>(map.keySet());
+
+        list.sort((a, b) -> map.get(b) - map.get(a));
+
+        StringBuilder ans = new StringBuilder();
+
+        for(char ch : list) {
+            for(int i = 0; i < map.get(ch); i++) {
+                ans.append(ch);
+            }
+        }
+
+        return ans.toString();
+    }
+}
+Complexity
+Time: O(n log n)
+Space: O(n)
+Approach 3: Max Heap (Most Common Interview Solution)
+Intuition
+
+Store characters in a max heap according to frequency.
+
+Highest frequency character comes first.
+Remove and append until heap becomes empty.
+
+Java
+class Solution {
+    public String frequencySort(String s) {
+
+        HashMap<Character, Integer> map = new HashMap<>();
+
+        for(char ch : s.toCharArray()) {
+            map.put(ch, map.getOrDefault(ch, 0) + 1);
+        }
+
+        PriorityQueue<Character> pq =
+                new PriorityQueue<>((a, b) ->
+                        map.get(b) - map.get(a));
+
+        pq.addAll(map.keySet());
+
+        StringBuilder ans = new StringBuilder();
+
+        while(!pq.isEmpty()) {
+
+            char ch = pq.poll();
+
+            for(int i = 0; i < map.get(ch); i++) {
+                ans.append(ch);
+            }
+        }
+
+        return ans.toString();
+    }
+}
+Dry Run
+
+Input:
+
+s = "tree"
+
+Frequency Map:
+
+t -> 1
+r -> 1
+e -> 2
+
+Max Heap:
+
+[e, t, r]
+
+Poll:
+
+e -> append "ee"
+t -> append "t"
+r -> append "r"
+
+Result:
+
+"eetr"
+
+("eert" is also valid)
+
+Complexity
+Time: O(n log k)
+Space: O(k)
+
+k = unique characters
+
+Approach 4: Bucket Sort (Optimal)
+Intuition
+
+Maximum frequency of any character can be at most n.
+
+Create buckets:
+
+bucket[frequency] = characters with that frequency
+
+Traverse buckets from high frequency to low frequency.
+
+Java
+class Solution {
+    public String frequencySort(String s) {
+
+        HashMap<Character, Integer> map = new HashMap<>();
+
+        for(char ch : s.toCharArray()) {
+            map.put(ch, map.getOrDefault(ch, 0) + 1);
+        }
+
+        List<Character>[] bucket =
+                new ArrayList[s.length() + 1];
+
+        for(char ch : map.keySet()) {
+
+            int freq = map.get(ch);
+
+            if(bucket[freq] == null) {
+                bucket[freq] = new ArrayList<>();
+            }
+
+            bucket[freq].add(ch);
+        }
+
+        StringBuilder ans = new StringBuilder();
+
+        for(int i = bucket.length - 1; i >= 0; i--) {
+
+            if(bucket[i] != null) {
+
+                for(char ch : bucket[i]) {
+
+                    for(int j = 0; j < i; j++) {
+                        ans.append(ch);
+                    }
+                }
+            }
+        }
+
+        return ans.toString();
+    }
+}
+Dry Run
+
+Input:
+
+s = "tree"
+
+Frequency:
+
+t -> 1
+r -> 1
+e -> 2
+
+Buckets:
+
+bucket[1] = [t,r]
+bucket[2] = [e]
+
+Traverse from end:
+
+bucket[2] -> "ee"
+bucket[1] -> "t" + "r"
+
+Result:
+
+"eetr"
+Complexity
+Time: O(n)
+Space: O(n)
+Interview Summary
+Approach	Time	Space
+Repeated Max Scan	O(n²)	O(n)
+Sorting	O(n log n)	O(n)
+Max Heap	O(n log k)	O(k)
+Bucket Sort (Optimal)	O(n)	O(n)
+Pattern
+String
+   ↓
+Frequency Map
+   ↓
+Top Frequent Characters
+   ↓
+Build Result String
+Key Takeaway
+Max Heap → Most common interview solution.
+Bucket Sort → Optimal solution (O(n)).
+Same pattern as LeetCode 347 Top K Frequent Elements, but here we return a sorted string instead of top k elements.
