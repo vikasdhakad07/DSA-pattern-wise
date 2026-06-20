@@ -1,0 +1,142 @@
+1. Two Sum
+Problem
+
+Given an integer array nums and an integer target, return the indices of the two numbers such that they add up to target.
+
+You may assume that exactly one solution exists, and you may not use the same element twice.
+
+Example
+Input: nums = [2,7,11,15], target = 9
+Output: [0,1]
+
+Explanation:
+
+nums[0] + nums[1] = 2 + 7 = 9
+Approach 1: Brute Force
+Intuition
+
+Check every possible pair of elements.
+
+If their sum equals the target, return their indices.
+
+Java
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+
+        for (int i = 0; i < nums.length; i++) {
+
+            for (int j = i + 1; j < nums.length; j++) {
+
+                if (nums[i] + nums[j] == target) {
+                    return new int[]{i, j};
+                }
+            }
+        }
+
+        return new int[]{};
+    }
+}
+Dry Run
+
+Input:
+
+nums = [2,7,11,15]
+target = 9
+i	j	Sum	Match
+0	1	2+7=9	✅ Return [0,1]
+Complexity
+Time: O(n²)
+Space: O(1)
+Approach 2: HashMap (Optimal)
+Intuition
+
+Instead of checking every pair:
+
+For each number,
+
+Compute its complement = target - current.
+If complement already exists in HashMap, return both indices.
+Otherwise store current number and its index.
+
+HashMap stores:
+
+number → index
+Algorithm
+Create an empty HashMap.
+Traverse the array.
+Find complement = target - nums[i].
+If complement exists in map:
+return {map.get(complement), i}
+Otherwise insert current number into map.
+Solution is guaranteed to exist.
+
+Java
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+
+        HashMap<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < nums.length; i++) {
+
+            int complement = target - nums[i];
+
+            if (map.containsKey(complement)) {
+                return new int[]{map.get(complement), i};
+            }
+
+            map.put(nums[i], i);
+        }
+
+        return new int[]{};
+    }
+}
+Dry Run
+
+Input:
+
+nums = [2,7,11,15]
+target = 9
+i	nums[i]	Complement	HashMap	Action
+0	2	7	{}	Store (2→0)
+1	7	2	{2→0}	Found 2 → Return [0,1]
+
+Output:
+
+[0,1]
+Complexity
+Time: O(n)
+Space: O(n)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+HashMap (Optimal)	O(n)	O(n)
+Key Trick
+
+Instead of searching for another number every time:
+
+Complement = Target - Current Number
+
+Store previously visited numbers in a HashMap:
+
+Number → Index
+
+If the complement already exists, you've found the answer.
+
+Pattern
+Array
+   ↓
+For each element
+   ↓
+Find Complement
+   ↓
+Check HashMap
+   ↓
+Found? → Return Indices
+Else → Store Current Number
+Similar Problems
+Two Sum II (Sorted Array)
+3Sum
+4Sum
+Two Sum IV (BST)
+Contains Duplicate
+Top K Frequent Elements
