@@ -1,0 +1,20 @@
+Pattern 3: Set Based (Pure Existence)
+You don't care where the element is, and you don't care how many times it appears. You just need $O(1)$ lookups to answer: "Does this exist?"The Concept: Use a HashSet (which is technically just a HashMap where the values are dummy objects).FAANG Trap: LeetCode 128 (Longest Consecutive Sequence) is a notorious FAANG question. You dump all numbers into a HashSet. Then, to find sequences, you only start counting when you find a number where num - 1 does NOT exist in the set (meaning it is the absolute start of a sequence).
+Java Blueprint:
+Java
+Set<Integer> set = new HashSet<>();
+for (int num : nums) set.add(num); // Dump everything in
+
+for (int num : set) {
+    // Only process if this is the START of a sequence
+    if (!set.contains(num - 1)) {
+        int currentNum = num;
+        int currentStreak = 1;
+        
+        while (set.contains(currentNum + 1)) {
+            currentNum += 1;
+            currentStreak += 1;
+        }
+    }
+}
+Essential Interview Questions:Easy: Contains Duplicate (LeetCode 217)Easy: Intersection of Two Arrays (LeetCode 349)Medium: Longest Consecutive Sequence (LeetCode 128) - Highly tested!
