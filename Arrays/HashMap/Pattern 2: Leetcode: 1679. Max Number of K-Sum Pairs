@@ -1,0 +1,229 @@
+1679. Max Number of K-Sum Pairs
+Problem
+
+Given an integer array nums and an integer k, return the maximum number of operations you can perform.
+
+In one operation:
+
+Choose two numbers whose sum equals k.
+Remove them from the array.
+
+Each element can be used only once.
+
+Example
+Input: nums = [1,2,3,4], k = 5
+Output: 2
+
+Explanation:
+
+(1,4) and (2,3)
+Approach 1: Brute Force
+Intuition
+
+For every element, search for another unused element whose sum equals k.
+
+Use a boolean array to mark used elements.
+
+Java
+class Solution {
+    public int maxOperations(int[] nums, int k) {
+
+        boolean[] used = new boolean[nums.length];
+        int count = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+
+            if (used[i]) continue;
+
+            for (int j = i + 1; j < nums.length; j++) {
+
+                if (!used[j] && nums[i] + nums[j] == k) {
+                    used[i] = true;
+                    used[j] = true;
+                    count++;
+                    break;
+                }
+            }
+        }
+
+        return count;
+    }
+}
+Dry Run
+nums = [1,2,3,4]
+k = 5
+Pair	Used	Count
+(1,4)	✓	1
+(2,3)	✓	2
+
+Answer:
+
+2
+Complexity
+Time: O(n²)
+Space: O(n)
+Approach 2: HashMap (Optimal)
+Intuition
+
+For every number:
+
+Need = k - num
+
+If the needed number already exists, form a pair.
+
+Otherwise, store the current number.
+
+HashMap stores:
+
+Number → Frequency
+Algorithm
+Traverse the array.
+Compute complement = k - num.
+If complement exists:
+Form a pair.
+Decrease complement frequency.
+Otherwise:
+Store current number.
+Java
+class Solution {
+    public int maxOperations(int[] nums, int k) {
+
+        HashMap<Integer, Integer> map = new HashMap<>();
+        int count = 0;
+
+        for (int num : nums) {
+
+            int need = k - num;
+
+            if (map.getOrDefault(need, 0) > 0) {
+
+                count++;
+                map.put(need, map.get(need) - 1);
+
+            } else {
+
+                map.put(num, map.getOrDefault(num, 0) + 1);
+            }
+        }
+
+        return count;
+    }
+}
+Dry Run
+
+Input:
+
+nums = [3,1,3,4,3]
+k = 6
+Num	Need	Map	Count
+3	3	{3=1}	0
+1	5	{3=1,1=1}	0
+3	3	Pair Found	1
+4	2	{1=1,4=1}	1
+3	3	{1=1,4=1,3=1}	1
+
+Answer:
+
+1
+Complexity
+Time: O(n)
+Space: O(n)
+Approach 3: Sorting + Two Pointers
+Intuition
+
+Sort the array.
+
+Use two pointers:
+
+left → smallest element
+right → largest element
+
+If:
+
+Sum == k → pair found
+Sum < k → move left
+Sum > k → move right
+Java
+class Solution {
+    public int maxOperations(int[] nums, int k) {
+
+        Arrays.sort(nums);
+
+        int left = 0;
+        int right = nums.length - 1;
+        int count = 0;
+
+        while (left < right) {
+
+            int sum = nums[left] + nums[right];
+
+            if (sum == k) {
+                count++;
+                left++;
+                right--;
+            }
+            else if (sum < k) {
+                left++;
+            }
+            else {
+                right--;
+            }
+        }
+
+        return count;
+    }
+}
+Dry Run
+
+Input:
+
+nums = [3,1,3,4,3]
+k = 6
+
+Sorted:
+
+[1,3,3,3,4]
+Left	Right	Sum	Action
+1	4	5	Left++
+3	4	7	Right--
+3	3	6	Pair Found
+
+Answer:
+
+1
+Complexity
+Time: O(n log n)
+Space: O(1) (ignoring sorting implementation)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n²)	O(n)
+HashMap (Optimal)	O(n)	O(n)
+Sorting + Two Pointers	O(n log n)	O(1)
+Key Trick
+
+For every number:
+
+Need = k - current
+
+If the needed number already exists, form a pair immediately.
+
+Store frequencies as:
+
+Number → Frequency
+Pattern
+Array
+   ↓
+Current Number
+   ↓
+Find Complement (k - num)
+   ↓
+Available?
+   ↓
+Yes → Form Pair
+No  → Store Current Number
+Similar Problems
+Two Sum
+Two Sum II (Sorted Array)
+Count Number of Pairs With Absolute Difference K
+Top K Frequent Elements
+3Sum
