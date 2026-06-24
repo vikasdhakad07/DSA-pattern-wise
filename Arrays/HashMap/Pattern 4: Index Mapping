@@ -1,0 +1,23 @@
+Pattern 4: Index Mapping
+You need to track elements, but the distance between them (their indices) is the restricting factor.
+
+The Concept: Store the array element as the key, and its index as the value. When you encounter a duplicate element, subtract its stored index from your current index to check the distance.
+
+Java Blueprint:
+
+Java
+Map<Integer, Integer> indexMap = new HashMap<>();
+for (int i = 0; i < nums.length; i++) {
+    // If we've seen it before, check the distance
+    if (indexMap.containsKey(nums[i])) {
+        int distance = i - indexMap.get(nums[i]);
+        if (distance <= k) return true; // Condition met
+    }
+    // Update the map with the MOST RECENT index
+    indexMap.put(nums[i], i); 
+}
+Essential Interview Questions:
+
+Easy: Contains Duplicate II (LeetCode 219) - Find duplicates that are at most K distance apart.
+
+Medium: Contiguous Array (LeetCode 525) - Here, you map the Prefix Sum to its index. If you see the same prefix sum again, the distance between the indices is the length of your valid subarray.
