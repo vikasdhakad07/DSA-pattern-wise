@@ -1,0 +1,244 @@
+525. Contiguous Array
+Problem
+
+Given a binary array nums, return the maximum length of a contiguous subarray with an equal number of 0s and 1s.
+
+Example 1
+Input: nums = [0,1]
+
+Output: 2
+Example 2
+Input: nums = [0,1,0]
+
+Output: 2
+Approach 1: Brute Force
+Intuition
+
+Check every possible subarray.
+
+Count the number of 0s and 1s.
+
+If they are equal, update the maximum length.
+
+Java
+class Solution {
+    public int findMaxLength(int[] nums) {
+
+        int maxLen = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+
+            int zeros = 0;
+            int ones = 0;
+
+            for (int j = i; j < nums.length; j++) {
+
+                if (nums[j] == 0)
+                    zeros++;
+                else
+                    ones++;
+
+                if (zeros == ones) {
+                    maxLen = Math.max(maxLen, j - i + 1);
+                }
+            }
+        }
+
+        return maxLen;
+    }
+}
+
+Complexity
+Time: O(n²)
+Space: O(1)
+Approach 2: Prefix Sum + HashMap (Optimal)
+Key Observation
+
+Convert:
+
+0 → -1
+1 → +1
+
+Now if a subarray has equal numbers of 0s and 1s:
+
+Sum = 0
+
+More generally:
+
+If the same prefix sum appears again,
+
+prefixSum(i) = prefixSum(j)
+
+then the subarray between them has sum 0.
+
+Thus it contains equal numbers of 0s and 1s.
+
+Intuition
+
+Store:
+
+Prefix Sum → First Index
+
+Whenever the same sum appears again:
+
+Length = CurrentIndex - FirstOccurrenceIndex
+
+Update maximum length.
+
+Java
+class Solution {
+    public int findMaxLength(int[] nums) {
+
+        HashMap<Integer, Integer> map = new HashMap<>();
+
+        map.put(0, -1);
+
+        int sum = 0;
+        int maxLen = 0;
+
+        for (int i = 0; i < nums.length; i++) {
+
+            if (nums[i] == 0)
+                sum += -1;
+            else
+                sum += 1;
+
+            if (map.containsKey(sum)) {
+
+                maxLen = Math.max(
+                        maxLen,
+                        i - map.get(sum)
+                );
+
+            } else {
+
+                map.put(sum, i);
+            }
+        }
+
+        return maxLen;
+    }
+}
+Dry Run
+
+Input
+
+nums = [0,1,0]
+
+Convert conceptually:
+
+0 → -1
+1 → +1
+0 → -1
+Initial
+map = {0 : -1}
+
+sum = 0
+maxLen = 0
+i = 0
+num = 0
+
+sum = -1
+
+Store:
+
+{-1 : 0}
+i = 1
+num = 1
+
+sum = 0
+
+Already exists:
+
+Length = 1 - (-1)
+       = 2
+maxLen = 2
+i = 2
+num = 0
+
+sum = -1
+
+Already exists:
+
+Length = 2 - 0
+       = 2
+
+Max remains:
+
+2
+
+Return:
+
+2
+Why Store First Occurrence Only?
+
+Suppose:
+
+sum = 2
+
+appears at:
+
+index 2
+index 8
+
+Length:
+
+8 - 2 = 6
+
+If we overwrite index 2:
+
+sum = 2 → 8
+
+we lose the longer subarray.
+
+Therefore:
+
+Store first occurrence only.
+Complexity
+HashMap Solution
+Time: O(n)
+Space: O(n)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+Prefix Sum + HashMap (Optimal)	O(n)	O(n)
+Key Trick
+
+Convert:
+
+0 → -1
+1 → +1
+
+Then:
+
+Equal 0s and 1s
+        ⇓
+Subarray Sum = 0
+
+Use:
+
+Prefix Sum → First Index
+
+to find the longest zero-sum subarray.
+
+Pattern
+Binary Array
+      ↓
+0 → -1
+1 → +1
+      ↓
+Prefix Sum
+      ↓
+Same Sum Seen Before?
+      ↓
+Valid Subarray
+      ↓
+Update Maximum Length
+Similar Problems
+560. Subarray Sum Equals K
+974. Subarray Sums Divisible by K
+930. Binary Subarrays With Sum
+325. Maximum Size Subarray Sum Equals k
+523. Continuous Subarray Sum
+Pattern Category
+Prefix Sum + HashMap
