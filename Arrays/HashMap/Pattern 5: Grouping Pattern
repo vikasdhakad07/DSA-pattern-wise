@@ -1,0 +1,29 @@
+📑 Pattern 5: Grouping Pattern
+You are given a list of messy data (strings, arrays) and asked to group them by a shared characteristic.
+
+The Concept: You must find a way to create a "Signature" or "Standardized Key" for the data. For anagrams, the signature is the sorted version of the string. The map stores <Signature, List of Original Words>.
+
+Java Blueprint:
+
+Java
+Map<String, List<String>> groupMap = new HashMap<>();
+
+for (String s : strs) {
+    // 1. Create the standardized signature (e.g., sort the string)
+    char[] chars = s.toCharArray();
+    Arrays.sort(chars);
+    String signature = new String(chars);
+    
+    // 2. Add to the group. computeIfAbsent creates the list if it doesn't exist yet!
+    groupMap.computeIfAbsent(signature, k -> new ArrayList<>()).add(s);
+}
+
+// Return the grouped values as a List of Lists
+return new ArrayList<>(groupMap.values());
+Essential Interview Questions:
+
+Medium: Group Anagrams (LeetCode 49) - The textbook example of this pattern.
+
+Medium: Find Duplicate File in System (LeetCode 609) - Key is the file content, Value is the list of file paths.
+
+Hard: Max Points on a Line (LeetCode 149) - Key is the mathematical slope between points, Value is the count of points sharing that slope.
