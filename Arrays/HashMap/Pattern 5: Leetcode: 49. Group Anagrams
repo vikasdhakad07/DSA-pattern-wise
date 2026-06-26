@@ -1,0 +1,258 @@
+49. Group Anagrams
+Problem
+
+Given an array of strings strs, group the anagrams together.
+
+Two strings are anagrams if they contain the same characters with the same frequencies, only the order differs.
+
+Return the groups in any order.
+
+Example 1
+Input: strs = ["eat","tea","tan","ate","nat","bat"]
+
+Output:
+[
+  ["bat"],
+  ["nat","tan"],
+  ["ate","eat","tea"]
+]
+Example 2
+Input: strs = [""]
+
+Output:
+[[""]]
+Example 3
+Input: strs = ["a"]
+
+Output:
+[["a"]]
+
+Approach 1: Brute Force
+Intuition
+
+Compare every string with every other string.
+
+Two strings are anagrams if their sorted forms are equal.
+
+Use a visited array so each string is grouped only once.
+
+Java
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+
+        List<List<String>> ans = new ArrayList<>();
+        boolean[] visited = new boolean[strs.length];
+
+        for (int i = 0; i < strs.length; i++) {
+
+            if (visited[i]) continue;
+
+            List<String> group = new ArrayList<>();
+            group.add(strs[i]);
+            visited[i] = true;
+
+            char[] ch1 = strs[i].toCharArray();
+            Arrays.sort(ch1);
+
+            for (int j = i + 1; j < strs.length; j++) {
+
+                if (visited[j]) continue;
+
+                char[] ch2 = strs[j].toCharArray();
+                Arrays.sort(ch2);
+
+                if (Arrays.equals(ch1, ch2)) {
+                    group.add(strs[j]);
+                    visited[j] = true;
+                }
+            }
+
+            ans.add(group);
+        }
+
+        return ans;
+    }
+}
+Complexity
+Time: O(n² × k log k)
+Space: O(n)
+
+k = average string length
+
+Approach 2: HashMap + Sorted String (Most Common)
+Intuition
+
+All anagrams become identical after sorting.
+
+Example:
+
+eat → aet
+tea → aet
+ate → aet
+
+Use the sorted string as the key.
+
+Store:
+
+Sorted String → List of Original Strings
+
+Java
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+
+        HashMap<String, List<String>> map = new HashMap<>();
+
+        for (String str : strs) {
+
+            char[] ch = str.toCharArray();
+            Arrays.sort(ch);
+
+            String key = new String(ch);
+
+            map.putIfAbsent(key, new ArrayList<>());
+            map.get(key).add(str);
+        }
+
+        return new ArrayList<>(map.values());
+    }
+}
+Dry Run
+
+Input
+
+["eat","tea","tan","ate","nat","bat"]
+String	Sorted	Map
+eat	aet	aet → [eat]
+tea	aet	aet → [eat,tea]
+tan	ant	ant → [tan]
+ate	aet	aet → [eat,tea,ate]
+nat	ant	ant → [tan,nat]
+bat	abt	abt → [bat]
+
+Result
+
+[
+[eat,tea,ate],
+[tan,nat],
+[bat]
+]
+Complexity
+Time: O(n × k log k)
+Space: O(n × k)
+
+Approach 3: HashMap + Character Frequency (Optimal)
+Intuition
+
+Instead of sorting each string, count the frequency of all 26 lowercase letters.
+
+Example:
+
+eat
+
+a =1
+e =1
+t =1
+
+Frequency array:
+
+[1,0,0,0,1,0,0,...,1]
+
+Convert this frequency array into a unique string key.
+
+Anagrams will always generate the same key.
+
+Java
+class Solution {
+    public List<List<String>> groupAnagrams(String[] strs) {
+
+        HashMap<String, List<String>> map = new HashMap<>();
+
+        for (String str : strs) {
+
+            int[] freq = new int[26];
+
+            for (char c : str.toCharArray()) {
+                freq[c - 'a']++;
+            }
+
+            StringBuilder key = new StringBuilder();
+
+            for (int count : freq) {
+                key.append(count).append("#");
+            }
+
+            String k = key.toString();
+
+            map.putIfAbsent(k, new ArrayList<>());
+            map.get(k).add(str);
+        }
+
+        return new ArrayList<>(map.values());
+    }
+}
+Dry Run
+
+Input
+
+["eat","tea","ate"]
+
+Frequency Key
+
+eat
+
+1#0#0#0#1#...#1#
+tea
+
+1#0#0#0#1#...#1#
+ate
+
+1#0#0#0#1#...#1#
+
+All produce the same key.
+
+Map
+
+Key
+
+↓
+
+[eat,tea,ate]
+Complexity
+Time: O(n × k)
+Space: O(n × k)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n² × k log k)	O(n)
+HashMap + Sorted String	O(n × k log k)	O(n × k)
+HashMap + Character Frequency (Optimal)	O(n × k)	O(n × k)
+Key Trick
+
+Anagrams have the same:
+
+Sorted String
+
+or
+
+Character Frequency
+
+Use either as the key in a HashMap.
+
+Key
+      ↓
+List of Anagrams
+Pattern
+Strings
+     ↓
+Generate Unique Key
+     ↓
+HashMap<Key, List<String>>
+     ↓
+Return All Groups
+Similar Problems
+242. Valid Anagram
+438. Find All Anagrams in a String
+451. Sort Characters By Frequency
+49. Group Anagrams
+347. Top K Frequent Elements
+Pattern Category
+HashMap + String Encoding / Frequency Count
