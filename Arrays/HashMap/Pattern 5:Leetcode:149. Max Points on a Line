@@ -1,0 +1,312 @@
+149. Max Points on a Line
+Problem
+
+Given an array of points where:
+
+points[i] = [xi, yi]
+
+Return the maximum number of points that lie on the same straight line.
+
+Example 1
+Input:
+points = [[1,1],[2,2],[3,3]]
+
+Output:
+3
+
+Explanation
+
+All three points lie on the same line.
+Example 2
+Input:
+points = [[1,1],[3,2],[5,3],[4,1],[2,3],[1,4]]
+
+Output:
+4
+Approach 1: Brute Force
+Intuition
+Pick every pair of points.
+Check every remaining point.
+If three points are collinear, count them.
+Keep the maximum count.
+
+To avoid floating-point errors, compare using cross multiplication:
+
+(y2-y1)*(x3-x1) == (y3-y1)*(x2-x1)
+
+Java
+class Solution {
+
+    public int maxPoints(int[][] points) {
+
+        int n = points.length;
+
+        if (n <= 2)
+            return n;
+
+        int max = 2;
+
+        for (int i = 0; i < n; i++) {
+
+            for (int j = i + 1; j < n; j++) {
+
+                int count = 2;
+
+                for (int k = j + 1; k < n; k++) {
+
+                    if ((points[j][1] - points[i][1]) * (points[k][0] - points[i][0])
+                            == (points[k][1] - points[i][1]) * (points[j][0] - points[i][0])) {
+
+                        count++;
+                    }
+                }
+
+                max = Math.max(max, count);
+            }
+        }
+
+        return max;
+    }
+}
+
+Dry Run
+points =
+
+(1,1)
+(2,2)
+(3,3)
+
+Choose
+
+(1,1) and (2,2)
+
+Check
+
+(3,3)
+
+Slope same
+
+Count = 3
+
+Answer
+
+3
+Complexity
+Time: O(n³)
+Space: O(1)
+
+Approach 2: HashMap + Slope (Optimal)
+Intuition
+
+Fix one point.
+
+Calculate the slope with every other point.
+
+If multiple points have the same slope with the fixed point, they all lie on the same line.
+
+Store
+
+Slope → Frequency
+
+The answer is
+
+Maximum Frequency + 1
+
+(the fixed point itself)
+
+Why use GCD?
+
+Instead of storing
+
+dy/dx
+
+store
+
+dy/gcd
+dx/gcd
+
+This avoids precision errors.
+
+Example
+
+2/4
+
+and
+
+1/2
+
+Both become
+
+1/2
+
+Java
+class Solution {
+
+    public int maxPoints(int[][] points) {
+
+        if (points.length <= 2)
+            return points.length;
+
+        int ans = 2;
+
+        for (int i = 0; i < points.length; i++) {
+
+            HashMap<String, Integer> map = new HashMap<>();
+
+            for (int j = i + 1; j < points.length; j++) {
+
+                int dx = points[j][0] - points[i][0];
+                int dy = points[j][1] - points[i][1];
+
+                int gcd = gcd(dx, dy);
+
+                dx /= gcd;
+                dy /= gcd;
+
+                String slope = dx + "#" + dy;
+
+                map.put(slope, map.getOrDefault(slope, 0) + 1);
+
+                ans = Math.max(ans, map.get(slope) + 1);
+            }
+        }
+
+        return ans;
+    }
+
+    private int gcd(int a, int b) {
+
+        if (b == 0)
+            return Math.abs(a);
+
+        return gcd(b, a % b);
+    }
+}
+Dry Run
+
+Input
+
+points =
+
+(1,1)
+(2,2)
+(3,3)
+
+Fix
+
+(1,1)
+
+Slope with
+
+(2,2)
+
+dx=1
+dy=1
+
+Slope = 1#1
+
+Map
+
+1#1 → 1
+
+Next
+
+(3,3)
+
+dx=2
+dy=2
+
+GCD=2
+
+Slope = 1#1
+
+Map
+
+1#1 → 2
+
+Answer
+
+2+1 = 3
+Another Example
+points =
+
+(1,1)
+(2,2)
+(3,3)
+(5,5)
+
+Fix first point
+
+Map
+
+Slope	Count
+1#1	3
+
+Answer
+
+3+1
+
+=
+
+4
+Complexity
+Time: O(n²)
+Space: O(n)
+Why Normalize Slopes?
+
+Without normalization
+
+2/4
+
+1/2
+
+would be different keys.
+
+Using GCD
+
+2/4
+
+↓
+
+1/2
+
+Both become identical.
+
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n³)	O(1)
+HashMap + Normalized Slope (Optimal)	O(n²)	O(n)
+Key Trick
+
+For every point:
+
+Fix One Point
+      ↓
+Compute Slope With Others
+      ↓
+Store Frequency
+      ↓
+Most Frequent Slope
+      ↓
+Maximum Points on Same Line
+
+Normalize the slope using GCD to avoid floating-point precision issues.
+
+Pattern
+Point
+   ↓
+Calculate Slope
+   ↓
+Normalize (dy/gcd, dx/gcd)
+   ↓
+HashMap<Slope, Frequency>
+   ↓
+Maximum Frequency + 1
+Similar Problems
+356. Line Reflection
+223. Rectangle Area
+939. Minimum Area Rectangle
+812. Largest Triangle Area
+593. Valid Square
+Pattern Category
+Geometry + HashMap + Slope Normalization
