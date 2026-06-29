@@ -1,0 +1,35 @@
+Pattern 1: Classic & Finding Bounds
+You aren't just looking for a number; you are looking for its absolute edges (first or last appearance) or where it belongs.
+
+The Concept: When finding bounds, if nums[mid] == target, do not return immediately. Save the index, and forcefully shrink the search space to the left (for first occurrence) or right (for last occurrence) to see if there is another one further down.
+
+Java Blueprint (Finding First Occurrence):
+
+Java
+public int findFirst(int[] nums, int target) {
+    int left = 0, right = nums.length - 1;
+    int result = -1; // Fallback if not found
+    
+    while (left <= right) {
+        // Prevents Integer Overflow bug: (left + right) / 2
+        int mid = left + (right - left) / 2; 
+        
+        if (nums[mid] == target) {
+            result = mid; // Record it!
+            right = mid - 1; // But keep searching to the LEFT for an earlier one
+        } else if (nums[mid] < target) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    return result;
+}
+
+Essential Interview Questions:
+
+Easy: Search Insert Position (LeetCode 35)
+
+Medium: Find First and Last Position of Element in Sorted Array (LeetCode 34) - Run the blueprint above twice (once for first, once for last).
+
+Medium: Find Peak Element (LeetCode 162) - Move toward the side that is sloping upward.
