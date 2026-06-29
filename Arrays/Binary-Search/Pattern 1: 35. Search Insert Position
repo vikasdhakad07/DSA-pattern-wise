@@ -1,0 +1,223 @@
+35. Search Insert Position
+Problem
+
+Given a sorted array of distinct integers nums and a target value target:
+
+Return the index if the target is found.
+Otherwise, return the index where it would be inserted to keep the array sorted.
+
+You must write an algorithm with O(log n) runtime complexity.
+
+Example 1
+Input: nums = [1,3,5,6], target = 5
+
+Output: 2
+Example 2
+Input: nums = [1,3,5,6], target = 2
+
+Output: 1
+Example 3
+Input: nums = [1,3,5,6], target = 7
+
+Output: 4
+Example 4
+Input: nums = [1,3,5,6], target = 0
+
+Output: 0
+
+Approach 1: Brute Force (Linear Search)
+Intuition
+
+Traverse the array from left to right.
+
+If the current element is greater than or equal to the target, return its index.
+If no such element exists, insert at the end.
+Java
+class Solution {
+    public int searchInsert(int[] nums, int target) {
+
+        for (int i = 0; i < nums.length; i++) {
+
+            if (nums[i] >= target)
+                return i;
+        }
+
+        return nums.length;
+    }
+}
+Dry Run
+
+Input
+
+nums = [1,3,5,6]
+target = 2
+i = 0
+
+1 < 2
+
+Continue
+i = 1
+
+3 >= 2
+
+Return 1
+Complexity
+Time: O(n)
+Space: O(1)
+
+Approach 2: Binary Search (Optimal)
+Intuition
+
+Since the array is sorted:
+
+If nums[mid] == target, return mid.
+If nums[mid] < target, search the right half.
+Otherwise, search the left half.
+If the target is not found, low will be the correct insertion index.
+
+Java
+class Solution {
+    public int searchInsert(int[] nums, int target) {
+
+        int low = 0;
+        int high = nums.length - 1;
+
+        while (low <= high) {
+
+            int mid = low + (high - low) / 2;
+
+            if (nums[mid] == target) {
+                return mid;
+            }
+            else if (nums[mid] < target) {
+                low = mid + 1;
+            }
+            else {
+                high = mid - 1;
+            }
+        }
+
+        return low;
+    }
+}
+Dry Run
+Example 1
+nums = [1,3,5,6]
+target = 5
+low	high	mid	nums[mid]	Action
+0	3	1	3	Go Right
+2	3	2	5	Found
+
+Answer
+
+2
+Example 2
+nums = [1,3,5,6]
+target = 2
+low	high	mid	nums[mid]	Action
+0	3	1	3	Go Left
+0	0	0	1	Go Right
+
+Loop ends
+
+low = 1
+
+Insert at index
+
+1
+Example 3
+nums = [1,3,5,6]
+target = 7
+low	high	mid	nums[mid]
+0	3	1	3
+2	3	2	5
+3	3	3	6
+
+Loop ends
+
+low = 4
+
+Answer
+
+4
+Example 4
+nums = [1,3,5,6]
+target = 0
+low	high	mid	nums[mid]
+0	3	1	3
+0	0	0	1
+
+Loop ends
+
+low = 0
+
+Answer
+
+0
+Why Return low?
+
+When the loop ends:
+
+while (low <= high)
+
+we always have:
+
+high < low
+
+low points to the first position where the target can be inserted while maintaining sorted order.
+
+Example:
+
+nums = [1,3,5,6]
+target = 2
+
+Loop ends:
+
+low = 1
+high = 0
+
+Insert at:
+
+Index = 1
+
+Result:
+
+[1,2,3,5,6]
+Complexity
+Binary Search
+Time: O(log n)
+Space: O(1)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n)	O(1)
+Binary Search (Optimal)	O(log n)	O(1)
+Key Trick
+
+If the target is found:
+
+Return its index.
+
+Otherwise:
+
+Return low.
+
+Because after binary search finishes:
+
+low = Correct insertion position
+Pattern
+Sorted Array
+      ↓
+Binary Search
+      ↓
+Target Found?
+      ↓
+Yes → Return Index
+No  → Return low (Insert Position)
+Similar Problems
+704. Binary Search
+34. Find First and Last Position of Element in Sorted Array
+744. Find Smallest Letter Greater Than Target
+278. First Bad Version
+69. Sqrt(x)
+Pattern Category
+Classic Binary Search / Lower Bound
