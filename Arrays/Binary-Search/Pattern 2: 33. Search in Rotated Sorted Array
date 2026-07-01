@@ -1,0 +1,401 @@
+33. Search in Rotated Sorted Array
+Problem
+
+There is an integer array nums sorted in ascending order, but it has been rotated at an unknown pivot.
+
+Given the rotated sorted array and an integer target, return the index of target. If it is not present, return -1.
+
+You must write an algorithm with O(log n) runtime complexity.
+
+Example 1
+Input:
+nums = [4,5,6,7,0,1,2]
+target = 0
+
+Output:
+4
+Example 2
+Input:
+nums = [4,5,6,7,0,1,2]
+target = 3
+
+Output:
+-1
+Example 3
+Input:
+nums = [1]
+target = 0
+
+Output:
+-1
+
+Approach 1: Brute Force (Linear Search)
+Intuition
+
+Traverse the array and compare every element with the target.
+
+Java
+class Solution {
+    public int search(int[] nums, int target) {
+
+        for (int i = 0; i < nums.length; i++) {
+
+            if (nums[i] == target)
+                return i;
+        }
+
+        return -1;
+    }
+}
+Dry Run
+nums = [4,5,6,7,0,1,2]
+target = 0
+4 ❌
+5 ❌
+6 ❌
+7 ❌
+0 ✔
+
+Return
+
+4
+Complexity
+Time: O(n)
+Space: O(1)
+
+Approach 2: Find Pivot + Binary Search
+Intuition
+
+A rotated sorted array consists of two sorted halves.
+
+Steps:
+
+Find the pivot (smallest element).
+Decide which half may contain the target.
+Apply Binary Search on that half.
+Java
+class Solution {
+
+    public int search(int[] nums, int target) {
+
+        int pivot = findPivot(nums);
+
+        if (target >= nums[pivot] && target <= nums[nums.length - 1]) {
+            return binarySearch(nums, pivot, nums.length - 1, target);
+        }
+
+        return binarySearch(nums, 0, pivot - 1, target);
+    }
+
+    private int findPivot(int[] nums) {
+
+        int low = 0;
+        int high = nums.length - 1;
+
+        while (low < high) {
+
+            int mid = low + (high - low) / 2;
+
+            if (nums[mid] > nums[high])
+                low = mid + 1;
+            else
+                high = mid;
+        }
+
+        return low;
+    }
+
+    private int binarySearch(int[] nums, int low, int high, int target) {
+
+        while (low <= high) {
+
+            int mid = low + (high - low) / 2;
+
+            if (nums[mid] == target)
+                return mid;
+
+            if (nums[mid] < target)
+                low = mid + 1;
+            else
+                high = mid - 1;
+        }
+
+        return -1;
+    }
+}
+Dry Run
+nums = [4,5,6,7,0,1,2]
+target = 0
+
+Find Pivot
+
+Pivot = 4
+
+Array becomes
+
+[4,5,6,7] | [0,1,2]
+
+Target belongs to
+
+Right Half
+
+Binary Search
+
+mid = 5
+
+nums[5]=1
+
+Go Left
+
+↓
+
+nums[4]=0
+
+Found
+
+Return
+
+4
+Complexity
+Time: O(log n) + O(log n) = O(log n)
+Space: O(1)
+
+Approach 3: One-Pass Binary Search (Optimal)
+Intuition
+
+In every iteration:
+
+One half of the array is always sorted.
+
+Determine:
+
+Which half is sorted.
+Whether the target lies inside that half.
+
+Discard the other half.
+
+Case 1: Left Half is Sorted
+
+Condition
+
+nums[low] <= nums[mid]
+
+Example
+
+4 5 6 7 | 0 1 2
+↑     ↑
+
+If
+
+target >= nums[low]
+&&
+target < nums[mid]
+
+Search left.
+
+Else
+
+Search right.
+
+Case 2: Right Half is Sorted
+
+Condition
+
+nums[mid] < nums[high]
+
+Example
+
+6 7 | 0 1 2 3
+      ↑     ↑
+
+If
+
+target > nums[mid]
+&&
+target <= nums[high]
+
+Search right.
+
+Else
+
+Search left.
+
+Java
+class Solution {
+    public int search(int[] nums, int target) {
+
+        int low = 0;
+        int high = nums.length - 1;
+
+        while (low <= high) {
+
+            int mid = low + (high - low) / 2;
+
+            if (nums[mid] == target)
+                return mid;
+
+            // Left half sorted
+            if (nums[low] <= nums[mid]) {
+
+                if (target >= nums[low] &&
+                    target < nums[mid]) {
+
+                    high = mid - 1;
+
+                } else {
+
+                    low = mid + 1;
+                }
+
+            }
+            // Right half sorted
+            else {
+
+                if (target > nums[mid] &&
+                    target <= nums[high]) {
+
+                    low = mid + 1;
+
+                } else {
+
+                    high = mid - 1;
+                }
+            }
+        }
+
+        return -1;
+    }
+}
+
+Dry Run
+
+Input
+
+nums = [4,5,6,7,0,1,2]
+target = 0
+Iteration 1
+low	high	mid	nums[mid]	Action
+0	6	3	7	Left half sorted
+
+Target
+
+0
+
+NOT between
+
+4 and 7
+
+Move Right
+
+low = 4
+Iteration 2
+low	high	mid	nums[mid]	Action
+4	6	5	1	Left half sorted
+
+Target
+
+0
+
+Between
+
+0 and 1
+
+Move Left
+
+high = 4
+Iteration 3
+low = 4
+
+high = 4
+
+mid = 4
+
+nums[mid]=0
+
+Found
+
+Return
+
+4
+Why Does This Work?
+
+At every step:
+
+A rotated sorted array always has one sorted half.
+
+Example
+
+4 5 6 7 | 0 1 2
+
+Left half is sorted.
+
+or
+
+6 7 | 0 1 2 3
+
+Right half is sorted.
+
+Use this property to eliminate half the array every iteration.
+
+Visualization
+             mid
+              ↓
+4 5 6 7 | 0 1 2
+
+Left Sorted ✔
+
+Target in Left?
+
+Yes → Left
+
+No → Right
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n)	O(1)
+Pivot + Binary Search	O(log n)	O(1)
+One-Pass Binary Search (Optimal)	O(log n)	O(1)
+Key Trick
+
+At every iteration:
+
+One half is always sorted.
+
+Check:
+
+Left Sorted?
+        ↓
+Target inside?
+        ↓
+Yes → Left
+
+No → Right
+
+Otherwise:
+
+Right Sorted?
+        ↓
+Target inside?
+        ↓
+Yes → Right
+
+No → Left
+Pattern
+Rotated Sorted Array
+         ↓
+Choose mid
+         ↓
+Which Half is Sorted?
+         ↓
+Check Target Range
+         ↓
+Discard One Half
+         ↓
+Repeat
+Similar Problems
+81. Search in Rotated Sorted Array II
+153. Find Minimum in Rotated Sorted Array
+154. Find Minimum in Rotated Sorted Array II
+162. Find Peak Element
+852. Peak Index in a Mountain Array
+Pattern Category
+Binary Search on Rotated Sorted Array
