@@ -1,0 +1,396 @@
+81. Search in Rotated Sorted Array II
+Problem
+
+There is an integer array nums sorted in non-decreasing order, but it has been rotated at an unknown pivot.
+
+Unlike LeetCode 33, the array may contain duplicates.
+
+Given the array nums and an integer target, return:
+
+true if the target exists.
+false otherwise.
+
+Example 1
+Input:
+nums = [2,5,6,0,0,1,2]
+target = 0
+
+Output:
+true
+Example 2
+Input:
+nums = [2,5,6,0,0,1,2]
+target = 3
+
+Output:
+false
+Example 3
+Input:
+nums = [1,0,1,1,1]
+target = 0
+
+Output:
+true
+Difference Between LC 33 & LC 81
+LeetCode 33	LeetCode 81
+No duplicates	Duplicates allowed
+Always one sorted half	Duplicates may hide the sorted half
+Worst Case: O(log n)	Worst Case: O(n)
+
+Approach 1: Brute Force (Linear Search)
+Intuition
+
+Traverse every element and compare it with the target.
+
+If found, return true; otherwise return false.
+
+Java
+class Solution {
+    public boolean search(int[] nums, int target) {
+
+        for (int num : nums) {
+            if (num == target)
+                return true;
+        }
+
+        return false;
+    }
+}
+
+Dry Run
+nums = [2,5,6,0,0,1,2]
+target = 0
+2 ❌
+5 ❌
+6 ❌
+0 ✔
+
+Return
+
+true
+Complexity
+Time: O(n)
+Space: O(1)
+
+Approach 2: Modified Binary Search (Your Approach)
+Intuition
+
+This approach is almost the same as LeetCode 33.
+
+The only difference is handling duplicates.
+
+If
+
+nums[mid] == nums[left]
+
+then we cannot determine which half is sorted.
+
+So simply move
+
+left++;
+
+and continue searching.
+
+Otherwise,
+
+If the left half is sorted → check whether the target lies there.
+Else → the right half is sorted.
+Java (Your Code)
+class Solution {
+    public boolean search(int[] nums, int target) {
+
+        int left = 0;
+        int right = nums.length - 1;
+
+        while (left <= right) {
+
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target) {
+                return true;
+            }
+
+            // Duplicate case
+            if (nums[mid] == nums[left]) {
+                left++;
+                continue;
+            }
+
+            // Left half is sorted
+            if (nums[left] <= nums[mid]) {
+
+                if (nums[left] <= target &&
+                    target < nums[mid]) {
+
+                    right = mid - 1;
+
+                } else {
+
+                    left = mid + 1;
+                }
+            }
+
+            // Right half is sorted
+            else {
+
+                if (nums[mid] < target &&
+                    target <= nums[right]) {
+
+                    left = mid + 1;
+
+                } else {
+
+                    right = mid - 1;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+Dry Run 1
+
+Input
+
+nums = [2,5,6,0,0,1,2]
+target = 0
+Iteration 1
+left = 0
+right = 6
+
+mid = 3
+
+nums[mid] = 0
+
+Target found.
+
+Return
+
+true
+Dry Run 2 (Duplicate Case)
+
+Input
+
+nums = [1,0,1,1,1]
+target = 0
+Iteration 1
+left = 0
+right = 4
+
+mid = 2
+
+nums[left] = 1
+nums[mid] = 1
+
+Duplicate
+
+left++
+
+Now
+
+left = 1
+right = 4
+Iteration 2
+mid = 2
+
+nums[left]=0
+
+nums[mid]=1
+
+Left half sorted.
+
+Target lies inside.
+
+right = mid-1
+Iteration 3
+left = 1
+
+right = 1
+
+mid = 1
+nums[mid]=0
+
+Found.
+
+Return
+
+true
+Approach 3: Modified Binary Search (Standard Solution)
+Intuition
+
+Instead of checking only
+
+nums[mid] == nums[left]
+
+check
+
+nums[left] == nums[mid] &&
+nums[mid] == nums[right]
+
+If all three are equal,
+
+we cannot determine the sorted half.
+
+Shrink both sides.
+
+left++;
+right--;
+
+Then continue normal binary search.
+
+This is the most commonly accepted interview solution.
+
+Java
+class Solution {
+    public boolean search(int[] nums, int target) {
+
+        int left = 0;
+        int right = nums.length - 1;
+
+        while (left <= right) {
+
+            int mid = left + (right - left) / 2;
+
+            if (nums[mid] == target)
+                return true;
+
+            if (nums[left] == nums[mid] &&
+                nums[mid] == nums[right]) {
+
+                left++;
+                right--;
+            }
+
+            else if (nums[left] <= nums[mid]) {
+
+                if (nums[left] <= target &&
+                    target < nums[mid]) {
+
+                    right = mid - 1;
+
+                } else {
+
+                    left = mid + 1;
+                }
+            }
+
+            else {
+
+                if (nums[mid] < target &&
+                    target <= nums[right]) {
+
+                    left = mid + 1;
+
+                } else {
+
+                    right = mid - 1;
+                }
+            }
+        }
+
+        return false;
+    }
+}
+Why Does Your Approach Work?
+
+When
+
+nums[mid] == nums[left]
+
+we don't know which half is sorted.
+
+Example
+
+1 1 1 3 1
+↑   ↑
+
+Skipping one duplicate
+
+left++;
+
+removes ambiguity and allows binary search to continue.
+
+Why Does the Standard Solution Shrink Both Ends?
+
+Example
+
+1 1 1 1 1
+
+Here,
+
+left == mid == right
+
+Removing both ends
+
+left++;
+right--;
+
+eliminates duplicates faster while preserving correctness.
+
+Complexity
+Your Approach
+Average: O(log n)
+Worst: O(n)
+Space: O(1)
+Standard Approach
+Average: O(log n)
+Worst: O(n)
+Space: O(1)
+Interview Summary
+Approach	Time	Space
+Brute Force	O(n)	O(1)
+Modified Binary Search (Your Approach - nums[mid] == nums[left])	Average: O(log n)
+Worst: O(n)	O(1)
+Standard Binary Search (left == mid == right)	Average: O(log n)
+Worst: O(n)	O(1)
+Key Trick
+
+Unlike LeetCode 33, duplicates make it impossible to always identify the sorted half.
+
+Handle duplicates first:
+
+Your Approach
+
+if (nums[mid] == nums[left]) {
+    left++;
+    continue;
+}
+
+Standard Approach
+
+if (nums[left] == nums[mid] &&
+    nums[mid] == nums[right]) {
+
+    left++;
+    right--;
+}
+
+After removing duplicates, solve it exactly like LeetCode 33.
+
+Pattern
+Rotated Sorted Array
+        ↓
+Choose mid
+        ↓
+Duplicate Found?
+        ↓
+Yes → Skip Duplicate(s)
+        ↓
+No
+        ↓
+Identify Sorted Half
+        ↓
+Target in Sorted Half?
+      ↓
+ Yes         No
+ ↓            ↓
+Search     Search
+Left       Right
+Similar Problems
+33. Search in Rotated Sorted Array
+153. Find Minimum in Rotated Sorted Array
+154. Find Minimum in Rotated Sorted Array II
+162. Find Peak Element
+852. Peak Index in a Mountain Array
+Pattern Category
+Binary Search on Rotated Sorted Array with Duplicates
