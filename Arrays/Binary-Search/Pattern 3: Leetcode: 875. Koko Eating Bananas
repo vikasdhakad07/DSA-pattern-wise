@@ -1,0 +1,374 @@
+875. Koko Eating Bananas
+Problem
+
+Koko loves eating bananas. There are n piles of bananas.
+
+piles[i] = number of bananas in the ith pile
+
+Koko chooses an eating speed of k bananas/hour.
+
+Rules:
+
+Every hour, she chooses one pile.
+She eats at most k bananas from that pile.
+If the pile has fewer than k bananas, she finishes that pile.
+She cannot move to another pile during the same hour.
+
+Return the minimum integer eating speed k such that Koko can finish all bananas within h hours.
+
+Example 1
+Input:
+piles = [3,6,7,11]
+h = 8
+
+Output:
+4
+Example 2
+Input:
+piles = [30,11,23,4,20]
+h = 5
+
+Output:
+30
+Example 3
+Input:
+piles = [30,11,23,4,20]
+h = 6
+
+Output:
+23
+Key Observation
+
+We are not searching in the array.
+
+We are searching for the minimum eating speed.
+
+Possible answers lie between
+
+1 ...... max(piles)
+
+This is a Binary Search on Answer problem.
+
+Approach 1: Brute Force (Try Every Speed)
+Intuition
+
+Try every speed from 1 to maximum pile.
+
+For every speed:
+
+Calculate hours required.
+If hours ≤ h, return that speed.
+
+Java
+class Solution {
+
+    public int minEatingSpeed(int[] piles, int h) {
+
+        int max = 0;
+
+        for (int pile : piles)
+            max = Math.max(max, pile);
+
+        for (int speed = 1; speed <= max; speed++) {
+
+            int hours = 0;
+
+            for (int pile : piles) {
+
+                hours += (pile + speed - 1) / speed;
+            }
+
+            if (hours <= h)
+                return speed;
+        }
+
+        return max;
+    }
+}
+
+Dry Run
+piles = [3,6,7,11]
+
+h = 8
+
+Speed = 1
+
+3+6+7+11 = 27 hours
+
+❌
+
+Speed = 2
+
+2+3+4+6 = 15 hours
+
+❌
+
+Speed = 3
+
+1+2+3+4 = 10 hours
+
+❌
+
+Speed = 4
+
+1+2+2+3 = 8 hours
+
+✔ Return 4
+
+Complexity
+Time: O(maxPile × n)
+Space: O(1)
+
+Approach 2: Binary Search on Answer (Optimal)
+Intuition
+
+Possible eating speeds are sorted.
+
+1 2 3 4 5 6 ... maxPile
+
+If Koko can finish at speed k,
+
+she can also finish at
+
+k+1, k+2, k+3...
+
+Hence the search space is monotonic.
+
+Use Binary Search to find the smallest valid speed.
+
+Algorithm
+Search from 1 to maxPile.
+Calculate hours needed at mid.
+If hours ≤ h
+Store answer.
+Try a smaller speed.
+Else
+Increase speed.
+
+Java
+class Solution {
+
+    public int minEatingSpeed(int[] piles, int h) {
+
+        int low = 1;
+        int high = 0;
+
+        for (int pile : piles)
+            high = Math.max(high, pile);
+
+        int ans = high;
+
+        while (low <= high) {
+
+            int mid = low + (high - low) / 2;
+
+            int hours = 0;
+
+            for (int pile : piles) {
+                hours += (pile + mid - 1) / mid;
+            }
+
+            if (hours <= h) {
+
+                ans = mid;
+                high = mid - 1;
+
+            } else {
+
+                low = mid + 1;
+            }
+        }
+
+        return ans;
+    }
+}
+Dry Run
+piles = [3,6,7,11]
+
+h = 8
+
+Maximum pile
+
+11
+
+Search Space
+
+1 ..... 11
+Iteration 1
+low = 1
+
+high = 11
+
+mid = 6
+
+Hours
+
+1+1+2+2 = 6
+
+6 ≤ 8
+
+Possible answer
+
+ans = 6
+
+high = 5
+Iteration 2
+low = 1
+
+high = 5
+
+mid = 3
+
+Hours
+
+1+2+3+4 = 10
+
+Too slow
+
+low = 4
+Iteration 3
+low = 4
+
+high = 5
+
+mid = 4
+
+Hours
+
+1+2+2+3 = 8
+
+Valid
+
+ans = 4
+
+high = 3
+
+Loop ends.
+
+Return
+
+4
+Why Use Ceiling Division?
+
+Suppose
+
+Pile = 7
+
+Speed = 3
+
+Actual hours
+
+3 + 3 + 1
+
+=
+
+3 hours
+
+Normal division
+
+7/3 = 2
+
+Wrong.
+
+Use
+
+(pile + speed - 1) / speed
+
+Example
+
+(7+3-1)/3
+
+=
+
+9/3
+
+=
+
+3
+
+Equivalent to
+
+Math.ceil((double)pile / speed)
+
+but faster.
+
+Visualization
+Speed
+
+1 2 3 4 5 6 7 8 9 10 11
+
+❌ ❌ ❌ ✔ ✔ ✔ ✔ ✔ ✔ ✔ ✔
+
+Binary Search finds the first ✔.
+
+Interview Summary
+Approach	Time	Space
+Brute Force	O(maxPile × n)	O(1)
+Binary Search on Answer (Optimal)	O(n × log(maxPile))	O(1)
+Key Trick
+
+We are not searching an index.
+
+We are searching the minimum valid answer.
+
+Search Space
+
+1 → Maximum Pile
+
+Decision Function
+
+Can Koko finish within h hours?
+
+If Yes
+
+Try Smaller Speed
+
+If No
+
+Increase Speed
+Pattern
+Minimum Possible Answer
+          ↓
+Maximum Possible Answer
+          ↓
+Binary Search
+          ↓
+Check Feasibility
+          ↓
+Possible?
+     ↓
+ Yes       No
+ ↓          ↓
+Search     Search
+Left       Right
+Similar Problems
+2187. Minimum Time to Complete Trips
+1283. Find the Smallest Divisor Given a Threshold
+1011. Capacity To Ship Packages Within D Days
+1482. Minimum Number of Days to Make m Bouquets
+410. Split Array Largest Sum
+Pattern Category
+Binary Search on Answer (Minimum Feasible Value)
+Binary Search on Answer Template
+int low = minimumPossibleAnswer;
+int high = maximumPossibleAnswer;
+int ans = high;
+
+while (low <= high) {
+
+    int mid = low + (high - low) / 2;
+
+    if (isPossible(mid)) {
+
+        ans = mid;
+        high = mid - 1;
+
+    } else {
+
+        low = mid + 1;
+    }
+}
+
+return ans;
+
+Interview Tip: This is one of the most important Binary Search on Answer problems. The same template applies to many hard interview questions like 1011, 1283, 1482, 2187, and 410.
