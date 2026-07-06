@@ -1,0 +1,53 @@
+📑 Pattern 3: Binary Search on Answer (The FAANG Favorite) 🔥
+This is the most asked Binary Search pattern at Google and Meta. The input array isn't sorted, but the range of possible answers is.
+
+The Concept: You are asked to find a minimum capacity, speed, or weight.
+
+Determine the absolute minimum possible answer (left) and absolute maximum possible answer (right).
+
+Guess the answer (mid = left + (right - left) / 2).
+
+Write a greedy helper function isValid(mid) to check if this guessed answer works.
+
+If it works, try to find a smaller valid answer (right = mid - 1). If it fails, you need a bigger answer (left = mid + 1).
+
+Java Blueprint (Koko Eating Bananas):
+
+Java
+public int minEatingSpeed(int[] piles, int h) {
+    // 1. Define the Search Space
+    int left = 1; // Min possible speed
+    int right = 1000000000; // Max possible speed (or max in array)
+    int result = right;
+    
+    // 2. Binary Search the Answer
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        
+        if (canEatAll(piles, mid, h)) {
+            result = mid; // This speed works! Save it.
+            right = mid - 1; // Can we do it slower?
+        } else {
+            left = mid + 1; // Too slow, need to eat faster.
+        }
+    }
+    return result;
+}
+
+// 3. The Helper Function
+private boolean canEatAll(int[] piles, int speed, int h) {
+    long hoursNeeded = 0; // Use long for summation!
+    for (int pile : piles) {
+        // Math trick for ceiling division: (pile + speed - 1) / speed
+        hoursNeeded += (pile + speed - 1) / speed; 
+    }
+    return hoursNeeded <= h;
+}
+
+Essential Interview Questions:
+
+Medium: Koko Eating Bananas (LeetCode 875)
+
+Medium: Capacity To Ship Packages Within D Days (LeetCode 1011)
+
+Hard: Split Array Largest Sum (LeetCode 410)
