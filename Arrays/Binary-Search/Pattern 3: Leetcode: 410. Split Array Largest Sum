@@ -1,0 +1,449 @@
+410. Split Array Largest Sum
+Problem
+
+Given an integer array nums and an integer k, split the array into k non-empty contiguous subarrays.
+
+Return the minimum possible largest sum among these subarrays.
+
+Constraint: Subarrays must be contiguous.
+
+Example 1
+Input:
+nums = [7,2,5,10,8]
+k = 2
+
+Output:
+18
+
+Explanation
+
+Split:
+
+[7,2,5] | [10,8]
+
+Largest Sum = 18
+Example 2
+Input:
+nums = [1,2,3,4,5]
+k = 2
+
+Output:
+9
+Key Observation
+
+We are not searching an index.
+
+We are searching the minimum possible largest subarray sum.
+
+Possible answers lie between
+
+max(nums) ------------------> sum(nums)
+
+Why?
+
+Minimum answer = Largest element
+Maximum answer = Sum of all elements
+
+This is a Binary Search on Answer problem.
+
+Approach 1: Brute Force (Try Every Possible Maximum Sum)
+Intuition
+
+Try every possible largest sum from
+
+max(nums) → sum(nums)
+
+For every value:
+
+Check if we can split the array into ≤ k subarrays.
+Return the first valid answer.
+Java
+class Solution {
+
+    public int splitArray(int[] nums, int k) {
+
+        int max = 0;
+        int sum = 0;
+
+        for (int num : nums) {
+            max = Math.max(max, num);
+            sum += num;
+        }
+
+        for (int maxSum = max; maxSum <= sum; maxSum++) {
+
+            if (isPossible(nums, k, maxSum))
+                return maxSum;
+        }
+
+        return sum;
+    }
+
+    private boolean isPossible(int[] nums, int k, int maxSum) {
+
+        int count = 1;
+        int currentSum = 0;
+
+        for (int num : nums) {
+
+            if (currentSum + num <= maxSum) {
+                currentSum += num;
+            } else {
+                count++;
+                currentSum = num;
+            }
+        }
+
+        return count <= k;
+    }
+}
+Dry Run
+nums = [7,2,5,10,8]
+
+k = 2
+
+Search
+
+10 → 32
+10 ❌
+11 ❌
+12 ❌
+...
+18 ✔
+
+Return
+
+18
+Complexity
+Time: O((sum-max) × n)
+Space: O(1)
+
+Approach 2: Binary Search on Answer (Optimal)
+Intuition
+
+Possible answers are sorted.
+
+10 11 12 13 14 15 16 17 18 ... 32
+
+❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ✔ ✔ ✔ ✔
+
+Binary Search finds the first valid maximum sum.
+
+Your Code (Optimal)
+class Solution {
+
+    public int splitArray(int[] nums, int k) {
+
+        int N = nums.length;
+
+        int left = Arrays.stream(nums).max().getAsInt();
+        int right = Arrays.stream(nums).sum();
+
+        while (left < right) {
+
+            int mid = left + (right - left) / 2;
+
+            if (isPossible(nums, k, N, mid)) {
+
+                right = mid;
+
+            } else {
+
+                left = mid + 1;
+            }
+        }
+
+        return left;
+    }
+
+    public boolean isPossible(int arr[], int k, int N, int maxSum) {
+
+        int count = 0;
+        int currentSum = 0;
+
+        for (int i = 0; i < N; i++) {
+
+            currentSum += arr[i];
+
+            if (currentSum > maxSum) {
+
+                count++;
+                currentSum = arr[i];
+            }
+        }
+
+        count++;
+
+        return count <= k;
+    }
+}
+Dry Run
+nums = [7,2,5,10,8]
+
+k = 2
+
+Search Space
+
+left = 10
+
+right = 32
+Iteration 1
+mid = 21
+
+Split
+
+[7,2,5]
+
+↓
+
+14
+
++10 >21
+
+↓
+
+New Subarray
+
+[10,8]
+
+Need
+
+2 subarrays
+
+Possible
+
+right = 21
+Iteration 2
+left = 10
+
+right = 21
+
+mid = 15
+
+Split
+
+[7,2,5]
+
+↓
+
+14
+
++10 >15
+
+↓
+
+[10]
+
+↓
+
++8 >15
+
+↓
+
+[8]
+
+Need
+
+3 subarrays
+
+Too many
+
+left = 16
+Iteration 3
+left = 16
+
+right = 21
+
+mid = 18
+
+Split
+
+[7,2,5]
+
+↓
+
+14
+
++10 >18
+
+↓
+
+[10,8]
+
+Need
+
+2 subarrays
+
+Possible
+
+right = 18
+Iteration 4
+left = 16
+
+right = 18
+
+mid = 17
+
+Need
+
+3 subarrays
+
+Not possible
+
+left = 18
+
+Loop Ends
+
+left == right == 18
+
+Return
+
+18
+Understanding isPossible()
+
+Suppose
+
+Maximum Allowed Sum = 18
+
+Keep adding numbers.
+
+7
+
+7+2 = 9
+
+9+5 = 14
+
+14+10 = 24 ❌
+
+Create a new subarray.
+
+Subarray 1
+
+[7,2,5]
+
+Next
+
+10+8 = 18 ✔
+
+Subarray 2
+
+[10,8]
+
+Need only 2 subarrays, so answer is possible.
+
+Why Binary Search Works?
+
+Search Space
+
+10 11 12 13 14 15 16 17 18 ... 32
+
+❌ ❌ ❌ ❌ ❌ ❌ ❌ ❌ ✔ ✔ ✔ ✔
+
+Once a maximum sum becomes valid,
+
+every larger value is also valid.
+
+This monotonic property makes Binary Search possible.
+
+Visualization
+Maximum Allowed Sum
+
+10 -------------------- 32
+
+❌ ❌ ❌ ❌ ❌ ❌ ❌ ✔ ✔ ✔ ✔ ✔
+
+Binary Search always finds the first ✔.
+
+Complexity
+Brute Force
+Time: O((sum-max) × n)
+Space: O(1)
+Binary Search (Your Code)
+Search Space = sum(nums)
+Each feasibility check = O(n)
+
+Overall
+
+Time: O(n × log(sum(nums)))
+Space: O(1)
+Interview Summary
+Approach	Time	Space
+Brute Force	O((sum-max) × n)	O(1)
+Binary Search on Answer (Optimal)	O(n × log(sum))	O(1)
+Key Trick
+
+Search Space
+
+Largest Element
+        ↓
+Total Sum
+
+Decision Function
+
+Can we split the array into
+≤ k subarrays
+such that every subarray sum ≤ mid?
+
+If Yes
+
+Search Left
+
+right = mid
+
+If No
+
+Search Right
+
+left = mid + 1
+
+Notice your implementation uses:
+
+while (left < right)
+
+instead of
+
+while (left <= right)
+
+This is another valid binary search template where the answer converges to left.
+
+Pattern
+Minimum Possible Answer
+          ↓
+Maximum Possible Answer
+          ↓
+Binary Search
+          ↓
+Greedy Feasibility Check
+          ↓
+Possible?
+     ↓
+ Yes       No
+ ↓          ↓
+Search     Search
+Left       Right
+Similar Problems
+875. Koko Eating Bananas
+1011. Capacity To Ship Packages Within D Days
+1283. Find the Smallest Divisor Given a Threshold
+1482. Minimum Number of Days to Make m Bouquets
+2187. Minimum Time to Complete Trips
+Pattern Category
+Binary Search on Answer (Minimum Feasible Maximum)
+Binary Search on Answer Template (Your Version)
+int left = minimumPossibleAnswer;
+int right = maximumPossibleAnswer;
+
+while (left < right) {
+
+    int mid = left + (right - left) / 2;
+
+    if (isPossible(mid)) {
+        right = mid;
+    } else {
+        left = mid + 1;
+    }
+}
+
+return left;
+
+Interview Tip: This is the standard "first valid answer" binary search template. It is widely used in problems like 410, 875, 1011, 1283, 1482, and 2187.
