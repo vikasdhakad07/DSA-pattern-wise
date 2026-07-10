@@ -1,0 +1,40 @@
+📑 Pattern 4: 2D Matrix Binary Search
+Searching a grid where rows and columns are sorted.
+
+The Concept: A strictly sorted M X N matrix can be visualized as a single 1D array of length M X N.
+To convert the 1D mid index back into 2D grid coordinates:
+row = mid / totalColumns
+col = mid % totalColumns
+
+Java Blueprint:
+public boolean searchMatrix(int[][] matrix, int target) {
+    int rows = matrix.length;
+    int cols = matrix[0].length;
+    
+    int left = 0;
+    int right = (rows * cols) - 1;
+    
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        // Map 1D index to 2D coordinates
+        int midValue = matrix[mid / cols][mid % cols];
+        
+        if (midValue == target) return true;
+        else if (midValue < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return false;
+}
+
+Essential Interview Questions:
+
+Medium: Search a 2D Matrix (LeetCode 74) - Uses the math above.
+
+Medium: Search a 2D Matrix II (LeetCode 240) - Rows and cols are sorted, but not strictly sequential. Start at the Top-Right corner. If target is larger, move down. If smaller, move left.
+
+⚠️ The 3 Deadly Interview Traps
+The Overflow Bug: Never write int mid = (left + right) / 2;. If left and right are massive numbers, adding them will overflow the 32-bit Integer limit, causing a negative index crash. Always use int mid = left + (right - left) / 2;.
+
+Infinite Loops: If you use while (left < right) instead of <=, be very careful with how you assign left = mid vs left = mid + 1. If left and right are adjacent, mid rounds down to left. Setting left = mid will cause the loop to run forever.
+
+Returning Early in "Bounds" Problems: When asked for the "Minimum", "First", or "Largest", finding a matching element does NOT mean you are done. Always save the result and continue shrinking the search space.
