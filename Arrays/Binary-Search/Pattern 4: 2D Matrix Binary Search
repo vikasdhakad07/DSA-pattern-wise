@@ -1,4 +1,4 @@
-📑 Pattern 4: 2D Matrix Binary Search
+Pattern 4: 2D Matrix Binary Search
 Searching a grid where rows and columns are sorted.
 
 The Concept: A strictly sorted M X N matrix can be visualized as a single 1D array of length M X N.
