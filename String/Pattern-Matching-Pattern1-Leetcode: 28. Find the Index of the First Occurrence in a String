@@ -1,0 +1,405 @@
+28. Find the Index of the First Occurrence in a String
+Problem
+
+Given two strings:
+
+haystack (text)
+needle (pattern)
+
+Return the index of the first occurrence of needle in haystack.
+
+If needle is not present, return -1.
+
+Example 1
+Input:
+haystack = "sadbutsad"
+needle = "sad"
+
+Output:
+0
+Example 2
+Input:
+haystack = "leetcode"
+needle = "leeto"
+
+Output:
+-1
+Key Observation
+
+We need to find the first occurrence of one string inside another.
+
+Possible approaches:
+
+Brute Force
+Using substring()
+Rabin-Karp (Rolling Hash)
+KMP (Most Optimal)
+
+Approach 1: Brute Force (Naive String Matching)
+Intuition
+
+Check every possible starting index in haystack.
+
+Compare characters one by one.
+
+If all characters match, return the starting index.
+
+Java
+class Solution {
+
+    public int strStr(String haystack, String needle) {
+
+        int n = haystack.length();
+        int m = needle.length();
+
+        if (m == 0) return 0;
+
+        for (int i = 0; i <= n - m; i++) {
+
+            int j = 0;
+
+            while (j < m && haystack.charAt(i + j) == needle.charAt(j)) {
+                j++;
+            }
+
+            if (j == m)
+                return i;
+        }
+
+        return -1;
+    }
+}
+Dry Run
+haystack = "sadbutsad"
+
+needle = "but"
+sad ❌
+
+adb ❌
+
+dbu ❌
+
+but ✔
+
+Return
+
+3
+Complexity
+Time: O((n-m+1) × m) ≈ O(nm)
+Space: O(1)
+
+Approach 2: Using substring()
+Intuition
+
+Extract every substring of length needle.length() and compare it with needle.
+
+Java
+class Solution {
+
+    public int strStr(String haystack, String needle) {
+
+        int n = haystack.length();
+        int m = needle.length();
+
+        if (m == 0) return 0;
+
+        for (int i = 0; i <= n - m; i++) {
+
+            if (haystack.substring(i, i + m).equals(needle))
+                return i;
+        }
+
+        return -1;
+    }
+}
+Complexity
+Time: O(nm)
+Space: O(m)
+
+Approach 3: Rabin-Karp (Rolling Hash)
+Intuition
+
+Instead of comparing every character,
+
+compare the hash of the pattern with the hash of the current window.
+
+If hashes match,
+
+verify the substring to avoid collisions.
+
+Rolling Hash
+
+Instead of recomputing the hash every time,
+
+Old Window
+
+↓
+
+Remove Left Character
+
+↓
+
+Multiply Remaining Hash
+
+↓
+
+Add New Character
+
+↓
+
+New Window Hash
+Java (Your Code)
+class Solution {
+
+    public int strStr(String haystack, String needle) {
+
+        if (needle.length() > haystack.length()) {
+            return -1;
+        }
+
+        if (needle.length() == 0) {
+            return 0;
+        }
+
+        int prime = 256;
+        int base = 101;
+
+        int m = needle.length();
+        int n = haystack.length();
+
+        int patternHash = 0;
+        int windowHash = 0;
+
+        int h = 1;
+
+        for (int i = 0; i < m - 1; i++) {
+            h = (h * base) % prime;
+        }
+
+        for (int i = 0; i < m; i++) {
+            patternHash = (base * patternHash + needle.charAt(i)) % prime;
+            windowHash = (base * windowHash + haystack.charAt(i)) % prime;
+        }
+
+        for (int i = 0; i <= n - m; i++) {
+
+            if (patternHash == windowHash) {
+
+                if (haystack.substring(i, i + m).equals(needle))
+                    return i;
+            }
+
+            if (i < n - m) {
+
+                windowHash =
+                        (base * (windowHash - haystack.charAt(i) * h)
+                                + haystack.charAt(i + m)) % prime;
+
+                if (windowHash < 0)
+                    windowHash += prime;
+            }
+        }
+
+        return -1;
+    }
+}
+Dry Run
+haystack = "abcdef"
+
+needle = "cde"
+
+Pattern Hash
+
+Hash(cde)
+
+Window
+
+abc ❌
+
+↓
+
+bcd ❌
+
+↓
+
+cde ✔
+
+Return
+
+2
+Rolling Hash Visualization
+abcdef
+
+Window 1
+
+abc
+
+↓
+
+Remove 'a'
+
+↓
+
+Multiply
+
+↓
+
+Add 'd'
+
+↓
+
+bcd
+
+↓
+
+Remove 'b'
+
+↓
+
+Multiply
+
+↓
+
+Add 'e'
+
+↓
+
+cde
+Complexity
+Average Time: O(n + m)
+Worst Time: O(nm) (hash collisions)
+Space: O(1)
+
+Approach 4: KMP (Knuth-Morris-Pratt) ⭐ Most Optimal
+Intuition
+
+Brute Force restarts matching from the next character after a mismatch.
+
+KMP avoids rechecking characters using the LPS (Longest Prefix Suffix) array.
+
+Java
+class Solution {
+
+    public int strStr(String haystack, String needle) {
+
+        if (needle.length() == 0)
+            return 0;
+
+        int[] lps = buildLPS(needle);
+
+        int i = 0, j = 0;
+
+        while (i < haystack.length()) {
+
+            if (haystack.charAt(i) == needle.charAt(j)) {
+                i++;
+                j++;
+            }
+
+            if (j == needle.length())
+                return i - j;
+
+            if (i < haystack.length() &&
+                haystack.charAt(i) != needle.charAt(j)) {
+
+                if (j != 0)
+                    j = lps[j - 1];
+                else
+                    i++;
+            }
+        }
+
+        return -1;
+    }
+
+    private int[] buildLPS(String pattern) {
+
+        int[] lps = new int[pattern.length()];
+
+        int len = 0;
+        int i = 1;
+
+        while (i < pattern.length()) {
+
+            if (pattern.charAt(i) == pattern.charAt(len)) {
+                lps[i++] = ++len;
+            } else {
+
+                if (len != 0)
+                    len = lps[len - 1];
+                else
+                    lps[i++] = 0;
+            }
+        }
+
+        return lps;
+    }
+}
+Dry Run
+haystack = "ababcabc"
+
+needle = "abc"
+ababcabc
+
+    abc ✔
+
+Return
+
+2
+Complexity
+Time: O(n + m)
+Space: O(m)
+Comparison
+Approach	Time	Space
+Brute Force	O(nm)	O(1)
+Using substring()	O(nm)	O(m)
+Rabin-Karp (Rolling Hash)	Average: O(n + m)
+Worst: O(nm)	O(1)
+KMP (Most Optimal)	O(n + m)	O(m)
+Key Tricks
+Brute Force
+
+Compare every possible starting position.
+
+Rabin-Karp
+
+Use Rolling Hash to update the hash in constant time.
+
+Remove Left Character
+
+↓
+
+Multiply
+
+↓
+
+Add Right Character
+KMP
+
+Build an LPS array to skip unnecessary comparisons after a mismatch.
+
+Pattern
+String Matching
+      │
+      ├── Brute Force
+      │
+      ├── Rolling Hash
+      │      ↓
+      │   Rabin-Karp
+      │
+      └── Prefix Function
+             ↓
+            KMP
+Similar Problems
+459. Repeated Substring Pattern
+686. Repeated String Match
+796. Rotate String
+214. Shortest Palindrome
+1392. Longest Happy Prefix
+Pattern Category
+String Matching
+├── Brute Force
+├── Rabin-Karp (Rolling Hash)
+└── KMP (LPS / Prefix Function)
+
+Interview Tip: In interviews, start with the Brute Force approach, then explain Rabin-Karp (good average-case performance using rolling hash), and finally mention KMP as the deterministic optimal solution with O(n + m) time.
