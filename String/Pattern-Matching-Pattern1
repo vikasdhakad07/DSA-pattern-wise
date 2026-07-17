@@ -1,0 +1,48 @@
+Pattern 1: Rabin-Karp (The Rolling Hash)
+This is the most intuitive of the three. Instead of comparing strings character by character, you compare their integer hashes.1. The ConceptIf you want to match a pattern of length $L$, calculate the hash of the pattern. Then, calculate the hash of the first $L$ characters of the text. As you slide the window across the text, drop the leftmost character from the hash and add the rightmost character.$$H_{new} = (H_{old} - \text{char}_{out} \times \text{base}^{L-1}) \times \text{base} + \text{char}_{in}$$2.
+
+Java Blueprint
+Java
+public int rabinKarp(String text, String pattern) {
+    if (pattern.length() > text.length()) return -1;
+    
+    int base = 256; // ASCII size
+    int prime = 101; // A prime number for modulo to prevent overflow
+    int m = pattern.length();
+    int n = text.length();
+    
+    int patternHash = 0;
+    int windowHash = 0;
+    int h = 1;
+    
+    // The multiplier for the most significant digit: pow(base, m-1) % prime
+    for (int i = 0; i < m - 1; i++) {
+        h = (h * base) % prime;
+    }
+    
+    // Calculate initial hashes
+    for (int i = 0; i < m; i++) {
+        patternHash = (base * patternHash + pattern.charAt(i)) % prime;
+        windowHash = (base * windowHash + text.charAt(i)) % prime;
+    }
+    
+    // Slide the window
+    for (int i = 0; i <= n - m; i++) {
+        // If hashes match, verify characters to avoid collision false-positives
+        if (patternHash == windowHash) {
+            if (text.substring(i, i + m).equals(pattern)) return i;
+        }
+        
+        // Calculate hash for next window
+        if (i < n - m) {
+            windowHash = (base * (windowHash - text.charAt(i) * h) + text.charAt(i + m)) % prime;
+            if (windowHash < 0) windowHash += prime; // Fix negative modulos in Java
+        }
+    }
+    return -1;
+}
+
+3. Essential Interview Questions
+Medium: Find the Index of the First Occurrence in a String (LeetCode 28)
+Medium: Repeated DNA Sequences (LeetCode 187) - Perfect use case for rolling hashes.
+Hard: Longest Duplicate Substring (LeetCode 1044) - FAANG favorite: Combine Binary Search on the answer length with Rabin-Karp to check for duplicates.
