@@ -1,0 +1,425 @@
+459. Repeated Substring Pattern
+Problem
+
+Given a string s, determine if it can be constructed by taking a substring and repeating it multiple times.
+
+Return:
+
+true → if possible
+false → otherwise.
+Example 1
+Input: s = "abab"
+
+Output: true
+
+Explanation
+
+"ab" + "ab"
+Example 2
+Input: s = "aba"
+
+Output: false
+Example 3
+Input: s = "abcabcabcabc"
+
+Output: true
+
+Explanation
+
+"abc" repeated 4 times
+Key Observation
+
+If a string is formed by repeating a substring,
+
+then
+
+Length of substring must divide the length of string.
+
+Approach 1: Brute Force (Generate Every Possible Substring)
+Intuition
+
+Try every possible substring length.
+
+If its length divides the string length,
+
+repeat that substring and compare with the original string.
+
+Java
+class Solution {
+
+    public boolean repeatedSubstringPattern(String s) {
+
+        int n = s.length();
+
+        for (int len = 1; len <= n / 2; len++) {
+
+            if (n % len != 0)
+                continue;
+
+            String sub = s.substring(0, len);
+
+            StringBuilder sb = new StringBuilder();
+
+            while (sb.length() < n) {
+                sb.append(sub);
+            }
+
+            if (sb.toString().equals(s))
+                return true;
+        }
+
+        return false;
+    }
+}
+
+Dry Run
+s = "abab"
+
+Try
+
+Length = 1
+
+"a"
+
+aaaa
+
+❌
+
+Try
+
+Length = 2
+
+"ab"
+
+abab
+
+✔
+
+Return
+
+true
+Complexity
+Time: O(n²)
+Space: O(n)
+
+Approach 2: Character Comparison (Without Creating String)
+Intuition
+
+Instead of building the repeated string,
+
+compare each character directly.
+
+Java
+class Solution {
+
+    public boolean repeatedSubstringPattern(String s) {
+
+        int n = s.length();
+
+        for (int len = 1; len <= n / 2; len++) {
+
+            if (n % len != 0)
+                continue;
+
+            boolean match = true;
+
+            for (int i = len; i < n; i++) {
+
+                if (s.charAt(i) != s.charAt(i % len)) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match)
+                return true;
+        }
+
+        return false;
+    }
+}
+
+Dry Run
+s = "abcabcabc"
+Length = 3
+
+a == a ✔
+b == b ✔
+c == c ✔
+
+...
+
+All Match ✔
+
+Return
+
+true
+Complexity
+Time: O(n²)
+Space: O(1)
+
+Approach 3: Double String Trick (Better)
+Intuition
+
+If s is made by repeating a substring,
+
+then s will appear inside
+
+(s + s)
+
+after removing the first and last characters.
+
+Example
+
+s = abab
+s+s
+
+abababab
+
+Remove first & last characters
+
+bababa
+
+Contains
+
+abab ✔
+Java
+class Solution {
+
+    public boolean repeatedSubstringPattern(String s) {
+
+        String doubled = s + s;
+
+        return doubled.substring(1, doubled.length() - 1).contains(s);
+    }
+}
+
+Dry Run
+s = "abab"
+
+↓
+
+abababab
+
+↓
+
+bababa
+
+↓
+
+Contains "abab"
+
+✔
+Complexity
+Time: O(n²) (worst case)
+Space: O(n)
+
+Approach 4: KMP (Prefix / LPS Array) ⭐ Most Optimal
+Intuition
+
+If the string is made of repeated substrings,
+
+its Longest Prefix which is also Suffix (LPS) tells us the repeating pattern.
+
+Example
+
+ababab
+
+LPS Array
+
+0 0 1 2 3 4
+
+Last LPS Value
+
+4
+
+Repeating substring length
+
+n - lastLPS
+
+6 - 4 = 2
+
+Since
+
+6 % 2 == 0
+
+Answer is
+
+true
+Java (Your Code)
+class Solution {
+
+    public boolean repeatedSubstringPattern(String s) {
+
+        int[] prefix = kms(s);
+
+        if (prefix[prefix.length - 1] > 0 &&
+            s.length() % (s.length() - prefix[prefix.length - 1]) == 0) {
+
+            return true;
+
+        } else {
+
+            return false;
+        }
+    }
+
+    public int[] kms(String s) {
+
+        int[] prefix = new int[s.length()];
+
+        int left = 0;
+        int right = 1;
+
+        while (right < s.length()) {
+
+            if (s.charAt(left) == s.charAt(right)) {
+
+                prefix[right] = left + 1;
+
+                left++;
+                right++;
+
+            } else if (left > 0) {
+
+                left = prefix[left - 1];
+
+            } else {
+
+                right++;
+            }
+        }
+
+        return prefix;
+    }
+}
+
+Dry Run
+s = "abcabcabc"
+Build Prefix Array
+Index	Character	Prefix Value
+0	a	0
+1	b	0
+2	c	0
+3	a	1
+4	b	2
+5	c	3
+6	a	4
+7	b	5
+8	c	6
+
+Prefix Array
+
+0 0 0 1 2 3 4 5 6
+
+Last Prefix
+
+6
+
+Repeated Length
+
+9 - 6 = 3
+
+Check
+
+9 % 3 == 0 ✔
+
+Return
+
+true
+Why Does KMP Work?
+
+Suppose
+
+ababab
+
+Longest Prefix = Longest Suffix
+
+abab
+
+Remaining part
+
+ab
+
+is the repeating unit.
+
+Formula
+
+Repeating Length = n - lastPrefix
+
+If
+
+n % RepeatingLength == 0
+
+then the string consists of repeated copies of that substring.
+
+Visualization
+ababab
+
+Prefix
+
+abab
+
+Suffix
+
+abab
+
+↓
+
+Repeated Unit
+
+ab
+Complexity Analysis
+Approach	Time	Space
+Brute Force (Build String)	O(n²)	O(n)
+Character Comparison	O(n²)	O(1)
+Double String Trick	O(n²) (worst case)	O(n)
+KMP (Your Code)	O(n)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Try every possible substring length
+Better	Compare characters directly
+Better	Double String Trick (s+s)
+Most Optimal	KMP (Prefix/LPS Array)
+Key Formula (KMP)
+Repeating Length
+
+=
+
+String Length - Last Prefix Value
+
+If
+
+Last Prefix > 0
+
+AND
+
+String Length % Repeating Length == 0
+
+then
+
+Answer = true
+Pattern
+String Pattern Matching
+        │
+        ├── Brute Force
+        │
+        ├── Character Comparison
+        │
+        ├── Double String Trick
+        │
+        └── KMP (Prefix / LPS)
+Similar Problems
+28. Find the Index of the First Occurrence in a String
+686. Repeated String Match
+796. Rotate String
+214. Shortest Palindrome
+1392. Longest Happy Prefix
+Pattern Category
+String Algorithms
+
+├── Brute Force
+├── String Manipulation
+└── KMP (Prefix / LPS Array)
+
+Interview Tip: Start with the brute-force idea, mention the elegant Double String Trick as a clever observation, and conclude with the KMP/LPS solution as the optimal algorithm with O(n) time complexity.
