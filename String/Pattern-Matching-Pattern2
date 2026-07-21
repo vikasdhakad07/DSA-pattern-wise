@@ -1,0 +1,61 @@
+Pattern 2: KMP (Knuth-Morris-Pratt)
+KMP is the undisputed king of strict $O(N + M)$ matching. It guarantees you never move your text pointer backward.
+
+1. The Concept: 
+When a mismatch occurs, the naive approach resets the text pointer to where it started + 1. KMP looks at the characters it already matched and asks: "Is there a suffix in what I just matched that is also a prefix of the pattern?" It uses the LPS array to skip redundant checks.
+
+2. Java Blueprint
+Java
+public int kmpSearch(String text, String pattern) {
+    if (pattern.isEmpty()) return 0;
+    
+    int[] lps = buildLPS(pattern);
+    int i = 0; // index for text
+    int j = 0; // index for pattern
+    
+    while (i < text.length()) {
+        if (pattern.charAt(j) == text.charAt(i)) {
+            i++; j++;
+        }
+        
+        if (j == pattern.length()) {
+            return i - j; // Match found at index (i - j)
+            // j = lps[j - 1]; // Uncomment if finding ALL occurrences
+        } 
+        else if (i < text.length() && pattern.charAt(j) != text.charAt(i)) {
+            if (j != 0) {
+                j = lps[j - 1]; // Fallback using LPS array
+            } else {
+                i++; // No fallback possible, move text pointer
+            }
+        }
+    }
+    return -1;
+}
+
+// Helper to build the Longest Proper Prefix/Suffix array
+private int[] buildLPS(String pattern) {
+    int[] lps = new int[pattern.length()];
+    int len = 0; // length of previous longest prefix suffix
+    int i = 1;
+    
+    while (i < pattern.length()) {
+        if (pattern.charAt(i) == pattern.charAt(len)) {
+            len++;
+            lps[i] = len;
+            i++;
+        } else {
+            if (len != 0) {
+                len = lps[len - 1]; // Tricky part: backtrack len
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+    }
+    return lps;
+}
+
+3. Essential Interview Questions
+Easy/Medium: Repeated Substring Pattern (LeetCode 459) - Math trick: If n % (n - lps[n - 1]) == 0, the string is formed by a repeating substring.
+Hard: Shortest Palindrome (LeetCode 214) - Create a new string s + "#" + reverse(s). The last value of the LPS array of this new string tells you the longest palindromic prefix.
