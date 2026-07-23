@@ -1,0 +1,37 @@
+Pattern 1: Monotonic Stack (Next/Prev Greater or Smaller)
+This is the backbone of 80% of stack interview questions. You maintain a stack of elements (or their indices) in a strictly increasing or decreasing order.
+
+1. The Concept (Next Greater Element)
+To find the Next Greater Element, you maintain a Monotonically Decreasing Stack.
+You iterate through the array. If the current number is greater than the top of the stack, it means the current number is the "Next Greater" answer for whatever was waiting on the stack. Pop them and record the answer.
+
+2. Java Blueprint (Next Greater Element)
+Note: In Java, always use Deque (like ArrayDeque) instead of the legacy Stack class for better performance.
+
+Java
+
+public int[] nextGreaterElements(int[] nums) {
+    int[] result = new int[nums.length];
+    Arrays.fill(result, -1); // Default if no greater element exists
+    
+    // The stack stores INDICES, not the actual values
+    Deque<Integer> stack = new ArrayDeque<>();
+    
+    for (int i = 0; i < nums.length; i++) {
+        // While current element is GREATER than the element at the top of the stack
+        while (!stack.isEmpty() && nums[i] > nums[stack.peek()]) {
+            int poppedIndex = stack.pop();
+            result[poppedIndex] = nums[i]; // We found the next greater element!
+        }
+        // Push the current index to wait for its next greater element
+        stack.push(i);
+    }
+    return result;
+}
+
+3. Essential Interview Questions
+Easy: Next Greater Element I (LeetCode 496)
+
+Medium: Daily Temperatures (LeetCode 739) - Instead of storing the value, store i - poppedIndex to get the number of days.
+
+Medium: Next Greater Element II (LeetCode 503) - The array is circular. Just loop up to 2 * n and use nums[i % n].
