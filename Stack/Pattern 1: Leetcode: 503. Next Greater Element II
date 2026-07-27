@@ -1,0 +1,526 @@
+503. Next Greater Element II
+Problem
+
+Given a circular integer array nums, return the Next Greater Element (NGE) for every element.
+
+The next greater element is the first greater element to its right.
+Since the array is circular, after the last element, continue searching from the beginning.
+If no greater element exists, return -1.
+Example 1
+Input:
+nums = [1,2,1]
+
+Output:
+[2,-1,2]
+
+Explanation
+
+For 1 → Next Greater = 2
+For 2 → No Greater = -1
+For last 1 → Circularly next Greater = 2
+Example 2
+Input:
+nums = [1,2,3,4,3]
+
+Output:
+[2,3,4,-1,4]
+Key Observation
+
+Unlike Next Greater Element I, the array is circular.
+
+After reaching the last index, continue searching from index 0.
+
+Possible approaches:
+
+Brute Force
+Better (Double Traversal)
+Monotonic Stack (Most Optimal)
+
+Approach 1: Brute Force
+Intuition
+
+For every element:
+
+Check the next n-1 elements.
+Use modulo (%) to wrap around.
+Java
+class Solution {
+
+    public int[] nextGreaterElements(int[] nums) {
+
+        int n = nums.length;
+        int[] ans = new int[n];
+
+        for (int i = 0; i < n; i++) {
+
+            ans[i] = -1;
+
+            for (int j = 1; j < n; j++) {
+
+                int next = (i + j) % n;
+
+                if (nums[next] > nums[i]) {
+
+                    ans[i] = nums[next];
+                    break;
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+nums
+
+1 2 1
+
+For
+
+1
+
+Search
+
+2 ✔
+
+Answer
+
+2
+
+For
+
+2
+
+Search
+
+1
+
+1
+
+No Greater
+
+-1
+
+For last
+
+1
+
+Circular search
+
+1
+
+2 ✔
+
+Answer
+
+2
+
+Final
+
+[2,-1,2]
+Complexity
+Time: O(n²)
+Space: O(1)
+
+Approach 2: Better (Double Traversal)
+Intuition
+
+Treat the array as if it were duplicated.
+
+1 2 1
+
+↓
+
+1 2 1 1 2 1
+
+For every index, search ahead until n elements.
+
+Still quadratic but easier to understand.
+
+Java
+class Solution {
+
+    public int[] nextGreaterElements(int[] nums) {
+
+        int n = nums.length;
+        int[] ans = new int[n];
+
+        Arrays.fill(ans, -1);
+
+        for (int i = 0; i < n; i++) {
+
+            for (int j = i + 1; j < i + n; j++) {
+
+                if (nums[j % n] > nums[i]) {
+
+                    ans[i] = nums[j % n];
+                    break;
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+Complexity
+Time: O(n²)
+Space: O(1)
+
+Approach 3: Monotonic Stack (Most Optimal)
+Intuition
+
+Use a Monotonic Decreasing Stack.
+
+Since the array is circular, iterate twice (2 × n).
+
+Use
+
+i % n
+
+to wrap around.
+
+Only fill answers during the second half (i < n).
+
+Algorithm
+Traverse from (2n-1) to 0
+
+↓
+
+Current >= Stack Top
+
+↓
+
+Pop Stack
+
+↓
+
+Top of Stack
+
+↓
+
+Next Greater Element
+
+↓
+
+Push Current
+Java (Your Code)
+class Solution {
+
+    public int[] nextGreaterElements(int[] nums) {
+
+        int n = nums.length;
+
+        int ans[] = new int[n];
+
+        Stack<Integer> st = new Stack<>();
+
+        st.add(nums[nums.length - 1]);
+
+        ans[n - 1] = -1;
+
+        for (int i = 2 * n - 1; i >= 0; i--) {
+
+            while (!st.isEmpty() && st.peek() <= nums[i % n]) {
+
+                st.pop();
+            }
+
+            if (i < n) {
+
+                if (!st.isEmpty()) {
+
+                    ans[i] = st.peek();
+
+                } else {
+
+                    ans[i] = -1;
+                }
+            }
+
+            st.push(nums[i % n]);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+nums
+
+1 2 1
+
+We traverse
+
+i = 5 → 0
+
+because
+
+2 × n - 1 = 5
+Initial
+Stack
+
+[1]
+
+Answer
+
+[0,0,-1]
+i = 5
+nums[5 % 3]
+
+=
+
+nums[2]
+
+=
+
+1
+
+Stack
+
+1 <= 1
+
+Pop
+
+Push
+
+1
+
+Stack
+
+[1]
+i = 4
+
+Current
+
+2
+2 > 1
+
+Pop
+
+Stack Empty
+
+Push
+
+2
+
+Stack
+
+[2]
+i = 3
+
+Current
+
+1
+1 < 2
+
+Push
+
+1
+
+Stack
+
+2
+
+1
+
+Now i < n, start filling answers.
+
+i = 2
+
+Current
+
+1
+Top = 1
+
+1 <= 1
+
+Pop
+
+Top
+
+2
+
+Answer
+
+ans[2] = 2
+
+Push
+
+1
+
+Stack
+
+2
+
+1
+
+Answer
+
+[0,0,2]
+i = 1
+
+Current
+
+2
+
+Pop
+
+1
+
+Pop
+
+2
+
+Stack Empty
+
+Answer
+
+-1
+
+Push
+
+2
+
+Stack
+
+[2]
+
+Answer
+
+[0,-1,2]
+i = 0
+
+Current
+
+1
+
+Top
+
+2
+
+Answer
+
+2
+
+Push
+
+1
+
+Final Answer
+
+[2,-1,2]
+Why Traverse Twice?
+
+Because the array is circular.
+
+Example
+
+1 2 1
+
+Last element
+
+1
+
+Its next greater element is
+
+2
+
+which lies at the beginning.
+
+Traversing 2 × n simulates the circular array without creating a new array.
+
+Why Monotonic Stack?
+
+The stack always stores elements in decreasing order.
+
+Whenever
+
+Current >= Stack Top
+
+↓
+
+Pop
+
+The first larger element remaining on the stack becomes the answer.
+
+Each element is:
+
+Pushed once
+Popped once
+
+Hence,
+
+O(n)
+Visualization
+Original
+
+1 2 1
+
+Circular Traversal
+
+1 2 1 1 2 1
+
+↓
+
+Stack keeps decreasing values
+
+↓
+
+Find Next Greater
+
+↓
+
+Answer
+Complexity Analysis
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+Better (Double Traversal)	O(n²)	O(1)
+Monotonic Stack (Your Code)	O(n)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Search next n-1 elements
+Better	Treat array as doubled
+Most Optimal	Monotonic Decreasing Stack + Circular Traversal
+Key Trick
+
+Use modulo to simulate a circular array.
+
+nums[i % n]
+
+Traverse
+
+2 × n - 1
+
+↓
+
+0
+
+Only store answers when
+
+i < n
+Pattern
+Monotonic Stack
+        │
+        ├── Next Greater Element I
+        ├── Next Greater Element II (Circular)
+        ├── Daily Temperatures
+        ├── Stock Span
+        └── Largest Rectangle
+Similar Problems
+496. Next Greater Element I
+739. Daily Temperatures
+84. Largest Rectangle in Histogram
+901. Online Stock Span
+1944. Number of Visible People in a Queue
+Pattern Category
+Monotonic Stack
+
+├── Next Greater Element
+├── Circular Array
+├── Previous Greater
+└── Next Smaller
+⭐ Interview Tip
+
+For Next Greater Element II, the only extra challenge compared to Next Greater Element I is the circular array. The standard trick is to iterate from 2*n - 1 down to 0 and access elements using nums[i % n]. Combined with a monotonic decreasing stack, this gives the optimal O(n) solution.
