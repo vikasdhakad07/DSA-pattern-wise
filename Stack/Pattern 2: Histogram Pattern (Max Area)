@@ -1,6 +1,40 @@
-Pattern 2: Histogram Pattern (Max Area)
-Problems involving grids, matrices, or vertical bars forming rectangles.
+Pattern 2: The Histogram Pattern
 
-Medium: LeetCode 1504 - Count Submatrices With All Ones: Similar to Maximal Rectangle, but instead of the maximum area, you use the histogram stack to calculate the number of valid submatrices ending at each cell.
+The most feared stack pattern. You must find the largest rectangle that can be formed within a series of vertical bars.
 
-Hard: LeetCode 42 - Trapping Rain Water: While the Two-Pointer approach is $O(1)$ space, the Stack approach is highly requested. Use a strictly decreasing stack. When you find a taller bar, you pop smaller bars and calculate the "puddle" bounded by the current bar and the new stack top.
+1. The Concept
+For any given bar, the maximum rectangle it can form is limited by the Next Smaller Element on its right, and the Previous Smaller Element on its left.
+We use a Monotonically Increasing Stack. When we encounter a bar shorter than the top of the stack, we know we have found the right boundary for the stack's top bar. We pop it and calculate the area.
+
+2. Java Blueprint
+Java
+
+
+public int largestRectangleArea(int[] heights) {
+    int maxArea = 0;
+    Deque<Integer> stack = new ArrayDeque<>();
+    
+    // We iterate up to heights.length to flush out the remaining bars in the stack
+    for (int i = 0; i <= heights.length; i++) {
+        // Use 0 as a dummy height for the very end to force pop everything
+        int currentHeight = (i == heights.length) ? 0 : heights[i];
+        
+        // When we find a smaller bar, it's time to process taller bars
+        while (!stack.isEmpty() && currentHeight < heights[stack.peek()]) {
+            int height = heights[stack.pop()];
+            
+            // If stack is empty, width is the entire distance 'i'
+            // Otherwise, width is between the current index and the new stack top
+            int width = stack.isEmpty() ? i : i - stack.peek() - 1;
+            
+            maxArea = Math.max(maxArea, height * width);
+        }
+        stack.push(i);
+    }
+    return maxArea;
+}
+
+3. Essential Interview Questions
+Hard: Largest Rectangle in Histogram (LeetCode 84) - The exact code above.
+
+Hard: Maximal Rectangle (LeetCode 85) - Given a 2D matrix of 1s and 0s, treat each row as the base of a histogram and reuse the code above.
