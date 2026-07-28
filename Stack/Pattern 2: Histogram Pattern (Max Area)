@@ -1,0 +1,6 @@
+Pattern 2: Histogram Pattern (Max Area)
+Problems involving grids, matrices, or vertical bars forming rectangles.
+
+Medium: LeetCode 1504 - Count Submatrices With All Ones: Similar to Maximal Rectangle, but instead of the maximum area, you use the histogram stack to calculate the number of valid submatrices ending at each cell.
+
+Hard: LeetCode 42 - Trapping Rain Water: While the Two-Pointer approach is $O(1)$ space, the Stack approach is highly requested. Use a strictly decreasing stack. When you find a taller bar, you pop smaller bars and calculate the "puddle" bounded by the current bar and the new stack top.
