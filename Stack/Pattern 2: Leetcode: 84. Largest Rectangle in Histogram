@@ -1,0 +1,467 @@
+84. Largest Rectangle in Histogram
+Problem
+
+Given an array heights representing the heights of histogram bars, find the largest rectangular area that can be formed.
+
+Each bar has width = 1.
+
+Example 1
+Input:
+heights = [2,1,5,6,2,3]
+
+Output:
+10
+
+Explanation
+
+The largest rectangle is formed by bars 5 and 6.
+
+Height = 5
+Width = 2
+
+Area = 5 × 2 = 10
+Example 2
+Input:
+heights = [2,4]
+
+Output:
+4
+Key Observation
+
+For every bar, we need to know:
+
+Nearest Smaller to Left (LSR)
+Nearest Smaller to Right (RSR)
+
+Then
+
+Width = RSR - LSR - 1
+
+Area = Height × Width
+
+Possible approaches:
+
+Brute Force:
+Better (Expand Left & Right)
+Monotonic Stack (LSR + RSR) ← Most Asked
+Single Stack (One Pass) ← Most Optimal
+Approach 1: Brute Force
+Intuition
+
+For every bar:
+
+Consider it as the smallest bar.
+Expand left until a smaller bar appears.
+Expand right until a smaller bar appears.
+Calculate area.
+
+Java
+class Solution {
+
+    public int largestRectangleArea(int[] heights) {
+
+        int n = heights.length;
+        int maxArea = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            int left = i;
+            int right = i;
+
+            while (left > 0 && heights[left - 1] >= heights[i])
+                left--;
+
+            while (right < n - 1 && heights[right + 1] >= heights[i])
+                right++;
+
+            int width = right - left + 1;
+
+            maxArea = Math.max(maxArea, width * heights[i]);
+        }
+
+        return maxArea;
+    }
+}
+
+Dry Run
+heights
+
+2 1 5 6 2 3
+
+Choose
+
+Height = 5
+
+Expand
+
+Left → stop at 1
+
+Right → include 6
+
+Width = 2
+
+Area = 5 × 2 = 10
+Complexity
+Time : O(n²)
+Space : O(1)
+
+Approach 2: Better (Explicit Left & Right Search)
+Intuition
+
+For every index:
+
+Find first smaller element on left.
+Find first smaller element on right.
+
+Still uses nested loops.
+
+Java
+class Solution {
+
+    public int largestRectangleArea(int[] heights) {
+
+        int n = heights.length;
+        int maxArea = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            int left = i - 1;
+
+            while (left >= 0 && heights[left] >= heights[i])
+                left--;
+
+            int right = i + 1;
+
+            while (right < n && heights[right] >= heights[i])
+                right++;
+
+            int width = right - left - 1;
+
+            maxArea = Math.max(maxArea, width * heights[i]);
+        }
+
+        return maxArea;
+    }
+}
+
+Complexity
+Time : O(n²)
+Space : O(1)
+Approach 3: Monotonic Stack (LSR + RSR) ⭐ (Your Code)
+Intuition
+
+For every bar,
+
+find
+
+Nearest Smaller to Left
+Nearest Smaller to Right
+
+using two monotonic stacks.
+
+Then
+
+Width = Right Smaller − Left Smaller − 1
+
+Area = Width × Height
+Step 1 : Find Left Smaller
+
+For every bar,
+
+find the first smaller element on the left.
+
+Java
+public static int[] heightsLSR(int heights[]) {
+
+    int n = heights.length;
+
+    int ans[] = new int[n];
+
+    Stack<Integer> st = new Stack<>();
+
+    for (int i = 0; i < n; i++) {
+
+        while (!st.isEmpty() &&
+               heights[i] <= heights[st.peek()]) {
+
+            st.pop();
+        }
+
+        ans[i] = st.isEmpty() ? -1 : st.peek();
+
+        st.push(i);
+    }
+
+    return ans;
+}
+
+Step 2 : Find Right Smaller
+
+Java
+public static int[] heightsRSR(int heights[]) {
+
+    int n = heights.length;
+
+    int ans[] = new int[n];
+
+    Stack<Integer> st = new Stack<>();
+
+    for (int i = n - 1; i >= 0; i--) {
+
+        while (!st.isEmpty() &&
+               heights[i] <= heights[st.peek()]) {
+
+            st.pop();
+        }
+
+        ans[i] = st.isEmpty() ? n : st.peek();
+
+        st.push(i);
+    }
+
+    return ans;
+}
+
+
+Final Solution (Your Code)
+class Solution {
+
+    public static int[] heightsLSR(int heights[]) {
+
+        int n = heights.length;
+        int ans[] = new int[n];
+        Stack<Integer> st = new Stack<>();
+
+        for (int i = 0; i < n; i++) {
+
+            while (!st.isEmpty() &&
+                   heights[i] <= heights[st.peek()]) {
+
+                st.pop();
+            }
+
+            ans[i] = st.isEmpty() ? -1 : st.peek();
+
+            st.push(i);
+        }
+
+        return ans;
+    }
+
+    public static int[] heightsRSR(int heights[]) {
+
+        int n = heights.length;
+        int ans[] = new int[n];
+        Stack<Integer> st = new Stack<>();
+
+        for (int i = n - 1; i >= 0; i--) {
+
+            while (!st.isEmpty() &&
+                   heights[i] <= heights[st.peek()]) {
+
+                st.pop();
+            }
+
+            ans[i] = st.isEmpty() ? n : st.peek();
+
+            st.push(i);
+        }
+
+        return ans;
+    }
+
+    public int largestRectangleArea(int[] heights) {
+
+        int ans = Integer.MIN_VALUE;
+
+        int lsr[] = heightsLSR(heights);
+        int rsr[] = heightsRSR(heights);
+
+        for (int i = 0; i < heights.length; i++) {
+
+            int width = rsr[i] - lsr[i] - 1;
+
+            ans = Math.max(ans, width * heights[i]);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+heights
+
+2 1 5 6 2 3
+Left Smaller
+Index	Height	LSR
+0	2	-1
+1	1	-1
+2	5	1
+3	6	2
+4	2	1
+5	3	4
+LSR
+
+[-1,-1,1,2,1,4]
+Right Smaller
+Index	Height	RSR
+0	2	1
+1	1	6
+2	5	4
+3	6	4
+4	2	6
+5	3	6
+RSR
+
+[1,6,4,4,6,6]
+Calculate Width & Area
+Height	LSR	RSR	Width	Area
+2	-1	1	1	2
+1	-1	6	6	6
+5	1	4	2	10
+6	2	4	1	6
+2	1	6	4	8
+3	4	6	1	3
+
+Maximum
+
+10
+Why
+Width = RSR - LSR - 1
+
+Example
+
+Height = 5
+
+LSR = 1
+
+RSR = 4
+
+Width
+
+= 4 - 1 - 1
+
+= 2
+
+Rectangle
+
+5 6
+
+Height = 5
+
+Width = 2
+
+Area = 10
+
+Approach 4: Single Monotonic Stack (Most Optimal)
+Intuition
+
+Instead of computing LSR and RSR separately,
+
+calculate the area immediately when a smaller bar is encountered.
+
+Java
+class Solution {
+
+    public int largestRectangleArea(int[] heights) {
+
+        Stack<Integer> st = new Stack<>();
+        int maxArea = 0;
+
+        for (int i = 0; i <= heights.length; i++) {
+
+            int currentHeight = (i == heights.length) ? 0 : heights[i];
+
+            while (!st.isEmpty() &&
+                   currentHeight < heights[st.peek()]) {
+
+                int height = heights[st.pop()];
+
+                int width = st.isEmpty()
+                        ? i
+                        : i - st.peek() - 1;
+
+                maxArea = Math.max(maxArea, height * width);
+            }
+
+            st.push(i);
+        }
+
+        return maxArea;
+    }
+}
+
+Dry Run (Key Step)
+heights
+
+2 1 5 6 2 3
+
+When
+
+Current = 2
+
+Stack
+
+5
+
+6
+
+Pop
+
+6
+
+Area = 6 × 1 = 6
+
+Pop
+
+5
+
+Width = 2
+
+Area = 5 × 2 = 10
+
+Maximum
+
+10
+Complexity Analysis
+Approach	Time	Space
+Brute Force	O(n²)	O(1)
+Better (Expand Left & Right)	O(n²)	O(1)
+Monotonic Stack (LSR + RSR)	O(n)	O(n)
+Single Monotonic Stack	O(n)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Expand left & right for every bar
+Better	Find left/right smaller using loops
+LSR + RSR Stack	Compute nearest smaller indices, then width
+Single Stack	Compute area while popping (best implementation)
+Key Formula
+Width = Right Smaller − Left Smaller − 1
+
+Area = Width × Height
+Pattern
+Monotonic Stack
+       │
+       ├── Next Greater Element
+       ├── Daily Temperatures
+       ├── Largest Rectangle in Histogram
+       ├── Maximal Rectangle
+       └── Trapping Rain Water
+
+Similar Problems
+85. Maximal Rectangle
+42. Trapping Rain Water
+496. Next Greater Element I
+503. Next Greater Element II
+739. Daily Temperatures
+Pattern Category
+Monotonic Stack
+
+├── Previous Smaller Element
+├── Next Smaller Element
+├── Largest Rectangle
+└── Histogram Problems
+
+⭐ Interview Tip
+
+For histogram problems, the most important idea is to determine the maximum width over which a bar can extend while remaining the minimum height. This is achieved using Nearest Smaller to Left (LSR) and Nearest Smaller to Right (RSR), or even more efficiently with a single monotonic increasing stack, giving an O(n) solution.
