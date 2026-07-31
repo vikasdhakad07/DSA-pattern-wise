@@ -1,0 +1,11 @@
+Pattern 3: Range / Scan Pattern
+You need to calculate how far an element "stretches" as the minimum or maximum of a subarray.
+
+1. The Concept
+Very similar to Next/Prev Greater, but you are interested in the distance between the indices.
+In Sum of Subarray Minimums, for example, a number is the absolute minimum for a specific subarray window defined by: [Previous Smaller ... Current ... Next Smaller].
+
+2. Essential Interview Questions
+Medium: Online Stock Span (LeetCode 901) - Count how many consecutive days prior the stock was cheaper. Accumulate the spans in the stack.
+
+Medium: Sum of Subarray Minimums (LeetCode 907) - Calculate the left span and right span for each element. The total subarrays where nums[i] is the minimum is left_span * right_span.
