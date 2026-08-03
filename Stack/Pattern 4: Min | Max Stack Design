@@ -1,0 +1,32 @@
+Pattern 4: Min/Max Stack Design
+You are asked to build a Stack class that can return the getMin() or getMax() in strictly $O(1)$ time.
+
+1. The Concept
+A single variable int min won't work, because if you pop the minimum element, you don't know what the previous minimum was.
+Solution: Store a snapshot of the minimum state alongside every single element you push.
+
+2. Java BlueprintJavaclass MinStack {
+    // Store an array of two integers: [value, current_minimum]
+    private Deque<int[]> stack;
+
+    public MinStack() {
+        stack = new ArrayDeque<>();
+    }
+    
+    public void push(int val) {
+        if (stack.isEmpty()) {
+            stack.push(new int[]{val, val});
+        } else {
+            int currentMin = stack.peek()[1];
+            stack.push(new int[]{val, Math.min(val, currentMin)});
+        }
+    }
+    
+    public void pop() { stack.pop(); }
+    public int top() { return stack.peek()[0]; }
+    public int getMin() { return stack.peek()[1]; }
+}
+
+3. Essential Interview Questions  
+Medium: Min Stack (LeetCode 155)  
+Hard: Max Stack (LeetCode 716 - Premium) - Same concept, but getting/popping the max requires an additional trick using a TreeMap or Doubly Linked List for $O(\log N)$ or $O(1)$ removals.  
