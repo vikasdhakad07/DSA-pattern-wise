@@ -1,0 +1,549 @@
+155. Min Stack
+Problem
+
+Design a stack that supports the following operations in O(1) time:
+
+push(int val)
+pop()
+top()
+getMin()
+
+getMin() should always return the minimum element currently present in the stack.
+
+Example
+Input
+
+["MinStack","push","push","push","getMin","pop","top","getMin"]
+
+[[],[-2],[0],[-3],[],[],[],[]]
+
+Output
+
+[null,null,null,null,-3,null,0,-2]
+
+Explanation
+
+push(-2)
+Stack : [-2]
+Min   : -2
+
+push(0)
+Stack : [-2,0]
+Min   : -2
+
+push(-3)
+Stack : [-2,0,-3]
+Min   : -3
+
+getMin() → -3
+
+pop()
+
+Stack : [-2,0]
+
+top() → 0
+
+getMin() → -2
+Key Observation
+
+A normal stack can perform
+
+push
+pop
+top
+
+in O(1).
+
+But
+
+getMin()
+
+cannot be done in O(1) without storing extra information.
+
+Possible approaches:
+
+Brute Force
+Better (Two Stacks)
+Most Optimal (Single Stack)
+
+Approach 1: Brute Force
+Intuition
+
+Use a normal stack.
+
+Whenever getMin() is called,
+
+scan the entire stack to find the minimum.
+
+Java
+class MinStack {
+
+    Stack<Integer> stack = new Stack<>();
+
+    public void push(int val) {
+        stack.push(val);
+    }
+
+    public void pop() {
+        stack.pop();
+    }
+
+    public int top() {
+        return stack.peek();
+    }
+
+    public int getMin() {
+
+        int min = Integer.MAX_VALUE;
+
+        for (int num : stack) {
+            min = Math.min(min, num);
+        }
+
+        return min;
+    }
+}
+
+Dry Run
+push(5)
+
+Stack
+
+5
+
+Min = 5
+push(2)
+
+Stack
+
+5 2
+
+Min = 2
+push(8)
+
+Stack
+
+5 2 8
+
+getMin()
+
+Scan entire stack
+
+Answer = 2
+Complexity
+Push : O(1)
+Pop : O(1)
+Top : O(1)
+getMin : O(n)
+
+Approach 2: Better (Using Two Stacks)
+Intuition
+
+Maintain
+
+Main Stack
+Min Stack
+
+The Min Stack stores the minimum element till that point.
+
+Whenever
+
+Current Value <= Current Minimum
+
+push it into the Min Stack.
+
+Whenever popping,
+
+if popped value equals minimum,
+
+pop from Min Stack also.
+
+Java
+class MinStack {
+
+    Stack<Integer> stack = new Stack<>();
+    Stack<Integer> minStack = new Stack<>();
+
+    public void push(int val) {
+
+        stack.push(val);
+
+        if (minStack.isEmpty() || val <= minStack.peek()) {
+            minStack.push(val);
+        }
+    }
+
+    public void pop() {
+
+        if (stack.peek().equals(minStack.peek())) {
+            minStack.pop();
+        }
+
+        stack.pop();
+    }
+
+    public int top() {
+        return stack.peek();
+    }
+
+    public int getMin() {
+        return minStack.peek();
+    }
+}
+
+Dry Run
+push(5)
+
+Stack
+
+5
+
+MinStack
+
+5
+push(2)
+
+Stack
+
+5 2
+
+MinStack
+
+5 2
+push(8)
+
+Stack
+
+5 2 8
+
+MinStack
+
+5 2
+pop()
+
+Remove 8
+
+MinStack unchanged
+
+Minimum = 2
+Complexity
+Push : O(1)
+Pop : O(1)
+Top : O(1)
+getMin : O(1)
+
+Space
+
+O(n)
+
+Approach 3: Single Stack ⭐ (Most Optimal)
+Intuition
+
+Instead of maintaining another stack,
+
+store the previous minimum inside the same stack.
+
+Whenever a new minimum arrives:
+
+Push the old minimum.
+Update minimum.
+Push current value.
+
+When popping:
+
+If popped value equals current minimum,
+
+pop again to restore the previous minimum.
+
+Java (Your Code)
+class MinStack {
+
+    int min = Integer.MAX_VALUE;
+
+    Stack<Integer> st = new Stack<>();
+
+    public MinStack() {
+
+    }
+
+    public void push(int val) {
+
+        if (val <= min) {
+
+            st.push(min);
+
+            min = val;
+        }
+
+        st.push(val);
+    }
+
+    public void pop() {
+
+        if (st.pop() == min) {
+
+            min = st.pop();
+        }
+    }
+
+    public int top() {
+
+        return st.peek();
+    }
+
+    public int getMin() {
+
+        return min;
+    }
+}
+
+Dry Run
+
+Operations
+
+push(5)
+
+push(2)
+
+push(8)
+
+push(1)
+
+pop()
+
+getMin()
+Initially
+Stack
+
+[]
+
+min = ∞
+push(5)
+
+Since
+
+5 <= ∞
+
+Push previous min
+
+∞
+
+Update
+
+min = 5
+
+Push
+
+5
+
+Stack
+
+∞ 5
+push(2)
+
+Since
+
+2 <= 5
+
+Push old minimum
+
+5
+
+Update
+
+min = 2
+
+Push
+
+2
+
+Stack
+
+∞ 5 5 2
+push(8)
+
+8 is not smaller.
+
+Simply push.
+
+Stack
+
+∞ 5 5 2 8
+
+Minimum
+
+2
+push(1)
+
+Push previous minimum
+
+2
+
+Update
+
+min = 1
+
+Push
+
+1
+
+Stack
+
+∞ 5 5 2 8 2 1
+pop()
+
+Pop
+
+1
+
+Since
+
+1 == min
+
+Pop again
+
+2
+
+Restore
+
+min = 2
+
+Stack
+
+∞ 5 5 2 8
+
+Minimum
+
+2
+getMin()
+2
+Visualization
+push(5)
+
+∞
+↓
+
+5
+
+-----------------
+
+push(2)
+
+∞
+
+5
+
+↓
+
+2
+
+-----------------
+
+push(8)
+
+∞
+
+5
+
+2
+
+8
+
+-----------------
+
+push(1)
+
+∞
+
+5
+
+2
+
+↓
+
+1
+Why Does It Work?
+
+Whenever a new minimum appears,
+
+save the previous minimum before pushing it.
+
+Example
+
+Current Min = 5
+
+Push 2
+
+Stack
+
+5
+
+2
+
+Current Min = 2
+
+Later,
+
+when 2 is removed,
+
+restore
+
+5
+
+without scanning the stack.
+
+Complexity Analysis
+Approach	Push	Pop	Top	getMin	Space
+Brute Force	O(1)	O(1)	O(1)	O(n)	O(n)
+Two Stacks	O(1)	O(1)	O(1)	O(1)	O(n)
+Single Stack (Optimal)	O(1)	O(1)	O(1)	O(1)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Scan stack to find minimum
+Better	Maintain an additional Min Stack
+Most Optimal	Store previous minimum inside the same stack
+Why Single Stack is Better?
+
+Instead of using
+
+Main Stack
+
++
+
+Min Stack
+
+we store
+
+Old Minimum
+
+Current Minimum
+
+Current Value
+
+inside one stack.
+
+Memory usage is still O(n) but requires only one stack and avoids maintaining two separate data structures.
+
+Pattern
+Stack
+│
+├── Min Stack
+├── Max Stack
+├── Constant Time Queries
+└── Auxiliary Information
+Similar Problems
+716. Max Stack
+225. Implement Stack using Queues
+232. Implement Queue using Stacks
+155. Min Stack
+901. Online Stock Span
+Pattern Category
+Stack
+
+├── Design Problems
+├── Constant Time Queries
+├── Auxiliary Data
+└── Special Stack
+⭐ Interview Tip
+
+The expected solutions are either the Two Stack approach or the Single Stack with Previous Minimum approach. In your solution, whenever a new minimum is pushed, the previous minimum is saved beneath it. When that minimum is popped, the saved value is restored instantly. This clever trick allows push, pop, top, and getMin all to run in O(1) while using only a single stack.
