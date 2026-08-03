@@ -1,0 +1,524 @@
+20. Valid Parentheses
+Problem
+
+Given a string s containing only the characters:
+
+'(', ')', '{', '}', '[' and ']'
+
+Determine whether the input string is valid.
+
+A string is valid if:
+
+Every opening bracket has a corresponding closing bracket.
+Brackets are closed in the correct order.
+Every closing bracket matches the most recent unmatched opening bracket.
+Example 1
+Input: s = "()"
+
+Output: true
+Example 2
+Input: s = "()[]{}"
+
+Output: true
+Example 3
+Input: s = "(]"
+
+Output: false
+Example 4
+Input: s = "([)]"
+
+Output: false
+Example 5
+Input: s = "{[]}"
+
+Output: true
+Key Observation
+
+Closing brackets must match the most recently opened bracket.
+
+This is exactly LIFO (Last In First Out), making Stack the ideal data structure.
+
+Possible approaches:
+
+Brute Force
+Better (Repeated String Replacement)
+Stack (Most Optimal)
+
+Approach 1: Brute Force
+Intuition
+
+Repeatedly search for matching bracket pairs.
+
+Whenever you find:
+
+()
+{}
+[]
+
+remove them.
+
+If the string becomes empty → Valid.
+
+Otherwise → Invalid.
+
+Java
+class Solution {
+
+    public boolean isValid(String s) {
+
+        while (true) {
+
+            String temp = s;
+
+            s = s.replace("()", "");
+            s = s.replace("{}", "");
+            s = s.replace("[]", "");
+
+            if (temp.equals(s))
+                break;
+        }
+
+        return s.isEmpty();
+    }
+}
+
+Dry Run
+
+Input
+
+({[]})
+
+Iteration 1
+
+({[]})
+
+↓
+
+({})
+
+Iteration 2
+
+({})
+
+↓
+
+()
+
+Iteration 3
+
+()
+
+↓
+
+""
+
+Empty string
+
+Valid
+Complexity
+Time : O(n²)
+Space : O(n)
+
+Approach 2: Better (Character Array Simulation)
+Intuition
+
+Use a character array like a stack.
+
+Maintain a pointer (top) manually instead of using Java's Stack.
+
+This avoids the overhead of the Stack class.
+
+Java
+class Solution {
+
+    public boolean isValid(String s) {
+
+        char[] stack = new char[s.length()];
+        int top = -1;
+
+        for (char ch : s.toCharArray()) {
+
+            if (ch == '(' || ch == '{' || ch == '[') {
+
+                stack[++top] = ch;
+
+            } else {
+
+                if (top == -1)
+                    return false;
+
+                char open = stack[top--];
+
+                if (ch == ')' && open != '(')
+                    return false;
+
+                if (ch == '}' && open != '{')
+                    return false;
+
+                if (ch == ']' && open != '[')
+                    return false;
+            }
+        }
+
+        return top == -1;
+    }
+}
+
+Complexity
+Time : O(n)
+Space : O(n)
+
+Approach 3: Stack ⭐ (Most Optimal)
+Intuition
+
+Push every opening bracket.
+
+Whenever a closing bracket appears:
+
+Stack must not be empty.
+Top must contain the matching opening bracket.
+Otherwise return false.
+
+Finally,
+
+if stack is empty,
+
+the expression is valid.
+
+Algorithm
+Read Character
+
+↓
+
+Opening Bracket?
+
+↓
+
+YES → Push
+
+↓
+
+NO
+
+↓
+
+Stack Empty?
+
+↓
+
+YES → False
+
+↓
+
+Pop
+
+↓
+
+Matching Pair?
+
+↓
+
+YES → Continue
+
+↓
+
+NO → False
+
+↓
+
+End
+
+↓
+
+Stack Empty?
+
+↓
+
+True
+
+Java (Your Code):
+
+class Solution {
+
+    public boolean isValid(String s) {
+
+        Stack<Character> st = new Stack<>();
+
+        int n = s.length();
+
+        for (int i = 0; i < n; i++) {
+
+            char ch = s.charAt(i);
+
+            if (ch == '{' || ch == '[' || ch == '(') {
+
+                st.push(ch);
+
+            } else {
+
+                if (ch == '}') {
+
+                    if (st.isEmpty() || st.pop() != '{')
+                        return false;
+                }
+
+                if (ch == ']') {
+
+                    if (st.isEmpty() || st.pop() != '[')
+                        return false;
+                }
+
+                if (ch == ')') {
+
+                    if (st.isEmpty() || st.pop() != '(')
+                        return false;
+                }
+            }
+        }
+
+        return st.isEmpty();
+    }
+}
+
+Dry Run
+
+Input
+
+{[()]}
+Step 1
+
+Read
+
+{
+
+Stack
+
+{
+Step 2
+
+Read
+
+[
+
+Stack
+
+{
+
+[
+Step 3
+
+Read
+
+(
+
+Stack
+
+{
+
+[
+
+(
+Step 4
+
+Read
+
+)
+
+Pop
+
+(
+
+Matched ✓
+
+Stack
+
+{
+
+[
+Step 5
+
+Read
+
+]
+
+Pop
+
+[
+
+Matched ✓
+
+Stack
+
+{
+Step 6
+
+Read
+
+}
+
+Pop
+
+{
+
+Matched ✓
+
+Stack
+
+Empty
+
+Return
+
+true
+Invalid Example
+
+Input
+
+([)]
+
+Process
+
+Push (
+
+Push [
+
+Read )
+
+Top = [
+
+Expected (
+
+Mismatch
+
+Return False
+Visualization
+Input
+
+{ [ ( ) ] }
+
+↓
+
+Push {
+
+↓
+
+Push [
+
+↓
+
+Push (
+
+↓
+
+Pop (
+
+↓
+
+Pop [
+
+↓
+
+Pop {
+
+↓
+
+Empty Stack
+
+↓
+
+Valid
+Why Stack Works?
+
+The last opening bracket must always be closed first.
+
+Example
+
+{ [ ( ) ] }
+
+Closing order
+
+)
+
+]
+
+}
+
+Opening order
+
+{
+
+[
+
+(
+
+Last Opened
+
+(
+
+must be
+
+First Closed
+
+This is exactly LIFO.
+
+Complexity Analysis
+Approach	Time	Space
+Brute Force (Replace)	O(n²)	O(n)
+Character Array (Manual Stack)	O(n)	O(n)
+Stack (Java Stack)	O(n)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Repeatedly remove valid pairs
+Better	Simulate stack using array
+Most Optimal	Use Stack to match brackets
+Key Idea
+
+Whenever you encounter:
+
+Opening Bracket
+
+↓
+
+Push
+
+Whenever you encounter:
+
+Closing Bracket
+
+↓
+
+Pop
+
+↓
+
+Check Matching Pair
+
+Finally,
+
+Stack Empty
+
+↓
+
+Valid
+Pattern
+Stack
+│
+├── Balanced Parentheses
+├── Expression Evaluation
+├── Syntax Validation
+└── Matching Problems
+Similar Problems
+32. Longest Valid Parentheses
+71. Simplify Path
+394. Decode String
+856. Score of Parentheses
+1190. Reverse Substrings Between Each Pair of Parentheses
+Pattern Category
+Stack
+
+├── Parentheses Matching
+├── Expression Problems
+├── String Processing
+└── LIFO Applications
+⭐ Interview Tip
+
+The expected solution is the Stack approach. Every opening bracket is pushed onto the stack, and every closing bracket must match the most recent unmatched opening bracket. If a mismatch occurs or the stack becomes empty too early, the string is invalid. If the stack is empty after processing all characters, the parentheses are balanced. This gives an O(n) time and O(n) space solution.
