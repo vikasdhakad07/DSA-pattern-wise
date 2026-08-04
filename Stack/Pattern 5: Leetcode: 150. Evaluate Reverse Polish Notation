@@ -1,0 +1,548 @@
+150. Evaluate Reverse Polish Notation
+Problem
+
+You are given an array of strings tokens representing an arithmetic expression in Reverse Polish Notation (Postfix Expression).
+
+Evaluate the expression and return the result.
+
+Valid operators are:
+
++, -, *, /
+
+Division should truncate toward zero.
+
+Example 1
+Input:
+tokens = ["2","1","+","3","*"]
+
+Output:
+9
+
+Explanation
+
+((2 + 1) * 3)
+
+= 9
+Example 2
+Input:
+tokens = ["4","13","5","/","+"]
+
+Output:
+6
+
+Explanation
+
+13 / 5 = 2
+
+4 + 2 = 6
+Example 3
+Input:
+
+["10","6","9","3","+","-11","*","/","*","17","+","5","+"]
+
+Output:
+
+22
+What is Reverse Polish Notation?
+
+Instead of writing
+
+2 + 3
+
+RPN writes
+
+2 3 +
+
+Another example
+
+(2 + 1) × 3
+
+becomes
+
+2 1 + 3 *
+Key Observation
+
+Whenever an operator appears,
+
+it always works on the last two numbers.
+
+This follows LIFO (Last In First Out).
+
+Hence Stack is the ideal data structure.
+
+Possible approaches:
+
+Brute Force
+Better (Recursive Evaluation)
+Stack (Most Optimal)
+
+Approach 1: Brute Force
+Intuition
+
+Repeatedly scan the array.
+
+Whenever
+
+Number Number Operator
+
+is found,
+
+evaluate it,
+
+replace the three tokens with the answer,
+
+and continue until only one element remains.
+
+Java
+class Solution {
+
+    public int evalRPN(String[] tokens) {
+
+        List<String> list = new ArrayList<>(Arrays.asList(tokens));
+
+        while (list.size() > 1) {
+
+            for (int i = 2; i < list.size(); i++) {
+
+                String op = list.get(i);
+
+                if (op.equals("+") || op.equals("-")
+                        || op.equals("*") || op.equals("/")) {
+
+                    int a = Integer.parseInt(list.get(i - 2));
+                    int b = Integer.parseInt(list.get(i - 1));
+
+                    int ans = 0;
+
+                    if (op.equals("+")) ans = a + b;
+                    else if (op.equals("-")) ans = a - b;
+                    else if (op.equals("*")) ans = a * b;
+                    else ans = a / b;
+
+                    list.subList(i - 2, i + 1).clear();
+                    list.add(i - 2, String.valueOf(ans));
+
+                    break;
+                }
+            }
+        }
+
+        return Integer.parseInt(list.get(0));
+    }
+}
+
+Dry Run
+
+Input
+
+2 1 + 3 *
+
+Step 1
+
+2 1 +
+
+↓
+
+3
+
+Array
+
+3 3 *
+
+Step 2
+
+3 3 *
+
+↓
+
+9
+
+Answer
+
+9
+Complexity
+Time : O(n²)
+Space : O(n)
+
+Approach 2: Better (Recursive Evaluation)
+Intuition
+
+Read the expression from right to left.
+
+If current token is a number → return it.
+If current token is an operator → recursively evaluate the next two operands.
+
+Java
+class Solution {
+
+    int index;
+
+    public int evalRPN(String[] tokens) {
+
+        index = tokens.length - 1;
+
+        return solve(tokens);
+    }
+
+    private int solve(String[] tokens) {
+
+        String s = tokens[index--];
+
+        if (!(s.equals("+") || s.equals("-") ||
+              s.equals("*") || s.equals("/"))) {
+
+            return Integer.parseInt(s);
+        }
+
+        int right = solve(tokens);
+        int left = solve(tokens);
+
+        switch (s) {
+
+            case "+": return left + right;
+            case "-": return left - right;
+            case "*": return left * right;
+            default: return left / right;
+        }
+    }
+}
+
+Complexity
+Time : O(n)
+Space : O(n) (Recursion Stack)
+
+Approach 3: Stack ⭐ (Most Optimal)
+Intuition
+
+Traverse tokens from left to right.
+
+If token is a number → Push into stack.
+If token is an operator:
+Pop second operand (b)
+Pop first operand (a)
+Compute a op b
+Push result back
+
+Finally,
+
+the remaining element is the answer.
+
+Algorithm
+Read Token
+
+↓
+
+Number ?
+
+↓
+
+YES
+
+↓
+
+Push
+
+↓
+
+NO
+
+↓
+
+Pop b
+
+Pop a
+
+↓
+
+Perform Operation
+
+↓
+
+Push Result
+
+↓
+
+Continue
+
+↓
+
+Top of Stack = Answer
+Java (Your Code)
+class Solution {
+
+    public int evalRPN(String[] tokens) {
+
+        Stack<Integer> st = new Stack<>();
+
+        for (String s : tokens) {
+
+            if (s.equals("+") || s.equals("-") ||
+                s.equals("*") || s.equals("/")) {
+
+                int b = st.pop();
+                int a = st.pop();
+
+                if (s.equals("+"))
+                    st.push(a + b);
+
+                else if (s.equals("-"))
+                    st.push(a - b);
+
+                else if (s.equals("*"))
+                    st.push(a * b);
+
+                else
+                    st.push(a / b);
+
+            } else {
+
+                st.push(Integer.parseInt(s));
+            }
+        }
+
+        return st.peek();
+    }
+}
+
+Dry Run
+
+Input
+
+["2","1","+","3","*"]
+Token = 2
+
+Push
+
+Stack
+
+2
+Token = 1
+
+Push
+
+Stack
+
+2
+
+1
+Token = +
+
+Pop
+
+b = 1
+
+a = 2
+
+Compute
+
+2 + 1 = 3
+
+Push
+
+Stack
+
+3
+Token = 3
+
+Push
+
+Stack
+
+3
+
+3
+Token = *
+
+Pop
+
+3
+
+3
+
+Multiply
+
+3 × 3 = 9
+
+Push
+
+Stack
+
+9
+
+Return
+
+9
+Another Dry Run
+
+Input
+
+["4","13","5","/","+"]
+
+Push
+
+4
+
+13
+
+5
+
+Operator
+
+/
+
+Compute
+
+13 / 5 = 2
+
+Stack
+
+4
+
+2
+
+Operator
+
++
+
+Compute
+
+4 + 2 = 6
+
+Answer
+
+6
+Visualization
+2 1 + 3 *
+
+↓
+
+Push 2
+
+↓
+
+Push 1
+
+↓
+
++
+
+↓
+
+Pop 1
+
+Pop 2
+
+↓
+
+3
+
+↓
+
+Push 3
+
+↓
+
+*
+
+↓
+
+Pop 3
+
+Pop 3
+
+↓
+
+9
+Why Pop b First?
+
+Suppose
+
+5 2 -
+
+Stack
+
+5
+
+2
+
+Top is
+
+2
+
+So
+
+b = 2
+
+a = 5
+
+Answer
+
+a - b
+
+5 - 2
+
+= 3
+
+If reversed,
+
+2 - 5
+
+= -3
+
+which is incorrect.
+
+Complexity Analysis
+Approach	Time	Space
+Brute Force	O(n²)	O(n)
+Recursive	O(n)	O(n)
+Stack	O(n)	O(n)
+Interview Summary
+Approach	Idea
+Brute Force	Repeatedly evaluate adjacent operands and operator
+Better	Evaluate recursively from right to left
+Most Optimal	Stack-based postfix evaluation
+Key Idea
+
+For every operator:
+
+Pop b
+
+↓
+
+Pop a
+
+↓
+
+Compute
+
+a operator b
+
+↓
+
+Push Result
+
+Continue until one element remains.
+
+Pattern
+Stack
+│
+├── Postfix Evaluation
+├── Prefix Evaluation
+├── Expression Conversion
+└── Calculator Problems
+Similar Problems
+224. Basic Calculator
+227. Basic Calculator II
+772. Basic Calculator III
+20. Valid Parentheses
+71. Simplify Path
+Pattern Category
+Stack
+
+├── Expression Evaluation
+├── Postfix Expressions
+├── Calculator Problems
+└── Parsing
+⭐ Interview Tip
+
+The expected solution is the Stack approach. Reverse Polish Notation guarantees that whenever an operator appears, its two operands are the most recent values, making a stack the perfect choice. Always pop the operands in the order b first, then a, and compute a op b. This preserves the correct order for non-commutative operations like subtraction and division, resulting in an O(n) time and O(n) space solution.
