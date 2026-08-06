@@ -1,0 +1,34 @@
+Pattern 1: Basic FIFO Processing & Data Streams
+The foundational pattern for handling dynamic streams of incoming data where older items expire or must be processed first.
+
+1. The Concept
+As new elements arrive at the back of the queue, you pop old elements from the front if they fall outside a specific window (e.g., time duration, buffer size).
+
+2. Java Blueprint (Moving Average from Data Stream)
+
+Javaclass MovingAverage {
+    private Queue<Integer> queue;
+    private int maxSize;
+    private double currentSum;
+
+    public MovingAverage(int size) {
+        this.queue = new ArrayDeque<>(); // ArrayDeque is faster than LinkedList in Java
+        this.maxSize = size;
+        this.currentSum = 0;
+    }
+    
+    public double next(int val) {
+        if (queue.size() == maxSize) {
+            currentSum -= queue.poll(); // Remove oldest element (FIFO)
+        }
+        queue.offer(val); // Add newest element
+        currentSum += val;
+        return currentSum / queue.size();
+    }
+}
+
+3. Essential Interview Questions
+Easy: LeetCode 346 - Moving Average from Data Stream (Premium)
+Easy: LeetCode 933 - Number of Recent Calls: Store timestamps in a queue. Pop timestamps older than $t - 3000$.
+Medium: LeetCode 622 - Design Circular Queue (See Pattern 3)
+Medium: LeetCode 1429 - First Unique Number: Use a Queue combined with a HashMap frequency tracker to keep track of the first unique element seen so far.
