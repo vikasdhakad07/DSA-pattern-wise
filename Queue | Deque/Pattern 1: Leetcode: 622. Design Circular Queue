@@ -1,0 +1,613 @@
+622. Design Circular Queue
+Problem
+
+Design a Circular Queue with capacity k.
+
+Implement the following methods:
+
+MyCircularQueue(k) → Initializes the queue.
+enQueue(value) → Insert an element into the circular queue.
+deQueue() → Delete an element from the queue.
+Front() → Get the front element.
+Rear() → Get the last element.
+isEmpty() → Check whether the queue is empty.
+isFull() → Check whether the queue is full.
+Example
+Input
+
+["MyCircularQueue","enQueue","enQueue","enQueue","enQueue",
+"Rear","isFull","deQueue","enQueue","Rear"]
+
+[[3],[1],[2],[3],[4],[],[],[],[4],[]]
+
+Output
+
+[null,true,true,true,false,3,true,true,true,4]
+Key Observation
+
+A normal queue wastes space after deletions.
+
+Example:
+
+Size = 5
+
+0 1 2 3 4
+
+After inserting
+
+10 20 30
+10 20 30 _ _
+
+Remove two elements
+
+_ _ 30 _ _
+
+Even though there is free space,
+
+normal array implementation cannot insert again if rear reaches the end.
+
+Circular Queue solves this by wrapping around.
+
+Possible approaches:
+
+Brute Force (Shift Elements)
+Better (Linear Queue using Array)
+Circular Queue (Most Optimal)
+
+Approach 1: Brute Force (Shift Elements)
+Intuition
+
+Use an array.
+
+Whenever an element is deleted,
+
+shift all remaining elements one position to the left.
+
+Java
+class MyCircularQueue {
+
+    int[] arr;
+    int size;
+
+    public MyCircularQueue(int k) {
+
+        arr = new int[k];
+        size = 0;
+    }
+
+    public boolean enQueue(int value) {
+
+        if (size == arr.length)
+            return false;
+
+        arr[size++] = value;
+
+        return true;
+    }
+
+    public boolean deQueue() {
+
+        if (size == 0)
+            return false;
+
+        for (int i = 1; i < size; i++) {
+
+            arr[i - 1] = arr[i];
+        }
+
+        size--;
+
+        return true;
+    }
+
+    public int Front() {
+
+        return size == 0 ? -1 : arr[0];
+    }
+
+    public int Rear() {
+
+        return size == 0 ? -1 : arr[size - 1];
+    }
+
+    public boolean isEmpty() {
+
+        return size == 0;
+    }
+
+    public boolean isFull() {
+
+        return size == arr.length;
+    }
+}
+
+Dry Run
+
+Capacity
+
+3
+
+Insert
+
+10
+
+20
+
+30
+
+Array
+
+10 20 30
+
+Delete
+
+Shift
+
+20 30 _
+
+Insert
+
+40
+
+Array
+
+20 30 40
+Complexity
+enQueue : O(1)
+deQueue : O(n) (shifting)
+Front : O(1)
+Rear : O(1)
+
+Approach 2: Better (Linear Queue using Array)
+Intuition
+
+Maintain
+
+front
+rear
+
+Insertion happens at rear.
+
+Deletion moves front.
+
+No shifting required.
+
+Problem:
+
+Once rear reaches the last index,
+
+remaining free spaces at the beginning cannot be reused.
+
+Java
+class MyCircularQueue {
+
+    int[] arr;
+    int front;
+    int rear;
+
+    public MyCircularQueue(int k) {
+
+        arr = new int[k];
+        front = 0;
+        rear = -1;
+    }
+
+    public boolean enQueue(int value) {
+
+        if (rear == arr.length - 1)
+            return false;
+
+        arr[++rear] = value;
+
+        return true;
+    }
+
+    public boolean deQueue() {
+
+        if (front > rear)
+            return false;
+
+        front++;
+
+        return true;
+    }
+
+    public int Front() {
+
+        return front > rear ? -1 : arr[front];
+    }
+
+    public int Rear() {
+
+        return front > rear ? -1 : arr[rear];
+    }
+
+    public boolean isEmpty() {
+
+        return front > rear;
+    }
+
+    public boolean isFull() {
+
+        return rear == arr.length - 1;
+    }
+}
+
+Complexity
+All Operations : O(1)
+
+But
+
+Unused space cannot be reused.
+
+Example
+
+Capacity = 5
+
+10 20 30 _ _
+
+Delete
+
+_ _ 30 _ _
+
+Rear is still at index 2.
+
+Eventually rear reaches end and queue becomes unusable.
+
+Approach 3: Circular Queue ⭐ (Most Optimal)
+Intuition
+
+Instead of allowing rear to move beyond the array,
+
+wrap it back to the beginning using
+
+(index + 1) % capacity
+
+Maintain
+
+front
+rear
+size
+
+This allows complete reuse of freed space.
+
+Circular Formula
+
+Move Forward
+
+(index + 1) % capacity
+
+Example
+
+Capacity
+
+5
+
+Current
+
+4
+
+Next
+
+(4 + 1) % 5
+
+= 0
+
+Java (Your Code)
+class MyCircularQueue {
+
+    int data[];
+    int front = 0;
+    int rear = -1;
+    int size = 0;
+
+    public MyCircularQueue(int k) {
+
+        data = new int[k];
+    }
+
+    public boolean enQueue(int value) {
+
+        if (size == data.length) {
+            return false;
+        }
+
+        rear = (rear + 1) % data.length;
+
+        data[rear] = value;
+
+        size++;
+
+        return true;
+    }
+
+    public boolean deQueue() {
+
+        if (size == 0) {
+            return false;
+        }
+
+        front = (front + 1) % data.length;
+
+        size--;
+
+        return true;
+    }
+
+    public int Front() {
+
+        return size == 0 ? -1 : data[front];
+    }
+
+    public int Rear() {
+
+        return size == 0 ? -1 : data[rear];
+    }
+
+    public boolean isEmpty() {
+
+        return size == 0;
+    }
+
+    public boolean isFull() {
+
+        return size == data.length;
+    }
+}
+
+Dry Run
+
+Capacity
+
+3
+
+Initially
+
+Front = 0
+
+Rear = -1
+
+Size = 0
+enQueue(10)
+Rear
+
+(-1+1)%3
+
+=0
+
+Array
+
+10 _ _
+
+Front
+
+0
+
+Rear
+
+0
+
+Size
+
+1
+enQueue(20)
+
+Rear
+
+(0+1)%3
+
+=1
+
+Array
+
+10 20 _
+
+Size
+
+2
+enQueue(30)
+
+Rear
+
+(1+1)%3
+
+=2
+
+Array
+
+10 20 30
+
+Size
+
+3
+
+Queue is Full
+
+deQueue()
+
+Front
+
+(0+1)%3
+
+=1
+
+Array
+
+10 20 30
+
+(Logically 10 is removed.)
+
+Front
+
+1
+
+Rear
+
+2
+
+Size
+
+2
+enQueue(40)
+
+Rear
+
+(2+1)%3
+
+=0
+
+Array
+
+40 20 30
+
+Front
+
+1
+
+Rear
+
+0
+
+Queue Order
+
+20 → 30 → 40
+
+Notice how index 0 is reused.
+
+Visualization
+Capacity = 3
+
+Initially
+
+_ _ _
+
+F
+R
+
+↓
+
+Insert 10
+
+10 _ _
+
+F
+R
+
+↓
+
+Insert 20
+
+10 20 _
+
+F
+   R
+
+↓
+
+Insert 30
+
+10 20 30
+
+F
+      R
+
+↓
+
+Delete
+
+10 20 30
+
+   F
+      R
+
+↓
+
+Insert 40
+
+40 20 30
+
+R  F
+
+Queue
+
+20 → 30 → 40
+Why Circular Queue Works?
+
+Instead of moving like
+
+0 → 1 → 2 → 3
+
+it moves
+
+0 → 1 → 2
+
+↓
+
+0
+
+↓
+
+1
+
+↓
+
+2
+
+using
+
+(index + 1) % capacity
+
+Thus, deleted spaces are reused efficiently.
+
+Complexity Analysis
+Approach	enQueue	deQueue	Front	Rear	Space
+Brute Force (Shift)	O(1)	O(n)	O(1)	O(1)	O(k)
+Linear Queue	O(1)	O(1)	O(1)	O(1)	O(k)
+Circular Queue	O(1)	O(1)	O(1)	O(1)	O(k)
+Interview Summary
+Approach	Idea
+Brute Force	Shift elements after every deletion
+Better	Maintain front and rear pointers
+Most Optimal	Circular Queue using modulo arithmetic
+Key Formula
+
+Move to next position
+
+(index + 1) % capacity
+
+Example
+
+Capacity = 5
+
+Current = 4
+
+Next = (4 + 1) % 5
+
+= 0
+Pattern
+Queue
+│
+├── Linear Queue
+├── Circular Queue
+├── Deque
+└── Sliding Window
+Similar Problems
+641. Design Circular Deque
+232. Implement Queue using Stacks
+225. Implement Stack using Queues
+933. Number of Recent Calls
+346. Moving Average from Data Stream
+Pattern Category
+Queue
+
+├── Design Problems
+├── Circular Data Structure
+├── Array Implementation
+└── Queue Simulation
+⭐ Interview Tip
+
+The expected solution is to implement a Circular Queue using an array with three variables: front, rear, and size. The key trick is using modulo arithmetic:
+
+Next Index = (current + 1) % capacity
+
+This allows the queue to wrap around and reuse freed positions instead of wasting space. As a result, all operations (enQueue, deQueue, Front, Rear, isEmpty, isFull) run in O(1) time, making it the optimal implementation.
