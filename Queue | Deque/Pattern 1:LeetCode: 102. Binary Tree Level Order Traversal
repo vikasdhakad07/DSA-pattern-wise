@@ -1,0 +1,451 @@
+LeetCode 102 — Binary Tree Level Order Traversal
+Problem
+
+Given the root of a binary tree, return its level-order traversal.
+
+Level order means:
+
+Visit nodes level by level from left to right.
+
+Example
+        3
+       / \
+      9   20
+         /  \
+        15   7
+
+Output:
+
+[[3], [9,20], [15,7]]
+
+Approach 1: Brute Force — DFS + Level
+Idea
+
+Use DFS and keep track of the current level.
+
+For every node:
+
+If the list for that level doesn't exist, create it.
+Add the current node to that level.
+Recursively process left and right children.
+
+Although DFS is used, we construct the result level by level.
+
+Java
+class Solution {
+
+    public List<List<Integer>> levelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        dfs(root, 0, ans);
+
+        return ans;
+    }
+
+    private void dfs(TreeNode root, int level,
+                      List<List<Integer>> ans) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (ans.size() == level) {
+            ans.add(new ArrayList<>());
+        }
+
+        ans.get(level).add(root.val);
+
+        dfs(root.left, level + 1, ans);
+        dfs(root.right, level + 1, ans);
+    }
+}
+
+Dry Run
+
+Tree:
+
+        3
+       / \
+      9   20
+         /  \
+        15   7
+
+DFS:
+
+3 → level 0
+9 → level 1
+20 → level 1
+15 → level 2
+7 → level 2
+
+Result:
+
+[[3], [9,20], [15,7]]
+Complexity
+Time  = O(n)
+Space = O(h)
+
+h = tree height, excluding the output list.
+
+Approach 2: Better — DFS with Height/Level
+
+This is essentially the same DFS idea but can be thought of as explicitly building each level.
+
+The important observation is:
+
+level = distance from root
+
+For example:
+
+        3          level 0
+       / \
+      9   20       level 1
+         /  \
+        15   7     level 2
+
+Java
+class Solution {
+
+    public List<List<Integer>> levelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        int height = getHeight(root);
+
+        for (int level = 0; level < height; level++) {
+
+            List<Integer> current = new ArrayList<>();
+
+            addLevel(root, level, current);
+
+            ans.add(current);
+        }
+
+        return ans;
+    }
+
+    private int getHeight(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        return 1 + Math.max(
+            getHeight(root.left),
+            getHeight(root.right)
+        );
+    }
+
+    private void addLevel(TreeNode root,
+                           int level,
+                           List<Integer> list) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (level == 0) {
+            list.add(root.val);
+            return;
+        }
+
+        addLevel(root.left, level - 1, list);
+        addLevel(root.right, level - 1, list);
+    }
+}
+
+Complexity
+
+Worst case:
+
+Time = O(n²)
+Space = O(h)
+
+Why can time become O(n²)?
+
+Because we repeatedly traverse parts of the tree for each level.
+
+So this is not preferred.
+
+Approach 3: BFS Using Queue ⭐ Most Optimal
+Key Idea
+
+Level Order Traversal naturally follows:
+
+Top → Bottom
+Left → Right
+
+This is exactly what BFS (Breadth First Search) does.
+
+Use a Queue.
+
+Algorithm
+Put root into queue.
+Get current queue size.
+That size represents the number of nodes in the current level.
+Process exactly those nodes.
+Add their children to the queue.
+Repeat.
+
+Java — Your Code
+
+Your approach is the standard optimal solution. I've added proper generics to make it cleaner Java:
+
+class Solution {
+
+    public List<List<Integer>> levelOrder(TreeNode root) {
+
+        List<List<Integer>> al = new ArrayList<>();
+
+        if (root == null) {
+            return al;
+        }
+
+        Queue<TreeNode> q = new LinkedList<>();
+
+        q.add(root);
+
+        while (!q.isEmpty()) {
+
+            ArrayList<Integer> list = new ArrayList<>();
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode curr = q.poll();
+
+                list.add(curr.val);
+
+                if (curr.left != null) {
+                    q.add(curr.left);
+                }
+
+                if (curr.right != null) {
+                    q.add(curr.right);
+                }
+            }
+
+            al.add(list);
+        }
+
+        return al;
+    }
+}
+
+Dry Run ⭐
+
+Tree:
+
+        3
+       / \
+      9   20
+         /  \
+        15   7
+
+Initially:
+
+Queue = [3]
+Answer = []
+Level 0
+size = q.size()
+     = 1
+
+Process 3.
+
+list = [3]
+
+Add children:
+
+Queue = [9, 20]
+
+Answer:
+
+[[3]]
+Level 1
+size = 2
+
+Process exactly 2 nodes.
+
+Process 9
+list = [9]
+
+No children.
+
+Process 20
+list = [9,20]
+
+Add children:
+
+Queue = [15,7]
+
+Answer:
+
+[[3], [9,20]]
+Level 2
+size = 2
+
+Process 15:
+
+list = [15]
+
+Process 7:
+
+list = [15,7]
+
+Queue becomes:
+
+[]
+
+Answer:
+
+[[3], [9,20], [15,7]]
+Why int size = q.size() Is Important
+
+This is one of the most important concepts in this problem.
+
+Suppose:
+
+Queue = [9, 20]
+
+Then:
+
+int size = q.size();
+
+gives:
+
+size = 2
+
+So we process exactly these two nodes.
+
+While processing them, their children are added:
+
+9  → children
+20 → children
+
+Queue = [15,7]
+
+But we don't process 15 and 7 in the same level, because our loop is:
+
+for (int i = 0; i < size; i++)
+
+where size was captured before processing the level.
+
+This separates the tree into levels.
+
+Visualization
+             3
+             ↓
+        Queue = [3]
+
+             ↓
+
+             3
+            / \
+           9   20
+             ↓
+        Queue = [9,20]
+
+             ↓
+
+           9   20
+              /  \
+             15   7
+             ↓
+        Queue = [15,7]
+
+             ↓
+
+           15   7
+
+Result:
+
+[[3], [9,20], [15,7]]
+Complexity
+
+For BFS:
+
+Time = O(n)
+
+Every node is inserted and removed from the queue exactly once.
+
+Auxiliary space:
+
+O(w)
+
+where w is the maximum width of the tree.
+
+Worst case:
+
+O(n)
+Comparison of All Approaches
+Approach	Technique	Time	Extra Space
+Brute Force	DFS + level	O(n)	O(h)
+Better	Height + DFS each level	O(n²) worst	O(h)
+Most Optimal ⭐	BFS + Queue	O(n)	O(w)
+Why BFS Is Preferred?
+
+The problem asks:
+
+Level 0
+Level 1
+Level 2
+Level 3
+...
+
+BFS naturally processes:
+
+Level 0 → Level 1 → Level 2 → ...
+
+DFS instead goes:
+
+Root → Deep Left → Backtrack → ...
+
+Therefore:
+
+Level Order Traversal → Think BFS → Think Queue
+
+Important Pattern
+Binary Tree
+     ↓
+Level by Level
+     ↓
+BFS
+     ↓
+Queue
+Remember
+int size = q.size();
+
+is the key line.
+
+It tells us:
+
+How many nodes belong to the current level?
+
+Then:
+
+for (int i = 0; i < size; i++)
+
+processes only that level.
+
+Interview Shortcut ⭐
+
+For any problem saying:
+
+Level order
+Level by level
+Nodes at each depth
+Minimum depth
+Zigzag level order
+Right/left view by levels
+
+Immediately think:
+
+BFS + Queue
+
+For LeetCode 102, the cleanest expected solution is BFS with a queue, giving O(n) time.
