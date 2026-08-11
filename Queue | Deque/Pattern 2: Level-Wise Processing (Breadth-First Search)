@@ -1,0 +1,46 @@
+Pattern 2: Level-Wise Processing (Breadth-First Search)
+The workhorse of Tree traversals, Graph Shortest-Paths, and Grid explorations.
+
+1. The Concept
+To process nodes level by level, record the exact queue size before starting the current level's for loop (int size = q.size()). That snapshot ensures you process only the current level's nodes and do not bleed into the next level's children being added simultaneously.
+
+2. Java Blueprint (Tree Level Order Traversal)
+Java
+
+
+public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> result = new ArrayList<>();
+    if (root == null) return result;
+    
+    Queue<TreeNode> queue = new ArrayDeque<>();
+    queue.offer(root);
+    
+    while (!queue.isEmpty()) {
+        int levelSize = queue.size(); // CRITICAL: Freeze current level size
+        List<Integer> currentLevel = new ArrayList<>();
+        
+        for (int i = 0; i < levelSize; i++) {
+            TreeNode currentNode = queue.poll();
+            currentLevel.add(currentNode.val);
+            
+            // Push children for the NEXT level
+            if (currentNode.left != null) queue.offer(currentNode.left);
+            if (currentNode.right != null) queue.offer(currentNode.right);
+        }
+        result.add(currentLevel);
+    }
+    return result;
+}
+
+3. Essential Interview Questions
+Medium: LeetCode 102 - Binary Tree Level Order Traversal
+
+Medium: LeetCode 103 - Binary Tree Zigzag Level Order Traversal: Alternate pushing elements to currentLevel from left-to-right vs. right-to-left using a LinkedList or Deque.
+
+Medium: LeetCode 199 - Binary Tree Right Side View: Capture the last node (i == levelSize - 1) of every level.
+
+Medium: LeetCode 542 - 01 Matrix (Multi-Source BFS): Push all 0 cells to the queue simultaneously at the start, then spread outward level-by-level to calculate the shortest distance to 1s.
+
+Medium: LeetCode 994 - Rotting Oranges: Multi-source BFS starting with all initial rotten oranges.
+
+Medium: LeetCode 116 - Populating Next Right Pointers in Each Node
