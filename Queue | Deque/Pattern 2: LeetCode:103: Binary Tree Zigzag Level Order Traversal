@@ -1,0 +1,614 @@
+LeetCode 103 — Binary Tree Zigzag Level Order Traversal
+
+Problem
+
+Given the root of a binary tree, return its zigzag level-order traversal.
+
+Unlike normal level order traversal:
+
+Level 0 → left to right
+Level 1 → right to left
+Level 2 → left to right
+Level 3 → right to left
+and so on.
+Example
+        3
+       / \
+      9   20
+         /  \
+        15   7
+
+Normal level order:
+
+[[3], [9,20], [15,7]]
+
+Zigzag level order:
+
+[[3], [20,9], [15,7]]
+
+Approach 1: Brute Force — Level Order + Reverse
+Idea
+
+First perform normal BFS level order traversal.
+
+For every alternate level, reverse the resulting list.
+
+Level 0 → normal
+Level 1 → reverse
+Level 2 → normal
+Level 3 → reverse
+
+This is the simplest approach and is very close to your code.
+
+Java
+
+class Solution {
+
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        Queue<TreeNode> q = new LinkedList<>();
+
+        q.add(root);
+
+        int level = 1;
+
+        while (!q.isEmpty()) {
+
+            List<Integer> list = new ArrayList<>();
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode cur = q.poll();
+
+                list.add(cur.val);
+
+                if (cur.left != null) {
+                    q.add(cur.left);
+                }
+
+                if (cur.right != null) {
+                    q.add(cur.right);
+                }
+            }
+
+            if (level % 2 == 0) {
+                Collections.reverse(list);
+            }
+
+            ans.add(list);
+
+            level++;
+        }
+
+        return ans;
+    }
+}
+
+Your Code
+
+Your solution follows exactly this approach:
+
+class Solution {
+
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+
+        List<List<Integer>> al = new ArrayList<>();
+
+        Queue<TreeNode> q = new LinkedList<>();
+
+        if (root == null)
+            return al;
+
+        int level = 1;
+
+        q.add(root);
+
+        while (!q.isEmpty()) {
+
+            List<Integer> list = new LinkedList<>();
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode cur = q.remove();
+
+                list.add(cur.val);
+
+                if (cur.left != null) {
+                    q.add(cur.left);
+                }
+
+                if (cur.right != null) {
+                    q.add(cur.right);
+                }
+            }
+
+            if (level % 2 == 0) {
+
+                Collections.reverse(list);
+                al.add(list);
+
+            } else {
+
+                al.add(list);
+            }
+
+            level++;
+        }
+
+        return al;
+    }
+}
+
+
+This is correct.
+
+Dry Run
+
+Consider:
+
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+Initially:
+
+Queue = [3]
+level = 1
+Level 1
+size = 1
+
+Process 3.
+
+list = [3]
+
+Add children:
+
+Queue = [9,20]
+
+Since:
+
+level = 1
+
+No reverse.
+
+Result:
+
+[[3]]
+Level 2
+
+Queue:
+
+[9,20]
+size = 2
+
+Process:
+
+9
+20
+
+List:
+
+[9,20]
+
+Children of 20 are added:
+
+Queue = [15,7]
+
+Since:
+
+level = 2
+
+Reverse:
+
+[9,20]
+
+↓
+
+[20,9]
+
+Result:
+
+[[3], [20,9]]
+Level 3
+
+Queue:
+
+[15,7]
+
+List:
+
+[15,7]
+
+Odd level → don't reverse.
+
+Final:
+
+[[3], [20,9], [15,7]]
+Complexity of Approach 1
+
+Suppose there are n nodes.
+
+BFS visits every node:
+
+O(n)
+
+Collections.reverse() can take O(number of nodes in that level).
+
+Across all levels, this is still:
+
+O(n)
+
+Therefore:
+
+Time  = O(n)
+Space = O(n)
+
+This is already a very good solution.
+
+
+Approach 2: BFS + Add to Beginning
+
+Instead of creating the level normally and then doing:
+
+Collections.reverse(list);
+
+we can directly insert elements at the beginning for reverse levels.
+
+For example:
+
+Normal:
+
+9 → 20
+
+Reverse:
+
+20 → 9
+
+Use:
+
+list.add(0, cur.val);
+
+Java
+
+class Solution {
+
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        Queue<TreeNode> q = new LinkedList<>();
+
+        q.add(root);
+
+        boolean leftToRight = true;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            LinkedList<Integer> list = new LinkedList<>();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode cur = q.poll();
+
+                if (leftToRight) {
+                    list.addLast(cur.val);
+                } else {
+                    list.addFirst(cur.val);
+                }
+
+                if (cur.left != null) {
+                    q.add(cur.left);
+                }
+
+                if (cur.right != null) {
+                    q.add(cur.right);
+                }
+            }
+
+            ans.add(list);
+
+            leftToRight = !leftToRight;
+        }
+
+        return ans;
+    }
+}
+
+Why LinkedList?
+
+Because:
+
+addFirst()
+
+is O(1) for a LinkedList.
+
+With an ArrayList:
+
+list.add(0, value);
+
+can require shifting elements and may become O(n) per insertion.
+
+Approach 3: BFS + Deque ⭐ Most Optimal / Cleanest
+
+A Deque allows insertion from either end.
+
+For each level:
+
+Left → Right
+addLast()
+Right → Left
+addFirst()
+
+This avoids the explicit Collections.reverse().
+
+Java
+
+class Solution {
+
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        Queue<TreeNode> q = new LinkedList<>();
+
+        q.add(root);
+
+        boolean leftToRight = true;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            Deque<Integer> level = new ArrayDeque<>();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode cur = q.poll();
+
+                if (leftToRight) {
+                    level.addLast(cur.val);
+                } else {
+                    level.addFirst(cur.val);
+                }
+
+                if (cur.left != null) {
+                    q.add(cur.left);
+                }
+
+                if (cur.right != null) {
+                    q.add(cur.right);
+                }
+            }
+
+            ans.add(new ArrayList<>(level));
+
+            leftToRight = !leftToRight;
+        }
+
+        return ans;
+    }
+}
+
+Important Point
+
+Notice that we do not change the order in which children are inserted into the queue.
+
+We always do:
+
+if (cur.left != null)
+    q.add(cur.left);
+
+if (cur.right != null)
+    q.add(cur.right);
+
+The queue remains:
+
+left → right
+
+The zigzag effect is created only while building the current level.
+
+Approach 4: DFS + Level
+
+Another possibility is DFS.
+
+Maintain the current level:
+
+level = 0 → left to right
+level = 1 → right to left
+
+For even levels:
+
+list.add(value);
+
+For odd levels:
+
+list.add(0, value);
+
+Java
+
+class Solution {
+
+    public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+
+        List<List<Integer>> ans = new ArrayList<>();
+
+        dfs(root, 0, ans);
+
+        return ans;
+    }
+
+    private void dfs(TreeNode root,
+                     int level,
+                     List<List<Integer>> ans) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (ans.size() == level) {
+            ans.add(new LinkedList<>());
+        }
+
+        LinkedList<Integer> list =
+            (LinkedList<Integer>) ans.get(level);
+
+        if (level % 2 == 0) {
+            list.addLast(root.val);
+        } else {
+            list.addFirst(root.val);
+        }
+
+        dfs(root.left, level + 1, ans);
+        dfs(root.right, level + 1, ans);
+    }
+}
+
+Complexity
+Time  = O(n)
+Space = O(h)
+
+excluding the output.
+
+However, for a level-order problem, BFS is more natural and easier to explain in an interview.
+
+Comparison
+Approach	Technique	Time	Extra Space
+Brute Force	BFS + reverse each alternate level	O(n)	O(n)
+Better	BFS + addFirst()	O(n)	O(n)
+Optimal	BFS + Deque	O(n)	O(n)
+Alternative	DFS + level	O(n)	O(h)
+
+Technically, Approach 1 is already asymptotically optimal in time. The later approaches mainly improve how the alternating order is constructed.
+
+Why size = q.size() Is Critical
+
+This is the same important concept from LeetCode 102.
+
+int size = q.size();
+
+Suppose:
+
+Queue = [9, 20]
+
+Then:
+
+size = 2
+
+We process exactly two nodes.
+
+While processing them, we may add:
+
+15, 7
+
+But they belong to the next level.
+
+Therefore:
+
+for (int i = 0; i < size; i++)
+
+is what separates the tree into levels.
+
+Zigzag Pattern
+
+For this tree:
+
+             3
+            / \
+           9   20
+              /  \
+             15   7
+            / \
+           8   10
+
+Traversal:
+
+Level 0 → [3]
+
+Level 1 → [20, 9]
+
+Level 2 → [15, 7]
+
+Level 3 → [10, 8]
+
+Final:
+
+[[3], [20,9], [15,7], [10,8]]
+
+Pattern:
+
+L → R
+R → L
+L → R
+R → L
+...
+Key Difference: 102 vs 103
+LeetCode 102
+Binary Tree Level Order Traversal
+L → R
+L → R
+L → R
+LeetCode 103
+Binary Tree Zigzag Level Order Traversal
+L → R
+R → L
+L → R
+R → L
+
+So:
+
+102 = BFS + Queue
+
+103 = BFS + Queue + Direction
+Interview Pattern ⭐
+
+When you see:
+
+Level Order
+
+think:
+
+BFS
+ ↓
+Queue
+
+When you see:
+
+Zigzag Level Order
+
+think:
+
+BFS
+ ↓
+Queue
+ ↓
+Direction / Reverse
+
+The simplest interview solution is your BFS + Collections.reverse() approach:
+
+if (level % 2 == 0) {
+    Collections.reverse(list);
+}
+
+It is clean, correct, and O(n).
