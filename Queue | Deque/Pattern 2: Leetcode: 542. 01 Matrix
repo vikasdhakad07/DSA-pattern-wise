@@ -1,0 +1,1006 @@
+LeetCode 542 — 01 Matrix
+Problem
+
+Given an m x n binary matrix mat, return a matrix where:
+
+Every 0 remains 0.
+Every 1 is replaced by its distance from the nearest 0.
+You can move only up, down, left, right.
+Example
+Input:
+0 0 0
+0 1 0
+1 1 1
+
+Output:
+0 0 0
+0 1 0
+1 2 1
+
+For example, the bottom-middle 1:
+
+1 → 1 → 0
+
+has distance 2.
+
+Approach 1 — Brute Force: BFS From Every 1
+Idea
+
+For every 1:
+
+Start BFS from that particular cell.
+Search until we find a 0.
+The first 0 found gives the shortest distance.
+Repeat for every 1.
+Example
+
+For:
+
+0 0 0
+0 1 0
+1 1 1
+
+For the center 1:
+
+      1
+     / \
+    0   0
+
+Nearest 0 is at distance 1.
+
+For bottom-middle:
+
+0 0 0
+0 1 0
+1 1 1
+    ↑
+
+Nearest 0:
+
+(2,1) → (1,1) → (1,2)
+
+Distance = 2.
+
+Java Code
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        int[][] ans = new int[m][n];
+
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+                    ans[i][j] = 0;
+                } else {
+                    ans[i][j] = bfs(mat, i, j);
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    private int bfs(int[][] mat, int sr, int sc) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        Queue<int[]> q = new LinkedList<>();
+        boolean[][] visited = new boolean[m][n];
+
+        q.add(new int[]{sr, sc});
+        visited[sr][sc] = true;
+
+        int distance = 0;
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                int[] curr = q.poll();
+
+                int r = curr[0];
+                int c = curr[1];
+
+                if (mat[r][c] == 0) {
+                    return distance;
+                }
+
+                for (int j = 0; j < 4; j++) {
+
+                    int nr = r + dr[j];
+                    int nc = c + dc[j];
+
+                    if (nr >= 0 && nr < m &&
+                        nc >= 0 && nc < n &&
+                        !visited[nr][nc]) {
+
+                        visited[nr][nc] = true;
+                        q.add(new int[]{nr, nc});
+                    }
+                }
+            }
+
+            distance++;
+        }
+
+        return -1;
+    }
+}
+
+Complexity
+
+There can be m × n starting cells, and each BFS can visit m × n cells.
+
+Time  = O((m × n)²)
+Space = O(m × n)
+
+❌ Too slow for large matrices.
+
+Approach 2 — Brute Force Using DFS
+
+We can also recursively search from every 1.
+
+The idea is:
+
+For every 1:
+    recursively explore neighbors
+    find nearest 0
+
+However, plain DFS is not a good shortest-path algorithm.
+
+DFS can go very deep in one direction before discovering a nearby 0.
+
+For example:
+
+1 1 1 1 0
+
+A DFS might explore:
+
+1 → 1 → 1 → 1 → 0
+
+before checking another direction.
+
+So we would need:
+
+visited tracking
+minimum distance
+backtracking
+potentially many repeated paths
+
+This makes it much more complicated and inefficient than BFS.
+
+Basic DFS Code
+
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        int[][] ans = new int[m][n];
+
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+                    ans[i][j] = 0;
+                } else {
+                    ans[i][j] = dfs(mat, i, j,
+                                    new boolean[m][n]);
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    private int dfs(
+        int[][] mat,
+        int r,
+        int c,
+        boolean[][] visited) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        if (r < 0 || r >= m ||
+            c < 0 || c >= n ||
+            visited[r][c]) {
+
+            return Integer.MAX_VALUE / 2;
+        }
+
+        if (mat[r][c] == 0) {
+            return 0;
+        }
+
+        visited[r][c] = true;
+
+        int up = dfs(mat, r - 1, c, visited);
+        int down = dfs(mat, r + 1, c, visited);
+        int left = dfs(mat, r, c - 1, visited);
+        int right = dfs(mat, r, c + 1, visited);
+
+        visited[r][c] = false;
+
+        return 1 + Math.min(
+            Math.min(up, down),
+            Math.min(left, right)
+        );
+    }
+}
+
+Complexity
+
+In the worst case, there can be a huge number of possible paths.
+
+Time = Very large / exponential in the worst case
+Space = O(m × n)
+
+❌ Not recommended.
+
+Important Lesson
+
+For shortest distance in an unweighted grid:
+
+DFS ❌
+BFS ✅
+
+Approach 3 — Dynamic Programming: Two-Pass Solution
+
+There is another excellent O(m × n) approach.
+
+Key Idea
+
+For every 1, its shortest distance can come from any of four directions:
+
+       Up
+       ↑
+Left ← 1 → Right
+       ↓
+      Down
+
+We can calculate the answer in two passes.
+
+Pass 1
+
+Move:
+
+Top → Bottom
+Left → Right
+
+At each cell, consider:
+
+up
+left
+Pass 2
+
+Move:
+
+Bottom → Top
+Right → Left
+
+Consider:
+
+down
+right
+
+Together, these cover all four directions.
+
+Java Code
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        int INF = m + n;
+
+        int[][] ans = new int[m][n];
+
+        // Initialize
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+                    ans[i][j] = 0;
+                } else {
+                    ans[i][j] = INF;
+                }
+            }
+        }
+
+        // Pass 1: Top -> Bottom, Left -> Right
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (ans[i][j] != 0) {
+
+                    if (i > 0) {
+                        ans[i][j] = Math.min(
+                            ans[i][j],
+                            ans[i - 1][j] + 1
+                        );
+                    }
+
+                    if (j > 0) {
+                        ans[i][j] = Math.min(
+                            ans[i][j],
+                            ans[i][j - 1] + 1
+                        );
+                    }
+                }
+            }
+        }
+
+        // Pass 2: Bottom -> Top, Right -> Left
+        for (int i = m - 1; i >= 0; i--) {
+
+            for (int j = n - 1; j >= 0; j--) {
+
+                if (i < m - 1) {
+                    ans[i][j] = Math.min(
+                        ans[i][j],
+                        ans[i + 1][j] + 1
+                    );
+                }
+
+                if (j < n - 1) {
+                    ans[i][j] = Math.min(
+                        ans[i][j],
+                        ans[i][j + 1] + 1
+                    );
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+Two-Pass Dry Run
+
+Consider:
+
+0 0 0
+0 1 0
+1 1 1
+
+Initialize:
+
+0 0 0
+0 INF 0
+INF INF INF
+
+where:
+
+INF = m + n = 6
+First Pass
+
+Move top-left → bottom-right.
+
+At (1,1):
+
+up   = 0 + 1 = 1
+left = 0 + 1 = 1
+
+Therefore:
+
+ans[1][1] = 1
+
+Matrix becomes:
+
+0 0 0
+0 1 0
+6 6 6
+
+At (2,0):
+
+up = 0 + 1
+
+So:
+
+1
+
+At (2,1):
+
+up = 1 + 1 = 2
+left = 1 + 1 = 2
+
+So:
+
+2
+
+After first pass:
+
+0 0 0
+0 1 0
+1 2 1
+
+Here this example already happens to be correct.
+
+The second pass ensures cases where the shortest path must come from the bottom or right are also corrected.
+
+Complexity
+Time  = O(m × n)
+Space = O(m × n)
+
+This is optimal time complexity.
+
+Approach 4 — Multi-Source BFS ⭐ Most Optimal / Best Pattern
+
+This is the most important solution for this problem.
+
+Key Observation
+
+Instead of doing:
+
+For every 1:
+    Find nearest 0
+
+reverse the problem.
+
+Put all zeros into the queue initially.
+
+0 0 0
+0 1 0
+1 1 1
+
+Initial queue:
+
+(0,0)
+(0,1)
+(0,2)
+(1,0)
+(1,2)
+
+Every zero has distance:
+
+0
+
+Then BFS expands outward:
+
+0 → 1 → 2 → 3 → ...
+
+Because BFS explores by increasing distance, the first time a cell is visited, we know the shortest distance to the nearest zero.
+
+This is called:
+
+Multi-Source BFS
+
+Your Code ⭐
+
+Your code is a correct and optimal multi-source BFS solution.
+
+class Pair {
+    int row;
+    int col;
+    int step;
+
+    public Pair(int row, int col, int step) {
+        this.row = row;
+        this.col = col;
+        this.step = step;
+    }
+}
+
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        Queue<Pair> q = new LinkedList<>();
+
+        int vis[][] = new int[m][n];
+        int ans[][] = new int[m][n];
+
+        // Put all 0s into the queue
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+
+                    q.add(new Pair(i, j, 0));
+
+                    vis[i][j] = 1;
+                }
+            }
+        }
+
+        int dr[] = {0, 1, 0, -1};
+        int dc[] = {-1, 0, 1, 0};
+
+        while (!q.isEmpty()) {
+
+            int r = q.peek().row;
+            int c = q.peek().col;
+            int s = q.peek().step;
+
+            q.remove();
+
+            ans[r][c] = s;
+
+            for (int i = 0; i < 4; i++) {
+
+                int nr = r + dr[i];
+                int nc = c + dc[i];
+
+                if (nr >= 0 && nr < m &&
+                    nc >= 0 && nc < n &&
+                    vis[nr][nc] == 0) {
+
+                    vis[nr][nc] = 1;
+
+                    q.add(new Pair(nr, nc, s + 1));
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+Multi-Source BFS Dry Run
+
+Take:
+
+mat =
+
+0 0 0
+0 1 0
+1 1 1
+Step 1 — Put all zeros into queue
+
+Zeros are:
+
+(0,0)
+(0,1)
+(0,2)
+(1,0)
+(1,2)
+
+Queue:
+
+(0,0,0)
+(0,1,0)
+(0,2,0)
+(1,0,0)
+(1,2,0)
+
+Format:
+
+(row, col, step)
+
+Visited:
+
+1 1 1
+1 0 1
+0 0 0
+
+Answer initially:
+
+0 0 0
+0 0 0
+0 0 0
+Step 2 — Process (0,0)
+
+Neighbors:
+
+up     → outside
+down   → (1,0) already visited
+left   → outside
+right  → (0,1) already visited
+
+Nothing new.
+
+Step 3 — Process (0,1)
+
+Neighbors:
+
+left  → (0,0) visited
+right → (0,2) visited
+down  → (1,1) unvisited
+
+So:
+
+(1,1)
+
+is added with:
+
+step = 1
+
+Queue contains:
+
+...
+(1,1,1)
+
+Answer:
+
+0 0 0
+0 1 0
+0 0 0
+Step 4 — Process (1,0)
+
+Its unvisited neighbor:
+
+(2,0)
+
+Add:
+
+(2,0,1)
+
+Answer:
+
+0 0 0
+0 1 0
+1 0 0
+Step 5 — Process (1,2)
+
+Its unvisited neighbor:
+
+(2,2)
+
+Add:
+
+(2,2,1)
+
+Answer:
+
+0 0 0
+0 1 0
+1 0 1
+Step 6 — Process (1,1)
+
+Its neighbors include:
+
+(2,1)
+
+which is unvisited.
+
+So:
+
+(2,1,2)
+
+is added.
+
+Answer:
+
+0 0 0
+0 1 0
+1 2 1
+Final Answer
+0 0 0
+0 1 0
+1 2 1
+Why Does Multi-Source BFS Guarantee the Minimum?
+
+Suppose we have:
+
+0 . . . 1
+
+The zero starts at distance 0.
+
+BFS visits:
+
+0
+↓
+1
+↓
+2
+↓
+3
+↓
+4
+
+So when the final cell is reached, it gets:
+
+4
+
+Now imagine there are two zeros:
+
+0 . . . 0
+
+Both start simultaneously:
+
+0       0
+↓       ↓
+1       1
+↓       ↓
+2   2   2
+
+The cell in the middle gets whichever distance reaches it first.
+
+Therefore:
+
+first visit = nearest zero
+Why vis Is Important
+
+Your code uses:
+
+if (... && vis[nr][nc] == 0)
+
+This means:
+
+Only add a cell if it has never been visited.
+
+Then:
+
+vis[nr][nc] = 1;
+
+marks it immediately.
+
+This prevents the same cell from being inserted into the queue multiple times.
+
+Direction Arrays
+
+Your code:
+
+int dr[] = {0, 1, 0, -1};
+int dc[] = {-1, 0, 1, 0};
+
+represents:
+
+           (-1,0)
+              ↑
+              |
+(0,-1) ←──── CELL ────→ (0,1)
+              |
+              ↓
+           (1,0)
+
+So we check:
+
+Left
+Down
+Right
+Up
+
+Order doesn't matter.
+
+Approach 5 — Multi-Source BFS Without Separate step in Queue
+
+We can make the solution slightly cleaner.
+
+Instead of storing:
+
+Pair(row, col, step)
+
+we can store only:
+
+(row, col)
+
+and process BFS level by level.
+
+The queue size tells us which distance we're currently processing.
+
+Java Code
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        int[][] ans = new int[m][n];
+
+        Queue<int[]> q = new LinkedList<>();
+
+        // -1 means unvisited
+        for (int i = 0; i < m; i++) {
+            Arrays.fill(ans[i], -1);
+        }
+
+        // Add all zeros
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+
+                    ans[i][j] = 0;
+
+                    q.add(new int[]{i, j});
+                }
+            }
+        }
+
+        int[] dr = {0, 1, 0, -1};
+        int[] dc = {-1, 0, 1, 0};
+
+        int distance = 0;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            for (int k = 0; k < size; k++) {
+
+                int[] curr = q.poll();
+
+                int r = curr[0];
+                int c = curr[1];
+
+                for (int i = 0; i < 4; i++) {
+
+                    int nr = r + dr[i];
+                    int nc = c + dc[i];
+
+                    if (nr >= 0 && nr < m &&
+                        nc >= 0 && nc < n &&
+                        ans[nr][nc] == -1) {
+
+                        ans[nr][nc] = distance + 1;
+
+                        q.add(new int[]{nr, nc});
+                    }
+                }
+            }
+
+            distance++;
+        }
+
+        return ans;
+    }
+}
+
+Complexity
+Time  = O(m × n)
+Space = O(m × n)
+Approach Comparison
+#	Approach	Time	Space	Recommended
+1	BFS from every 1	O((mn)²)	O(mn)	❌
+2	DFS from every 1	Very large	O(mn)	❌
+3	Two-Pass DP	O(mn)	O(mn)	✅
+4	Multi-Source BFS	O(mn)	O(mn)	⭐
+5	Multi-Source BFS level-by-level	O(mn)	O(mn)	⭐
+Why Your Solution Is Optimal
+
+Your solution does:
+
+1. Find all zeros
+       ↓
+2. Put all zeros in queue
+       ↓
+3. BFS simultaneously
+       ↓
+4. First visit = shortest distance
+
+Every cell is:
+
+visited once
+↓
+inserted once
+↓
+removed once
+↓
+4 neighbors checked
+
+Therefore:
+
+Time = O(m × n)
+
+You cannot do better asymptotically because the matrix contains m × n cells and we need to determine the answer for each one.
+
+Important Pattern ⭐ — Multi-Source BFS
+
+This is the main concept you should remember from 542. 01 Matrix.
+
+Whenever a problem says:
+
+Find the shortest distance from every cell to the nearest one of multiple starting points.
+
+Think:
+
+Multiple Sources
+       ↓
+Put ALL sources in Queue
+       ↓
+BFS
+       ↓
+Level = Distance
+       ↓
+First Visit = Minimum Distance
+Examples
+Problem	Sources
+542. 01 Matrix	All 0s
+994. Rotting Oranges	All rotten oranges
+286. Walls and Gates	All gates
+Fire spread problems	All fire cells
+Infection spread problems	All infected cells
+⭐ Final Interview Version — Your Approach
+
+If you're preparing for interviews, I would keep this version in your notes:
+
+class Pair {
+    int row;
+    int col;
+    int step;
+
+    public Pair(int row, int col, int step) {
+        this.row = row;
+        this.col = col;
+        this.step = step;
+    }
+}
+
+class Solution {
+
+    public int[][] updateMatrix(int[][] mat) {
+
+        int m = mat.length;
+        int n = mat[0].length;
+
+        Queue<Pair> q = new LinkedList<>();
+
+        int[][] vis = new int[m][n];
+        int[][] ans = new int[m][n];
+
+        // Multi-source: add every 0
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (mat[i][j] == 0) {
+
+                    q.add(new Pair(i, j, 0));
+                    vis[i][j] = 1;
+                }
+            }
+        }
+
+        int[] dr = {0, 1, 0, -1};
+        int[] dc = {-1, 0, 1, 0};
+
+        while (!q.isEmpty()) {
+
+            Pair curr = q.poll();
+
+            int r = curr.row;
+            int c = curr.col;
+            int step = curr.step;
+
+            ans[r][c] = step;
+
+            for (int i = 0; i < 4; i++) {
+
+                int nr = r + dr[i];
+                int nc = c + dc[i];
+
+                if (nr >= 0 && nr < m &&
+                    nc >= 0 && nc < n &&
+                    vis[nr][nc] == 0) {
+
+                    vis[nr][nc] = 1;
+
+                    q.add(new Pair(nr, nc, step + 1));
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+One-line memory trick
+
+542 → Put all 0s in the queue → Multi-Source BFS → first visit gives nearest-zero distance → O(m × n).
