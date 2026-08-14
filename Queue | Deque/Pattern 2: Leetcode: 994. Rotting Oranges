@@ -1,0 +1,1159 @@
+LeetCode 994 — Rotting Oranges
+
+From Brute Force → Most Optimal | All Approaches + Code + Explanation + Dry Run
+
+1. Problem Statement
+
+You are given a grid:
+
+0 = Empty cell
+1 = Fresh orange
+2 = Rotten orange
+
+Every minute, a rotten orange makes its 4-directionally adjacent fresh oranges rotten.
+
+Return the minimum number of minutes required to rot all oranges.
+
+If some fresh oranges can never become rotten, return:
+
+-1
+Example
+Input:
+
+
+2 1 1
+1 1 0
+0 1 1
+
+
+Output:
+4
+
+The rotting spreads like:
+
+Minute 0:
+
+
+2 1 1
+1 1 0
+0 1 1
+Minute 1:
+
+
+2 2 1
+2 1 0
+0 1 1
+Minute 2:
+
+
+2 2 2
+2 2 0
+0 1 1
+Minute 3:
+
+
+2 2 2
+2 2 0
+0 2 1
+Minute 4:
+
+
+2 2 2
+2 2 0
+0 2 2
+
+Answer:
+
+4
+
+Approach 1 — Brute Force Simulation
+Idea
+
+At every minute:
+
+Scan the entire matrix.
+Find all currently rotten oranges.
+Rot their neighboring fresh oranges.
+Repeat until no new orange becomes rotten.
+
+The important problem is that if we simply modify the grid while scanning, newly rotten oranges might incorrectly spread in the same minute.
+
+So we can use a temporary grid / list of newly rotten cells.
+
+Code — Brute Force
+class Solution {
+
+
+    public int orangesRotting(int[][] grid) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        int fresh = 0;
+        int time = 0;
+
+
+        while (true) {
+
+
+            List<int[]> rotten = new ArrayList<>();
+
+
+            // Find all currently rotten oranges
+            for (int i = 0; i < n; i++) {
+
+
+                for (int j = 0; j < m; j++) {
+
+
+                    if (grid[i][j] == 2) {
+                        rotten.add(new int[]{i, j});
+                    }
+
+
+                    if (grid[i][j] == 1) {
+                        fresh++;
+                    }
+                }
+            }
+
+
+            if (fresh == 0) {
+                return time;
+            }
+
+
+            boolean changed = false;
+
+
+            for (int[] cell : rotten) {
+
+
+                int r = cell[0];
+                int c = cell[1];
+
+
+                int[] dr = {-1, 0, 1, 0};
+                int[] dc = {0, 1, 0, -1};
+
+
+                for (int k = 0; k < 4; k++) {
+
+
+                    int nr = r + dr[k];
+                    int nc = c + dc[k];
+
+
+                    if (nr >= 0 && nr < n &&
+                        nc >= 0 && nc < m &&
+                        grid[nr][nc] == 1) {
+
+
+                        grid[nr][nc] = 2;
+                        changed = true;
+                    }
+                }
+            }
+
+
+            if (!changed) {
+                return -1;
+            }
+
+
+            time++;
+            fresh = 0;
+        }
+    }
+}
+
+Complexity
+
+Let:
+
+N = rows × columns
+
+In the worst case, we may perform N minutes, and every minute scans the entire matrix.
+
+Time = O(N²)
+Space = O(N)
+
+❌ Not optimal.
+
+Approach 2 — BFS From Every Fresh Orange
+
+Another way is to ask:
+
+For each fresh orange, how long does it take to reach a rotten orange?
+
+For every fresh orange:
+
+Run BFS.
+Search for the nearest rotten orange.
+Store its distance.
+Take the maximum distance.
+
+This works because BFS gives the shortest distance in an unweighted grid.
+
+Code
+class Solution {
+
+
+    public int orangesRotting(int[][] grid) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        int answer = 0;
+
+
+        for (int i = 0; i < n; i++) {
+
+
+            for (int j = 0; j < m; j++) {
+
+
+                if (grid[i][j] == 1) {
+
+
+                    int distance = bfs(grid, i, j);
+
+
+                    if (distance == -1) {
+                        return -1;
+                    }
+
+
+                    answer = Math.max(answer, distance);
+                }
+            }
+        }
+
+
+        return answer;
+    }
+
+
+    private int bfs(int[][] grid, int sr, int sc) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        Queue<int[]> q = new LinkedList<>();
+        boolean[][] visited = new boolean[n][m];
+
+
+        q.offer(new int[]{sr, sc});
+        visited[sr][sc] = true;
+
+
+        int distance = 0;
+
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+
+        while (!q.isEmpty()) {
+
+
+            int size = q.size();
+
+
+            for (int i = 0; i < size; i++) {
+
+
+                int[] cell = q.poll();
+
+
+                int r = cell[0];
+                int c = cell[1];
+
+
+                if (grid[r][c] == 2) {
+                    return distance;
+                }
+
+
+                for (int k = 0; k < 4; k++) {
+
+
+                    int nr = r + dr[k];
+                    int nc = c + dc[k];
+
+
+                    if (nr >= 0 && nr < n &&
+                        nc >= 0 && nc < m &&
+                        !visited[nr][nc]) {
+
+
+                        visited[nr][nc] = true;
+
+
+                        q.offer(new int[]{nr, nc});
+                    }
+                }
+            }
+
+
+            distance++;
+        }
+
+
+        return -1;
+    }
+}
+
+Complexity
+
+There can be N fresh oranges, and each BFS can visit N cells.
+
+Time = O(N²)
+Space = O(N)
+
+❌ Better conceptually, but still not optimal.
+
+Approach 3 — Dynamic Programming / Distance Propagation
+
+We can think about the answer for every cell as a distance to the nearest rotten orange.
+
+For example:
+
+2 1 1
+1 1 0
+0 1 1
+
+We can propagate distances from already-known rotten cells.
+
+However, unlike 542. 01 Matrix, this problem is naturally a time-based spreading problem.
+
+A two-pass DP solution is possible with careful handling, but it is unnecessarily complicated because the spreading happens simultaneously from multiple rotten oranges.
+
+So for this problem, the cleanest optimal approach is:
+
+Multi-Source BFS
+
+Code — DP Two-Pass Approach
+JAVA
+class Solution {
+
+    public int orangesRotting(int[][] grid) {
+
+        int m = grid.length;
+        int n = grid[0].length;
+
+        int INF = 1000000;
+
+        int[][] dist = new int[m][n];
+
+        int fresh = 0;
+
+        // Step 1: Initialize distance matrix
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (grid[i][j] == 2) {
+
+                    // Already rotten
+                    dist[i][j] = 0;
+
+                } else if (grid[i][j] == 1) {
+
+                    // Fresh orange
+                    dist[i][j] = INF;
+                    fresh++;
+
+                } else {
+
+                    // Empty cell
+                    dist[i][j] = INF;
+                }
+            }
+        }
+
+        // Step 2: Top-left → Bottom-right
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (grid[i][j] == 0) {
+                    continue;
+                }
+
+                // From top
+                if (i > 0 && dist[i - 1][j] != INF) {
+                    dist[i][j] =
+                        Math.min(dist[i][j],
+                                 dist[i - 1][j] + 1);
+                }
+
+                // From left
+                if (j > 0 && dist[i][j - 1] != INF) {
+                    dist[i][j] =
+                        Math.min(dist[i][j],
+                                 dist[i][j - 1] + 1);
+                }
+            }
+        }
+
+        // Step 3: Bottom-right → Top-left
+        for (int i = m - 1; i >= 0; i--) {
+
+            for (int j = n - 1; j >= 0; j--) {
+
+                if (grid[i][j] == 0) {
+                    continue;
+                }
+
+                // From bottom
+                if (i < m - 1 && dist[i + 1][j] != INF) {
+                    dist[i][j] =
+                        Math.min(dist[i][j],
+                                 dist[i + 1][j] + 1);
+                }
+
+                // From right
+                if (j < n - 1 && dist[i][j + 1] != INF) {
+                    dist[i][j] =
+                        Math.min(dist[i][j],
+                                 dist[i][j + 1] + 1);
+                }
+            }
+        }
+
+        // Step 4: Find answer
+        int answer = 0;
+
+        for (int i = 0; i < m; i++) {
+
+            for (int j = 0; j < n; j++) {
+
+                if (grid[i][j] == 1) {
+
+                    // Fresh orange cannot reach any rotten orange
+                    if (dist[i][j] == INF) {
+                        return -1;
+                    }
+
+                    answer = Math.max(answer, dist[i][j]);
+                }
+            }
+        }
+
+        return answer;
+    }
+}
+
+Approach 4 — Multi-Source BFS ⭐ Optimal
+
+This is the standard and best solution.
+
+Key Observation
+
+There can be multiple rotten oranges at time 0.
+
+Instead of doing:
+
+Rotten orange 1 → spread
+Rotten orange 2 → spread
+Rotten orange 3 → spread
+
+we start BFS with all rotten oranges simultaneously.
+
+2 1 1
+1 1 0
+0 1 1
+
+Initial queue:
+
+(0,0)
+
+because (0,0) is rotten.
+
+At the same time, if there were multiple 2s, all of them would be added to the queue.
+
+Your Code ⭐
+
+Your supplied code is the optimal multi-source BFS approach.
+
+class Solution {
+
+
+    class Pair {
+        int row;
+        int col;
+        int step;
+
+
+        public Pair(int row, int col, int step) {
+            this.row = row;
+            this.col = col;
+            this.step = step;
+        }
+    }
+
+
+    public int orangesRotting(int[][] grid) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        int count = 0;
+
+
+        Queue<Pair> q = new LinkedList<>();
+
+
+        // Put all rotten oranges into queue
+        // Count all fresh oranges
+        for (int i = 0; i < n; i++) {
+
+
+            for (int j = 0; j < m; j++) {
+
+
+                if (grid[i][j] == 2) {
+
+
+                    q.offer(new Pair(i, j, 0));
+
+
+                } else if (grid[i][j] == 1) {
+
+
+                    count++;
+                }
+            }
+        }
+
+
+        int time = 0;
+        int cnt = 0;
+
+
+        int rc[] = {-1, 0, 1, 0};
+        int nc[] = {0, 1, 0, -1};
+
+
+        while (!q.isEmpty()) {
+
+
+            Pair p = q.poll();
+
+
+            int r = p.row;
+            int c = p.col;
+            int s = p.step;
+
+
+            time = Math.max(time, s);
+
+
+            for (int i = 0; i < 4; i++) {
+
+
+                int nr = r + rc[i];
+                int cn = c + nc[i];
+
+
+                if (nr >= 0 && nr < n &&
+                    cn >= 0 && cn < m &&
+                    grid[nr][cn] == 1) {
+
+
+                    q.offer(new Pair(nr, cn, s + 1));
+
+
+                    // Mark immediately
+                    grid[nr][cn] = 2;
+
+
+                    cnt++;
+                }
+            }
+        }
+
+
+        // Some fresh oranges could not be reached
+        if (cnt != count) {
+            return -1;
+        }
+
+
+        return time;
+    }
+}
+
+How Your Code Works
+
+There are three important variables:
+
+int count = 0;
+int cnt = 0;
+int time = 0;
+count
+
+Number of fresh oranges initially.
+
+else if (grid[i][j] == 1) {
+    count++;
+}
+cnt
+
+Number of fresh oranges that actually became rotten.
+
+cnt++;
+time
+
+Maximum BFS level reached.
+
+time = Math.max(time, s);
+
+At the end:
+
+if (cnt != count)
+    return -1;
+
+means:
+
+If the number of oranges that became rotten is smaller than the number of initially fresh oranges, some orange was unreachable.
+
+Dry Run
+
+Consider:
+
+2 1 1
+1 1 0
+0 1 1
+
+Coordinates:
+
+(0,0) = 2
+(0,1) = 1
+(0,2) = 1
+
+
+(1,0) = 1
+(1,1) = 1
+(1,2) = 0
+
+
+(2,0) = 0
+(2,1) = 1
+(2,2) = 1
+
+Initially:
+
+count = 6
+
+because there are six fresh oranges.
+
+Queue:
+
+[(0,0,0)]
+Minute 0
+
+Process:
+
+(0,0,0)
+
+Neighbors:
+
+(0,1) → fresh
+(1,0) → fresh
+
+So they become rotten.
+
+Queue:
+
+(0,1,1)
+(1,0,1)
+
+Grid:
+
+2 2 1
+2 1 0
+0 1 1
+Minute 1
+
+Process:
+
+(0,1,1)
+
+It rots:
+
+(0,2)
+(1,1)
+
+Queue now contains cells with step 1 and newly added cells with step 2.
+
+Grid:
+
+2 2 2
+2 2 0
+0 1 1
+Continue
+
+Process (1,0,1).
+
+No important new fresh cell from this position.
+
+Then:
+
+(0,2,2)
+(1,1,2)
+
+eventually reach:
+
+(2,1)
+(2,2)
+
+with distances:
+
+(2,1) → 3
+(2,2) → 4
+
+Final grid:
+
+2 2 2
+2 2 0
+0 2 2
+
+Maximum step:
+
+time = 4
+
+Therefore:
+
+answer = 4
+Why grid[nr][cn] = 2 Is Important
+
+This line is extremely important:
+
+grid[nr][cn] = 2;
+
+Suppose two rotten oranges can reach the same fresh orange.
+
+Without marking it immediately:
+
+Rotten A → fresh
+Rotten B → same fresh
+
+the same cell could be inserted into the queue multiple times.
+
+By doing:
+
+grid[nr][cn] = 2;
+
+as soon as we enqueue it:
+
+fresh
+ ↓
+mark rotten
+ ↓
+enqueue
+
+we guarantee that each orange is processed only once.
+
+Why time = Math.max(time, s)?
+
+Every queue element stores:
+
+(row, col, step)
+
+For example:
+
+(0,0,0)
+(0,1,1)
+(0,2,2)
+(1,1,2)
+(2,1,3)
+(2,2,4)
+
+The final orange rots at time 4.
+
+Therefore:
+
+time = Math.max(time, s);
+
+gives the total number of minutes.
+
+Approach 5 — Multi-Source BFS Using Level Order ⭐ Cleaner
+
+We don't actually need to store step inside every Pair.
+
+The BFS queue itself already gives us the current level.
+
+This version is often easier to explain in interviews.
+
+class Solution {
+
+
+    public int orangesRotting(int[][] grid) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        Queue<int[]> q = new LinkedList<>();
+
+
+        int fresh = 0;
+
+
+        // Add all rotten oranges
+        for (int i = 0; i < n; i++) {
+
+
+            for (int j = 0; j < m; j++) {
+
+
+                if (grid[i][j] == 2) {
+
+
+                    q.offer(new int[]{i, j});
+
+
+                } else if (grid[i][j] == 1) {
+
+
+                    fresh++;
+                }
+            }
+        }
+
+
+        int time = 0;
+
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+
+        while (!q.isEmpty() && fresh > 0) {
+
+
+            int size = q.size();
+
+
+            // One BFS level = one minute
+            for (int i = 0; i < size; i++) {
+
+
+                int[] curr = q.poll();
+
+
+                int r = curr[0];
+                int c = curr[1];
+
+
+                for (int j = 0; j < 4; j++) {
+
+
+                    int nr = r + dr[j];
+                    int nc = c + dc[j];
+
+
+                    if (nr >= 0 && nr < n &&
+                        nc >= 0 && nc < m &&
+                        grid[nr][nc] == 1) {
+
+
+                        grid[nr][nc] = 2;
+
+
+                        fresh--;
+
+
+                        q.offer(new int[]{nr, nc});
+                    }
+                }
+            }
+
+
+            time++;
+        }
+
+
+        return fresh == 0 ? time : -1;
+    }
+}
+
+Dry Run of Level-Order BFS
+
+Initial:
+
+2 1 1
+1 1 0
+0 1 1
+
+Queue:
+
+[(0,0)]
+
+Fresh:
+
+6
+Level 0
+size = 1
+
+Process (0,0).
+
+Rot:
+
+(0,1)
+(1,0)
+
+Fresh:
+
+4
+
+Increment:
+
+time = 1
+Level 1
+
+Queue:
+
+(0,1)
+(1,0)
+
+Process both.
+
+New rotten:
+
+(0,2)
+(1,1)
+
+Fresh:
+
+2
+time = 2
+Level 2
+
+Process:
+
+(0,2)
+(1,1)
+
+New rotten:
+
+(2,1)
+
+Fresh:
+
+1
+time = 3
+Level 3
+
+Process:
+
+(2,1)
+
+New rotten:
+
+(2,2)
+
+Fresh:
+
+0
+time = 4
+
+Return:
+4
+
+Approach 6 — BFS With Pair, but No vis
+
+This is essentially your approach, and it is important to understand that you don't need a separate visited[][].
+
+Why?
+
+Because this:
+
+grid[nr][nc] = 2;
+
+acts as the visited marker.
+
+Initially:
+
+1 = unvisited fresh
+2 = already rotten/visited
+0 = empty
+
+When we process:
+
+if (grid[nr][nc] == 1)
+
+we know the cell has not been processed before.
+
+Then immediately:
+
+grid[nr][nc] = 2;
+
+marks it.
+
+Therefore:
+
+Separate visited array ❌
+Modify grid directly    ✅
+
+This saves some memory.
+
+Complexity Comparison
+
+Let:
+
+N = rows × columns
+Approach	Time	Space	Recommended
+Brute-force simulation	O(N²)	O(N)	❌
+BFS from every fresh orange	O(N²)	O(N)	❌
+DP-style propagation	O(N)	O(N)	⚠️
+Multi-source BFS + Pair	O(N)	O(N)	⭐
+Multi-source BFS + levels	O(N)	O(N)	⭐
+
+Since every cell is added to the queue at most once:
+
+Time = O(rows × cols)
+
+The queue can contain up to every cell:
+
+Space = O(rows × cols)
+⭐ Most Important Pattern
+
+This problem is another classic:
+
+Multi-Source BFS
+
+The pattern is:
+
+Multiple starting points
+        ↓
+Put ALL starting points into Queue
+        ↓
+BFS simultaneously
+        ↓
+Each BFS level = 1 unit of time
+        ↓
+First visit = shortest distance/time
+
+For 994 Rotting Oranges:
+
+Source = Rotten oranges (2)
+Target = Fresh oranges (1)
+Distance = Minutes
+
+For 542 01 Matrix:
+
+Source = Zeros (0)
+Target = Ones (1)
+Distance = Shortest distance
+
+For 994, remember:
+
+Put every rotten orange into the queue at time 0, then BFS level-by-level. Each level represents one minute.
+
+⭐ Interview-Ready Code
+
+I'd recommend memorizing this version because it is slightly cleaner than storing step in every node:
+
+class Solution {
+
+
+    public int orangesRotting(int[][] grid) {
+
+
+        int n = grid.length;
+        int m = grid[0].length;
+
+
+        Queue<int[]> q = new LinkedList<>();
+
+
+        int fresh = 0;
+
+
+        // Step 1: Add all rotten oranges
+        for (int i = 0; i < n; i++) {
+
+
+            for (int j = 0; j < m; j++) {
+
+
+                if (grid[i][j] == 2) {
+                    q.offer(new int[]{i, j});
+                } 
+                else if (grid[i][j] == 1) {
+                    fresh++;
+                }
+            }
+        }
+
+
+        int time = 0;
+
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+
+        // Step 2: Multi-source BFS
+        while (!q.isEmpty() && fresh > 0) {
+
+
+            int size = q.size();
+
+
+            // One complete level = one minute
+            for (int i = 0; i < size; i++) {
+
+
+                int[] curr = q.poll();
+
+
+                int r = curr[0];
+                int c = curr[1];
+
+
+                for (int j = 0; j < 4; j++) {
+
+
+                    int nr = r + dr[j];
+                    int nc = c + dc[j];
+
+
+                    if (nr >= 0 && nr < n &&
+                        nc >= 0 && nc < m &&
+                        grid[nr][nc] == 1) {
+
+
+                        grid[nr][nc] = 2;
+                        fresh--;
+
+
+                        q.offer(new int[]{nr, nc});
+                    }
+                }
+            }
+
+
+            time++;
+        }
+
+
+        // If fresh oranges remain, they are unreachable
+        return fresh == 0 ? time : -1;
+    }
+}
+🧠 One-line memory trick
+
+994 → All 2s into Queue → BFS level = 1 minute → convert neighboring 1 to 2 → count remaining fresh → if fresh > 0, return -1.
