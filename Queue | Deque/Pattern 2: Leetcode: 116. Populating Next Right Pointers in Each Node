@@ -1,0 +1,869 @@
+LeetCode 116 — Populating Next Right Pointers in Each Node
+
+From Brute Force → Most Optimal
+
+All Approaches + Code + Explanation + Dry Run
+
+1. Problem Statement
+
+You are given a perfect binary tree.
+
+Each node has:
+
+val
+left
+right
+next
+
+Initially, every next pointer is:
+
+null
+
+Your task is to connect every node to the node immediately to its right on the same level.
+
+For example:
+
+        1
+      /   \
+     2     3
+    / \   / \
+   4   5 6   7
+
+After connecting:
+
+        1 → null
+
+
+      2 → 3 → null
+
+
+    4 → 5 → 6 → 7 → null
+Important Observation
+
+The problem specifically says Perfect Binary Tree.
+
+That means:
+
+Every internal node has exactly 2 children.
+Every leaf is at the same level.
+
+So:
+
+        1
+      /   \
+     2     3
+    / \   / \
+   4   5 6   7
+
+is perfect.
+
+But:
+
+        1
+       /
+      2
+
+is not perfect.
+
+This property allows us to create a very efficient O(1) extra-space solution.
+
+Approach 1 — Brute Force
+Idea
+
+For every node, find the node immediately to its right at the same level.
+
+One simple brute-force idea is:
+
+Traverse the tree level by level.
+Store every level in a list.
+Connect adjacent nodes in that list.
+
+This is essentially BFS, but we're explicitly storing each level.
+
+Code
+class Solution {
+
+
+    public Node connect(Node root) {
+
+
+        if (root == null) {
+            return null;
+        }
+
+
+        List<List<Node>> levels = new ArrayList<>();
+
+
+        Queue<Node> q = new LinkedList<>();
+        q.offer(root);
+
+
+        while (!q.isEmpty()) {
+
+
+            int size = q.size();
+
+
+            List<Node> level = new ArrayList<>();
+
+
+            for (int i = 0; i < size; i++) {
+
+
+                Node curr = q.poll();
+
+
+                level.add(curr);
+
+
+                if (curr.left != null) {
+                    q.offer(curr.left);
+                }
+
+
+                if (curr.right != null) {
+                    q.offer(curr.right);
+                }
+            }
+
+
+            levels.add(level);
+        }
+
+
+        // Connect adjacent nodes
+        for (List<Node> level : levels) {
+
+
+            for (int i = 0; i < level.size() - 1; i++) {
+
+
+                level.get(i).next = level.get(i + 1);
+            }
+        }
+
+
+        return root;
+    }
+}
+
+Complexity
+
+Let N = number of nodes.
+
+Time  = O(N)
+Space = O(N)
+
+The algorithm is correct, but we can do better in terms of auxiliary space.
+
+Approach 2 — Level Order BFS ⭐
+
+This is the first code you provided.
+
+Idea
+
+Use a queue.
+
+For every level:
+
+current → next → next → ... → null
+
+When processing a node, the next node in the queue is the node immediately to its right within the same level.
+
+So:
+
+curr.next = q.peek();
+
+But only if it isn't the last node of the level.
+
+Your Code
+class Solution {
+
+
+    public Node connect(Node root) {
+
+
+        if (root == null) {
+            return null;
+        }
+
+
+        Queue<Node> q = new LinkedList<>();
+
+
+        q.offer(root);
+
+
+        while (!q.isEmpty()) {
+
+
+            int size = q.size();
+
+
+            for (int i = 0; i < size; i++) {
+
+
+                Node curr = q.poll();
+
+
+                if (i < size - 1) {
+                    curr.next = q.peek();
+                }
+
+
+                if (curr.left != null) {
+                    q.offer(curr.left);
+                }
+
+
+                if (curr.right != null) {
+                    q.offer(curr.right);
+                }
+            }
+        }
+
+
+        return root;
+    }
+}
+
+How q.peek() Works
+
+Suppose the queue contains:
+
+4 5 6 7
+
+We process:
+
+curr = 4
+
+After removing 4:
+
+5 6 7
+
+So:
+
+curr.next = q.peek();
+
+becomes:
+
+4.next = 5
+
+Next:
+
+curr = 5
+
+Queue:
+
+6 7
+
+Therefore:
+
+5.next = 6
+
+And so on.
+
+For 7:
+
+i == size - 1
+
+so we don't assign next.
+
+It remains:
+
+7.next = null
+Dry Run
+
+Tree:
+
+        1
+      /   \
+     2     3
+    / \   / \
+   4   5 6   7
+Level 1
+
+Queue:
+
+1
+
+Process 1.
+
+There is no node to its right:
+
+1.next = null
+
+Add children:
+
+Queue: 2 3
+Level 2
+
+Queue:
+
+2 3
+
+Process 2:
+
+2.next = 3
+
+Queue:
+
+3 4 5
+
+But remember, 4 and 5 are added after processing the current level.
+
+Process 3:
+
+3.next = null
+
+After level:
+
+2 → 3 → null
+
+Queue:
+
+4 5 6 7
+Level 3
+
+Process 4:
+
+4.next = 5
+
+Process 5:
+
+5.next = 6
+
+Process 6:
+
+6.next = 7
+
+Process 7:
+
+7.next = null
+
+Final:
+
+4 → 5 → 6 → 7 → null
+Complexity
+Time  = O(N)
+Space = O(N)
+Why O(N) space?
+
+The queue can contain an entire level.
+
+For a perfect binary tree, the last level can contain approximately N/2 nodes.
+
+So:
+
+Space = O(N)
+
+Approach 3 — Recursive DFS ⭐
+
+This is your second code.
+
+The key observation is that because the tree is perfect, we know:
+
+root.left
+
+and
+
+root.right
+
+are siblings.
+
+Therefore:
+
+root.left.next = root.right;
+
+But what about:
+
+        1
+      /   \
+     2     3
+    / \   / \
+   4   5 6   7
+
+We also need:
+
+5 → 6
+
+These nodes are not siblings.
+
+But because the tree is perfect:
+
+root.left.right
+
+is immediately followed by:
+
+root.right.left
+
+Therefore:
+
+root.left.right.next = root.right.left;
+
+More generally:
+
+root.left.next = root.right;
+
+and:
+
+root.right.next = root.next.left;
+
+Your Recursive Code
+class Solution {
+
+
+    public Node connect(Node root) {
+
+
+        if (root == null) {
+            return root;
+        }
+
+
+        if (root.left != null) {
+
+
+            root.left.next = root.right;
+        }
+
+
+        if (root.right != null && root.next != null) {
+
+
+            root.right.next = root.next.left;
+        }
+
+
+        connect(root.left);
+        connect(root.right);
+
+
+        return root;
+    }
+}
+
+Important Line
+
+This is the most important line:
+
+root.right.next = root.next.left;
+
+Let's understand it.
+
+Suppose:
+
+        1 → null
+      /       \
+     2  ─────→ 3
+    / \       / \
+   4   5     6   7
+
+For node 2:
+
+root = 2
+root.next = 3
+
+Therefore:
+
+root.right.next = root.next.left;
+
+means:
+
+5.next = 3.left;
+
+which gives:
+
+5.next = 6
+
+Exactly what we need.
+
+Recursive Dry Run
+
+Start:
+
+root = 1
+Step 1
+
+Connect:
+
+1.left.next = 1.right
+
+Therefore:
+
+2 → 3
+Step 2
+
+Does 1.right.next exist?
+
+No:
+
+1.next = null
+
+So nothing more at this level.
+
+Step 3
+
+Recursive call:
+
+connect(root.left);
+
+Now:
+
+root = 2
+
+We connect:
+
+4 → 5
+
+Since:
+
+2.next = 3
+
+we also connect:
+
+5 → 3.left
+
+Therefore:
+
+5 → 6
+Step 4
+
+Recursive call:
+
+connect(root.right);
+
+Now:
+
+root = 3
+
+Connect:
+
+6 → 7
+
+Since:
+
+3.next = null
+
+there is no cross-subtree connection.
+
+Final:
+
+1 → null
+
+
+2 → 3 → null
+
+
+4 → 5 → 6 → 7 → null
+Complexity
+
+Every node is visited once.
+
+Time = O(N)
+
+The recursion stack depends on the height.
+
+For a perfect binary tree:
+
+Height = O(log N)
+
+Therefore:
+
+Space = O(log N)
+
+This is already much better than BFS's O(N) auxiliary space.
+
+Approach 4 — Iterative O(1) Extra Space ⭐⭐⭐ Most Optimal
+
+We can go one step further.
+
+Instead of recursion, we can use the already-created next pointers to move horizontally across the current level.
+
+This eliminates:
+
+Queue
+Recursion stack
+
+So we get:
+
+Time  = O(N)
+Space = O(1)
+Idea
+
+At each level:
+
+        1
+      /   \
+     2     3
+
+First connect:
+
+2 → 3
+
+Then move to the next level.
+
+Now:
+
+2 → 3
+
+allows us to traverse the current level without a queue.
+
+For every node:
+
+current.left.next = current.right
+
+And if there is a next node:
+
+current.right.next = current.next.left
+
+Most Optimal Code
+class Solution {
+
+
+    public Node connect(Node root) {
+
+
+        if (root == null) {
+            return null;
+        }
+
+
+        Node leftmost = root;
+
+
+        while (leftmost.left != null) {
+
+
+            Node curr = leftmost;
+
+
+            while (curr != null) {
+
+
+                // Connect left child to right child
+                curr.left.next = curr.right;
+
+
+                // Connect right child to next node's left child
+                if (curr.next != null) {
+                    curr.right.next = curr.next.left;
+                }
+
+
+                // Move horizontally
+                curr = curr.next;
+            }
+
+
+            // Move to next level
+            leftmost = leftmost.left;
+        }
+
+
+        return root;
+    }
+}
+
+Dry Run of O(1) Approach
+
+Initial:
+
+        1
+      /   \
+     2     3
+    / \   / \
+   4   5 6   7
+leftmost = 1
+
+Process level containing 1.
+
+curr = 1
+
+Connect:
+
+1.left.next = 1.right
+
+So:
+
+2 → 3
+
+Since:
+
+1.next = null
+
+nothing else.
+
+Move:
+
+leftmost = leftmost.left
+
+Therefore:
+
+leftmost = 2
+Next Level
+
+Current level:
+
+2 → 3 → null
+
+Start:
+
+curr = 2
+
+Connect:
+
+4 → 5
+
+Because:
+
+2.next = 3
+
+connect:
+
+5 → 3.left
+
+Therefore:
+
+5 → 6
+
+Move:
+
+curr = curr.next
+
+So:
+
+curr = 3
+
+Connect:
+
+6 → 7
+
+Since:
+
+3.next = null
+
+we stop.
+
+Final:
+
+        1 → null
+
+
+      2 → 3 → null
+
+
+    4 → 5 → 6 → 7 → null
+Why O(1) Space Works
+
+Normally, to move across a level, we'd need:
+
+Queue
+
+But we already have:
+
+next pointers
+
+For example:
+
+2 → 3 → null
+
+We can use:
+
+curr = curr.next;
+
+to move horizontally.
+
+So the next pointers themselves act like our level traversal mechanism.
+
+This is a very important tree technique.
+
+All Approaches Comparison
+Approach	Main Idea	Time	Extra Space
+1. Store levels	BFS + lists	O(N)	O(N)
+2. Queue BFS	curr.next = q.peek()	O(N)	O(N)
+3. Recursive DFS	Use root.next	O(N)	O(log N)
+4. Iterative DFS	Use existing next pointers	O(N)	O(1) ⭐
+
+Approach Selection
+🟢 Approach 1 — Brute Force
+
+Good for understanding the problem.
+
+Level → store nodes → connect adjacent nodes
+
+But unnecessary extra storage.
+
+🟢 Approach 2 — BFS
+
+Very easy to understand and implement.
+
+curr.next = q.peek();
+
+This is probably the easiest solution in an interview.
+
+Time  = O(N)
+Space = O(N)
+
+🟡 Approach 3 — Recursive
+
+Uses the special property of a perfect binary tree:
+
+root.left.next = root.right;
+
+
+root.right.next = root.next.left;
+Time  = O(N)
+Space = O(log N)
+
+🟢 Approach 4 — Iterative O(1)
+
+Best solution.
+
+Current level:
+next pointers → traverse horizontally
+
+
+Children:
+create next level's next pointers
+Time  = O(N)
+Space = O(1)
+
+🧠 Pattern to Remember
+
+For LeetCode 116, remember these two connections:
+
+Connection 1 — Same Parent
+        parent
+       /      \
+      L        R
+
+Always:
+
+L.next = R;
+Connection 2 — Different Parents
+        A → B
+       / \   / \
+      L   R X   Y
+
+Connect:
+
+R.next = X;
+
+In terms of pointers:
+
+R.next = A.next.left;
+
+So the entire solution boils down to:
+
+root.left.next = root.right;
+
+
+if (root.next != null) {
+    root.right.next = root.next.left;
+}
+
+And the most optimal implementation simply performs those connections iteratively without a queue or recursion.
+
+116 = Perfect Binary Tree + next pointer connection + O(1) space.
