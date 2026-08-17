@@ -1,0 +1,46 @@
+Pattern 3: Circular Queue Pattern (Buffer Allocation)
+Memory-efficient array-backed queues used in system design, ring buffers, and OS scheduling.
+
+1. The ConceptInstead of shifting elements in memory (which costs $O(N)$ time), use two pointers (head and tail) with an array of fixed size K. Use modulo arithmetic (% K) to wrap pointers back to the beginning of the array when they hit the end.
+
+2. Java Blueprint (Design Circular Queue)
+Java:
+
+class MyCircularQueue {
+    private int[] data;
+    private int head;
+    private int tail;
+    private int size;
+    private int capacity;
+
+    public MyCircularQueue(int k) {
+        data = new int[k];
+        capacity = k;
+        head = 0;
+        tail = 0;
+        size = 0;
+    }
+    
+    public boolean enQueue(int value) {
+        if (isFull()) return false;
+        data[tail] = value;
+        tail = (tail + 1) % capacity; // Wrap around with modulo
+        size++;
+        return true;
+    }
+    
+    public boolean deQueue() {
+        if (isEmpty()) return false;
+        head = (head + 1) % capacity; // Wrap around with modulo
+        size--;
+        return true;
+    }
+    
+    public int Front() { return isEmpty() ? -1 : data[head]; }
+    public int Rear() { return isEmpty() ? -1 : data[(tail - 1 + capacity) % capacity]; }
+    public boolean isEmpty() { return size == 0; }
+    public boolean isFull() { return size == capacity; }
+}
+3. Essential Interview Questions
+Medium: LeetCode 622 - Design Circular Queue
+Medium: LeetCode 641 - Design Circular Deque: Extends the circular concept to handle pushing and popping from both head and tail.
