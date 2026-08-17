@@ -1,0 +1,938 @@
+LeetCode 622 — Design Circular Queue
+
+From Brute Force → Most Optimal
+
+All approaches + code + explanation + dry run
+1. Problem Understanding
+
+A Queue follows:
+
+FIFO = First In First Out
+
+For example:
+
+Front                    Rear
+ ↓                         ↓
+10 → 20 → 30 → 40
+
+Operations:
+
+enQueue(value) → insert at rear
+deQueue() → remove from front
+Front() → return front element
+Rear() → return rear element
+isEmpty()
+isFull()
+
+The special requirement is that the queue should be circular.
+
+So when we reach the end of the array:
+
+index 0 → 1 → 2 → 3 → 4 → 0 → 1 ...
+
+Approach 1 — Simple Array + Shifting
+Idea
+
+Use a normal array.
+
+For insertion:
+
+[10, 20, 30, _, _]
+
+Add 40:
+
+[10, 20, 30, 40, _]
+
+For deletion from the front, shift everything left:
+
+Before:
+[10, 20, 30, 40]
+
+
+deQueue()
+
+
+After:
+[20, 30, 40, _]
+Code
+class MyCircularQueue {
+
+
+    int[] data;
+    int size;
+    int capacity;
+
+
+    public MyCircularQueue(int k) {
+        capacity = k;
+        data = new int[k];
+        size = 0;
+    }
+
+
+    public boolean enQueue(int value) {
+
+
+        if (isFull()) {
+            return false;
+        }
+
+
+        data[size] = value;
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deQueue() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        // Shift elements left
+        for (int i = 0; i < size - 1; i++) {
+            data[i] = data[i + 1];
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int Front() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return data[0];
+    }
+
+
+    public int Rear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return data[size - 1];
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Complexity
+Operation	Time
+enQueue()	O(1)
+deQueue()	O(K)
+Front()	O(1)
+Rear()	O(1)
+
+The problem is:
+
+deQueue() → shifting → O(K)
+
+We want O(1).
+
+Approach 2 — Linked List Queue
+
+A normal linked list can implement a queue efficiently.
+
+Maintain:
+
+front
+rear
+
+Example:
+
+front                   rear
+ ↓                       ↓
+10 → 20 → 30 → 40 → null
+enQueue(50)
+
+Add at rear:
+
+10 → 20 → 30 → 40 → 50
+deQueue()
+
+Remove front:
+
+20 → 30 → 40 → 50
+
+Both operations are O(1).
+
+Code
+class MyCircularQueue {
+
+
+    class Node {
+        int val;
+        Node next;
+
+
+        Node(int val) {
+            this.val = val;
+        }
+    }
+
+
+    Node front;
+    Node rear;
+
+
+    int size;
+    int capacity;
+
+
+    public MyCircularQueue(int k) {
+        capacity = k;
+        size = 0;
+    }
+
+
+    public boolean enQueue(int value) {
+
+
+        if (isFull()) {
+            return false;
+        }
+
+
+        Node node = new Node(value);
+
+
+        if (isEmpty()) {
+            front = rear = node;
+        } else {
+            rear.next = node;
+            rear = node;
+        }
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deQueue() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        front = front.next;
+
+
+        size--;
+
+
+        if (size == 0) {
+            rear = null;
+        }
+
+
+        return true;
+    }
+
+
+    public int Front() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return front.val;
+    }
+
+
+    public int Rear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return rear.val;
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Complexity
+enQueue  → O(1)
+deQueue  → O(1)
+Front    → O(1)
+Rear     → O(1)
+
+
+Space → O(K)
+
+This is efficient, but it isn't actually using a circular array, which is the main concept being tested by this problem.
+
+So let's implement the actual circular queue.
+
+Approach 3 — Circular Array ⭐
+
+Instead of shifting elements, we use two pointers:
+
+front
+rear
+
+and a size.
+
+The array wraps around using %.
+
+For example, capacity = 5:
+
+0 → 1 → 2 → 3 → 4
+↑               ↓
+└───────────────┘
+
+After index 4:
+
+(rear + 1) % capacity
+
+becomes:
+
+(4 + 1) % 5 = 0
+Your Code
+
+Your code uses a very clean implementation:
+
+class MyCircularQueue {
+
+
+    int data[];
+    int front = 0;
+    int rear = -1;
+    int size = 0;
+
+
+    public MyCircularQueue(int k) {
+        data = new int[k];
+    }
+
+
+    public boolean enQueue(int value) {
+
+
+        if (size == data.length) {
+            return false;
+        }
+
+
+        rear = (rear + 1) % data.length;
+
+
+        data[rear] = value;
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deQueue() {
+
+
+        if (size == 0) {
+            return false;
+        }
+
+
+        front = (front + 1) % data.length;
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int Front() {
+        return size == 0 ? -1 : data[front];
+    }
+
+
+    public int Rear() {
+        return size == 0 ? -1 : data[rear];
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == data.length;
+    }
+}
+
+This is correct.
+
+Why rear = -1 Initially?
+
+Initially:
+
+Array:
+[ _  _  _  _  _ ]
+
+
+front = 0
+rear = -1
+size = 0
+
+When we call:
+
+enQueue(10)
+
+we first do:
+
+rear = (rear + 1) % data.length;
+
+Therefore:
+
+rear = (-1 + 1) % 5
+     = 0
+
+Then:
+
+data[rear] = value;
+
+So:
+
+[10, _, _, _, _]
+ ↑
+front/rear
+Dry Run
+
+Suppose:
+
+k = 3
+
+Initial:
+
+index:   0   1   2
+        [_] [_] [_]
+
+
+front = 0
+rear  = -1
+size  = 0
+Operation 1
+enQueue(10)
+
+Calculate:
+
+rear = (-1 + 1) % 3
+     = 0
+
+Store:
+
+[10, _, _]
+ ↑
+front
+ ↑
+rear
+
+State:
+
+front = 0
+rear = 0
+size = 1
+Operation 2
+enQueue(20)
+
+Calculate:
+
+rear = (0 + 1) % 3
+     = 1
+
+Store:
+
+[10, 20, _]
+ ↑    ↑
+front rear
+
+State:
+
+front = 0
+rear = 1
+size = 2
+
+Logical queue:
+
+10 → 20
+Operation 3
+enQueue(30)
+rear = (1 + 1) % 3
+     = 2
+
+Array:
+
+[10, 20, 30]
+ ↑        ↑
+front    rear
+
+State:
+
+front = 0
+rear = 2
+size = 3
+
+Now:
+
+isFull()
+
+returns:
+
+size == data.length
+3 == 3
+
+So:
+
+true
+Operation 4
+deQueue()
+
+We don't actually delete 10 from the array.
+
+We simply move front:
+
+front = (front + 1) % data.length
+
+Therefore:
+
+front = 1
+
+Array still:
+
+[10, 20, 30]
+     ↑    ↑
+   front rear
+
+Logical queue:
+
+20 → 30
+
+And:
+
+size = 2
+
+This is an important circular-array concept:
+
+We don't need to physically erase an element. We just move the pointer.
+
+Operation 5
+enQueue(40)
+
+Current:
+
+rear = 2
+
+Calculate:
+
+rear = (2 + 1) % 3
+     = 0
+
+So we wrap around.
+
+Store:
+
+data[0] = 40
+
+Array:
+
+[40, 20, 30]
+     ↑    ↑
+   front rear
+
+Logical queue is:
+
+20 → 30 → 40
+
+This is why it's called a Circular Queue.
+
+Important Visualization
+
+Physical array:
+
+[40, 20, 30]
+
+doesn't look sorted according to queue order.
+
+But logically:
+
+       front
+         ↓
+[40, 20, 30]
+      ↑     ↑
+      20 → 30 → 40
+
+The actual logical order is obtained by starting from front and moving circularly.
+
+Front()
+
+Your code:
+
+return size == 0 ? -1 : data[front];
+
+Very straightforward.
+
+If:
+
+front = 1
+
+then:
+
+data[1]
+
+is the front element.
+
+Rear()
+
+Your implementation maintains:
+
+rear → actual last element
+
+Therefore:
+
+return data[rear];
+
+Unlike the circular deque implementation from the previous problem, here rear points directly to the last element.
+
+That's an important distinction.
+
+Approach 4 — Circular Linked List
+
+Another possible implementation is a circular linked list.
+
+Instead of:
+
+10 → 20 → 30 → null
+
+we can make:
+
+10 → 20 → 30
+↑           ↓
+└───────────┘
+
+Maintain a pointer to the rear.
+
+Then:
+
+rear.next
+
+is the front.
+
+This gives O(1) enqueue/dequeue.
+
+Code
+class MyCircularQueue {
+        Node node = new Node(value);
+
+
+        if (isEmpty()) {
+
+
+            rear = node;
+            rear.next = rear;
+
+
+        } else {
+
+
+            node.next = rear.next;
+            rear.next = node;
+            rear = node;
+        }
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deQueue() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        if (size == 1) {
+
+
+            rear = null;
+
+
+        } else {
+
+
+            // rear.next is front
+            rear.next = rear.next.next;
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int Front() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return rear.next.val;
+    }
+
+
+    public int Rear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return rear.val;
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Circular Linked List Visualization
+
+Suppose:
+
+10 → 20 → 30
+↑           ↓
+└───────────┘
+
+rear points to:
+
+30
+
+Then:
+
+rear.next
+
+points to:
+
+10
+
+Therefore:
+
+rear.next = Front
+
+This makes both ends accessible.
+
+Approach Comparison
+Approach	enQueue	deQueue	Front	Rear	Space
+Array + shifting	O(1)	O(K)	O(1)	O(1)	O(K)
+Normal Linked List	O(1)	O(1)	O(1)	O(1)	O(K)
+Circular Linked List	O(1)	O(1)	O(1)	O(1)	O(K)
+Circular Array ⭐	O(1)	O(1)	O(1)	O(1)	O(K)
+Why Circular Array Is Most Optimal Here
+
+The problem is specifically:
+
+Design Circular Queue
+
+So the circular-array implementation directly demonstrates the intended concept.
+
+The key trick is:
+
+rear = (rear + 1) % data.length;
+
+and:
+
+front = (front + 1) % data.length;
+
+Instead of shifting:
+
+[10,20,30,_,_]
+
+when 10 is removed, we simply move:
+
+front
+ ↓
+[10,20,30,_,_]
+    ↓
+[10,20,30,_,_]
+
+The 10 can remain physically in memory because it is no longer part of the logical queue.
+
+⭐ Final Recommended Code
+class MyCircularQueue {
+
+
+    int data[];
+    int front = 0;
+    int rear = -1;
+    int size = 0;
+
+
+    public MyCircularQueue(int k) {
+        data = new int[k];
+    }
+
+
+    public boolean enQueue(int value) {
+
+
+        if (size == data.length) {
+            return false;
+        }
+
+
+        rear = (rear + 1) % data.length;
+
+
+        data[rear] = value;
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deQueue() {
+
+
+        if (size == 0) {
+            return false;
+        }
+
+
+        front = (front + 1) % data.length;
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int Front() {
+
+
+        return size == 0 ? -1 : data[front];
+    }
+
+
+    public int Rear() {
+
+
+        return size == 0 ? -1 : data[rear];
+    }
+
+
+    public boolean isEmpty() {
+
+
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+
+
+        return size == data.length;
+    }
+}
+🧠 Interview Notes
+
+Remember these four things:
+
+1. Queue follows FIFO
+Front → 10 20 30 ← Rear
+          ↓
+        FIFO
+2. Don't shift elements
+
+Instead of:
+
+deQueue → shift everything
+
+do:
+
+front = (front + 1) % capacity;
+3. Circular movement
+(index + 1) % capacity
+4. Track size
+isEmpty() → size == 0
+isFull()  → size == capacity
+Pattern
+622 Design Circular Queue
+          ↓
+     Fixed Array
+          ↓
+    front + rear
+          ↓
+        size
+          ↓
+       modulo
+          ↓
+All operations O(1)
+
+Best approach: Circular Array — O(1) time for every operation and O(K) space.
