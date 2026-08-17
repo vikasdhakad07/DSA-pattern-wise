@@ -1,0 +1,876 @@
+LeetCode 641 — Design Circular Deque
+
+From Brute Force → Most Optimal
+
+All approaches + code + explanation + dry run
+1. Problem Understanding
+
+A Deque (Double-Ended Queue) allows insertion and deletion from both ends.
+
+We need to implement:
+
+insertFront()
+insertLast()
+
+
+deleteFront()
+deleteLast()
+
+
+getFront()
+getRear()
+
+
+isEmpty()
+isFull()
+
+For a circular deque, when we reach the end of the array, we wrap around to the beginning.
+
+For example, capacity = 5:
+
+0 1 2 3 4
+↑       ↑
+front   rear
+
+After index 4, the next index is:
+
+(4 + 1) % 5 = 0
+
+And before index 0:
+
+(0 - 1 + 5) % 5 = 4
+
+Approach 1 — Simple Array / Shifting
+Idea
+
+Use a normal array.
+
+For:
+
+insertFront(value)
+
+we shift all existing elements one position to the right.
+
+Example:
+
+Before:
+
+
+[10, 20, 30, _, _]
+
+Insert 5 at front:
+
+[5, 10, 20, 30, _]
+
+Similarly, deletion from the front requires shifting elements left.
+
+Code
+class MyCircularDeque {
+        return true;
+    }
+
+
+    public boolean insertLast(int value) {
+
+
+        if (isFull()) {
+            return false;
+        }
+
+
+        deque[size] = value;
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deleteFront() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        // Shift elements left
+        for (int i = 0; i < size - 1; i++) {
+            deque[i] = deque[i + 1];
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public boolean deleteLast() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int getFront() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return deque[0];
+    }
+
+
+    public int getRear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return deque[size - 1];
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Complexity
+Operation	Time
+insertFront	O(K)
+insertLast	O(1)
+deleteFront	O(K)
+deleteLast	O(1)
+getFront	O(1)
+getRear	O(1)
+
+Where K is the deque capacity.
+
+Problem
+
+The major issue is shifting.
+
+We want:
+
+insertFront → O(1)
+deleteFront → O(1)
+
+So let's improve it.
+
+Approach 2 — Doubly Linked List
+
+A deque naturally fits a doubly linked list.
+
+Each node has:
+
+prev ← node → next
+
+We maintain:
+
+head
+tail
+
+Example:
+
+null ← 10 ⇄ 20 ⇄ 30 → null
+        ↑           ↑
+       head        tail
+
+Then:
+
+Insert Front
+5
+↓
+5 ⇄ 10 ⇄ 20 ⇄ 30
+Insert Last
+10 ⇄ 20 ⇄ 30 ⇄ 40
+Delete Front
+
+Remove head.
+
+Delete Last
+
+Remove tail.
+
+All these operations are O(1).
+
+Code
+class MyCircularDeque {
+        Node node = new Node(value);
+
+
+        if (isEmpty()) {
+            head = tail = node;
+        } else {
+            tail.next = node;
+            node.prev = tail;
+            tail = node;
+        }
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deleteFront() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        if (size == 1) {
+            head = tail = null;
+        } else {
+            head = head.next;
+            head.prev = null;
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public boolean deleteLast() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        if (size == 1) {
+            head = tail = null;
+        } else {
+            tail = tail.prev;
+            tail.next = null;
+        }
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int getFront() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return head.val;
+    }
+
+
+    public int getRear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return tail.val;
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Complexity
+insertFront  → O(1)
+insertLast   → O(1)
+deleteFront  → O(1)
+deleteLast   → O(1)
+getFront     → O(1)
+getRear      → O(1)
+
+But:
+
+Space = O(K)
+
+because we have K nodes plus pointers.
+
+Approach 3 — Circular Array ⭐
+
+This is the intended and most elegant approach for this problem.
+
+Instead of shifting elements, use a fixed-size circular array.
+
+We maintain:
+
+front
+rear
+size
+capacity
+
+The important formulas are:
+
+Move forward
+(index + 1) % capacity
+Move backward
+(index - 1 + capacity) % capacity
+
+The + capacity is important because Java's % can produce a negative result.
+
+For example:
+
+(0 - 1) % 5
+
+gives:
+
+-1
+
+Instead:
+
+(0 - 1 + 5) % 5
+
+gives:
+
+4
+Your Code
+
+Your approach is correct in concept, but there is one important Java bug in the constructor.
+
+You wrote:
+
+int front=0;
+int rear=k-1;
+int size=0;
+
+These create local variables instead of assigning the class fields.
+
+You need:
+
+front = 0;
+rear = k - 1;
+size = 0;
+
+or:
+
+this.front = 0;
+this.rear = k - 1;
+this.size = 0;
+Corrected Version of Your Code
+class MyCircularDeque {
+
+
+        dequeue[front] = value;
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean insertLast(int value) {
+
+
+        if (isFull()) {
+            return false;
+        }
+
+
+        dequeue[rear] = value;
+
+
+        rear = (rear + 1) % capacity;
+
+
+        size++;
+
+
+        return true;
+    }
+
+
+    public boolean deleteFront() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        front = (front + 1) % capacity;
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public boolean deleteLast() {
+
+
+        if (isEmpty()) {
+            return false;
+        }
+
+
+        rear = (rear - 1 + capacity) % capacity;
+
+
+        size--;
+
+
+        return true;
+    }
+
+
+    public int getFront() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return dequeue[front];
+    }
+
+
+    public int getRear() {
+
+
+        if (isEmpty()) {
+            return -1;
+        }
+
+
+        return dequeue[(rear - 1 + capacity) % capacity];
+    }
+
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
+
+
+    public boolean isFull() {
+        return size == capacity;
+    }
+}
+
+Understanding front and rear
+
+This implementation uses a slightly unusual but very useful convention:
+
+front
+ ↓
+first element
+
+while:
+
+rear
+ ↓
+position AFTER the last element
+
+So rear does not directly point to the last element.
+
+That's why:
+
+getRear()
+
+uses:
+
+(rear - 1 + capacity) % capacity
+Example
+
+Capacity:
+
+K = 5
+
+Initial:
+
+index:  0  1  2  3  4
+        .  .  .  .  .
+
+
+front = 0
+rear  = 4
+size  = 0
+
+Why rear = 4?
+
+Because rear represents the position where the next insertLast() will happen.
+
+insertLast(10)
+dequeue[rear] = 10;
+
+So:
+
+index:  0   1  2  3  4
+        .   .  .  .  10
+
+Then:
+
+rear = (rear + 1) % capacity;
+rear = (4 + 1) % 5
+     = 0
+
+Now:
+
+front = 0
+rear = 0
+size = 1
+
+The actual element is at:
+
+front = 0
+
+and the next rear insertion position is:
+
+0
+insertLast(20)
+
+Place at:
+
+dequeue[rear]
+
+which is index 0.
+
+index:  0   1  2  3  4
+       20   .  .  .  10
+
+Then:
+
+rear = 1
+
+Logical deque:
+
+10 → 20
+
+Even though physically the array looks like:
+
+20 . . . 10
+
+The circular structure determines the logical order.
+
+insertFront(5)
+
+Current:
+
+front = 0
+
+Move front backward:
+
+front = (front - 1 + capacity) % capacity;
+
+Therefore:
+
+front = (0 - 1 + 5) % 5
+      = 4
+
+Put:
+
+dequeue[4] = 5;
+
+Array:
+
+index:  0   1  2  3  4
+       20   .  .  .  5
+
+Logical order from front:
+
+5 → 10 → 20
+
+This is the beauty of the circular array.
+
+deleteFront()
+
+Current:
+
+front = 4
+
+Delete the element at 4.
+
+Move front:
+
+front = (front + 1) % capacity;
+
+Therefore:
+
+front = 0
+
+Now:
+
+10 → 20
+deleteLast()
+
+Remember:
+
+rear
+
+points to the next available position, not the last element.
+
+So first move backward:
+
+rear = (rear - 1 + capacity) % capacity;
+
+Then the new rear position represents the removed last element.
+
+Why size Is Important
+
+Circular arrays often have a problem:
+
+front == rear
+
+could mean either:
+
+empty
+
+or:
+
+full
+
+depending on the implementation.
+
+We avoid this ambiguity by maintaining:
+
+size
+
+Therefore:
+
+isEmpty()
+
+is simply:
+
+return size == 0;
+
+And:
+
+isFull()
+
+is:
+
+return size == capacity;
+
+This makes the implementation much easier to reason about.
+
+Dry Run
+
+Let's execute:
+
+k = 3
+
+
+insertLast(1)
+insertLast(2)
+insertFront(3)
+getRear()
+deleteLast()
+insertFront(4)
+getFront()
+Initial
+Array:
+
+
+[ _  _  _ ]
+
+
+front = 0
+rear = 2
+size = 0
+insertLast(1)
+
+Put at rear = 2:
+
+[ _  _  1 ]
+
+Then:
+
+rear = (2 + 1) % 3 = 0
+size = 1
+
+Logical:
+
+1
+insertLast(2)
+
+Put at index 0:
+
+[ 2  _  1 ]
+
+Then:
+
+rear = 1
+size = 2
+
+Logical:
+
+1 → 2
+insertFront(3)
+
+Move:
+
+front = (0 - 1 + 3) % 3
+      = 2
+
+Put 3:
+
+[ 2  _  3 ]
+
+Now:
+
+front = 2
+rear = 1
+size = 3
+
+Logical order:
+
+3 → 1 → 2
+
+Deque is full.
+
+getRear()
+
+rear = 1.
+
+Last element is:
+
+(rear - 1 + capacity) % capacity
+
+
+= (1 - 1 + 3) % 3
+
+
+= 0
+
+Therefore:
+
+dequeue[0] = 2
+
+Answer:
+
+2
+deleteLast()
+
+Move:
+
+rear = (1 - 1 + 3) % 3
+     = 0
+
+Size:
+
+size = 2
+
+Logical deque:
+
+3 → 1
+insertFront(4)
+
+Current:
+
+front = 2
+
+Move backward:
+
+front = (2 - 1 + 3) % 3
+      = 1
+
+Put:
+
+dequeue[1] = 4
+
+Array:
+
+[ 2  4  3 ]
+
+Logical deque:
+
+4 → 3 → 1
+getFront()
+dequeue[front]
+dequeue[1] = 4
+
+Answer:
+
+4
+Complexity Comparison
+Approach	insertFront	insertLast	deleteFront	deleteLast	Space
+Array + shifting	O(K)	O(1)	O(K)	O(1)	O(K)
+Doubly Linked List	O(1)	O(1)	O(1)	O(1)	O(K)
+Circular Array	O(1)	O(1)	O(1)	O(1)	O(K)
+⭐ Final Recommended Solution
+
+For LeetCode 641, use the Circular Array + front + rear + size approach.
+
+The key formulas to memorize:
+
+Move Front Forward
+front = (front + 1) % capacity;
+Move Front Backward
+front = (front - 1 + capacity) % capacity;
+Move Rear Forward
+rear = (rear + 1) % capacity;
+Move Rear Backward
+rear = (rear - 1 + capacity) % capacity;
+
+And remember this implementation's convention:
+
+front → first element
+rear  → position after last element
+
+Therefore:
+
+getFront() = dequeue[front]
+
+while:
+
+getRear() = dequeue[(rear - 1 + capacity) % capacity]
+Interview takeaway
+641 Design Circular Deque
+        ↓
+Circular Array
+        ↓
+front + rear + size
+        ↓
+Modulo (%) for wrap-around
+        ↓
+O(1) for every operation
+
+One correction to your submitted code is essential: in the constructor, use front = 0, rear = k - 1, and size = 0; otherwise Java creates local variables and the instance fields remain at their default values.
