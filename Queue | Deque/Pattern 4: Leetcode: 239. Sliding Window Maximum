@@ -1,0 +1,817 @@
+239. Sliding Window Maximum
+
+This problem is a classic example where we can move from Brute Force → Better → Optimal Monotonic Deque.
+
+Problem
+
+Given an integer array nums and an integer k, find the maximum element in every contiguous window of size k.
+
+Example:
+
+nums = [1,3,-1,-3,5,3,6,7]
+k = 3
+
+
+Windows:
+[1, 3, -1]  → 3
+[3, -1, -3] → 3
+[-1,-3, 5]  → 5
+[-3, 5, 3]  → 5
+[5, 3, 6]   → 6
+[3, 6, 7]   → 7
+
+
+Answer = [3,3,5,5,6,7]
+
+Approach 1: Brute Force
+Idea
+
+For every possible window:
+
+Start at index i.
+Look at the next k elements.
+Find their maximum.
+Store it.
+
+For example:
+
+nums = [1,3,-1,-3,5,3,6,7]
+k = 3
+
+
+i = 0 → [1,3,-1] → max = 3
+i = 1 → [3,-1,-3] → max = 3
+i = 2 → [-1,-3,5] → max = 5
+...
+
+Code
+class Solution {
+    public int[] maxSlidingWindow(int[] nums, int k) {
+        int n = nums.length;
+
+
+        int[] ans = new int[n - k + 1];
+        int index = 0;
+
+
+        for (int i = 0; i <= n - k; i++) {
+
+
+            int max = Integer.MIN_VALUE;
+
+
+            for (int j = i; j < i + k; j++) {
+                max = Math.max(max, nums[j]);
+            }
+
+
+            ans[index++] = max;
+        }
+
+
+        return ans;
+    }
+}
+
+Dry Run
+nums = [1,3,-1,-3,5,3,6,7]
+k = 3
+
+First window:
+
+i = 0
+
+
+j = 0 → max = 1
+j = 1 → max = 3
+j = 2 → max = 3
+
+
+answer = [3]
+
+Second window:
+
+i = 1
+
+
+[3,-1,-3]
+
+
+max = 3
+
+
+answer = [3,3]
+
+Continue:
+
+[-1,-3,5] → 5
+[-3,5,3]  → 5
+[5,3,6]   → 6
+[3,6,7]   → 7
+
+
+answer = [3,3,5,5,6,7]
+Complexity
+
+There are approximately n windows, and for every window we scan k elements.
+
+Time  = O(n × k)
+Space = O(n)
+
+The O(n) space is for the output array.
+
+Problem
+
+The biggest issue is that we repeatedly inspect the same elements.
+
+For example:
+
+[1,3,-1]
+   [3,-1,-3]
+      [-1,-3,5]
+
+3 and -1 are repeatedly examined.
+
+We need to avoid unnecessary work.
+
+Approach 2: Using a Max Heap / Priority Queue
+
+A better idea is to maintain the maximum element using a max heap.
+
+Java's PriorityQueue is a min heap by default, so we can create a max heap using:
+
+PriorityQueue<int[]> pq =
+    new PriorityQueue<>((a, b) -> b[0] - a[0]);
+
+We store:
+
+[value, index]
+
+Why do we need the index?
+
+Because when an element leaves the sliding window, we need to know whether it is outside the current window.
+
+Code
+class Solution {
+    public int[] maxSlidingWindow(int[] nums, int k) {
+
+
+        int n = nums.length;
+        int[] ans = new int[n - k + 1];
+
+
+        PriorityQueue<int[]> pq =
+            new PriorityQueue<>((a, b) -> b[0] - a[0]);
+
+
+        // Add first k elements
+        for (int i = 0; i < k; i++) {
+            pq.offer(new int[]{nums[i], i});
+        }
+
+
+        ans[0] = pq.peek()[0];
+
+
+        int index = 1;
+
+
+        for (int i = k; i < n; i++) {
+
+
+            // Add current element
+            pq.offer(new int[]{nums[i], i});
+
+
+            // Remove elements outside the window
+            while (pq.peek()[1] <= i - k) {
+                pq.poll();
+            }
+
+
+            // Maximum
+            ans[index++] = pq.peek()[0];
+        }
+
+
+        return ans;
+    }
+}
+
+Dry Run
+nums = [1,3,-1,-3,5,3,6,7]
+k = 3
+
+Initially:
+
+Window = [1,3,-1]
+
+
+Heap:
+3
+1
+-1
+
+
+max = 3
+
+Move window:
+
+Window = [3,-1,-3]
+
+Add -3.
+
+The maximum remains:
+
+3
+
+Next:
+
+Window = [-1,-3,5]
+
+Add 5.
+
+Heap top becomes:
+
+5
+
+So:
+
+answer = [3,3,5]
+
+Continue:
+
+[-3,5,3] → 5
+[5,3,6]  → 6
+[3,6,7]  → 7
+
+
+answer = [3,3,5,5,6,7]
+Complexity
+
+Each insertion/removal from the heap costs O(log k).
+
+Time  = O(n log k)
+Space = O(k)
+
+This is better than O(nk), but we can do even better.
+
+Approach 3: Optimal — Monotonic Deque
+
+This is the standard optimal solution.
+
+The key question is:
+
+Do we really need every element in the window?
+
+Suppose:
+
+[1, 3, -1]
+
+We're looking for the maximum.
+
+Since 3 > 1, once 3 enters the window, 1 can never become the maximum while 3 is present.
+
+So 1 is useless.
+
+Similarly, if we have:
+
+[3, -1, 5]
+
+When 5 arrives:
+
+5 > -1
+5 > 3
+
+Both -1 and 3 can be removed because 5 is newer and larger.
+
+This gives us the central idea.
+
+Maintain a decreasing deque
+
+The deque stores indices, not values.
+
+The values corresponding to those indices are always in decreasing order.
+
+For example:
+
+nums = [1,3,-1]
+
+
+Deque values:
+
+
+[3, -1]
+
+Notice:
+
+3 >= -1
+
+The front always contains the index of the current maximum.
+
+Why Store Indices?
+
+We need two pieces of information:
+
+1. Value
+
+To compare elements:
+
+nums[q.peekLast()] <= nums[i]
+2. Index
+
+To determine whether an element has left the window:
+
+q.peek() < i - k + 1
+
+Therefore, we store indices.
+
+The Three Important Operations
+
+For every i, we perform three steps.
+
+Step 1: Remove expired elements
+
+Current window starts at:
+
+i - k + 1
+
+Therefore, any index smaller than this is outside the window.
+
+while (!q.isEmpty() && q.peek() < i - k + 1) {
+    q.poll();
+}
+
+Example:
+
+i = 4
+k = 3
+
+
+window = [2,3,4]
+
+
+window start = 4 - 3 + 1
+             = 2
+
+So indices:
+
+0, 1
+
+are expired.
+
+Step 2: Remove smaller elements from the back
+
+Suppose the deque represents:
+
+[5, 3, 2]
+
+and the new element is:
+
+6
+
+Since:
+
+6 > 2
+6 > 3
+6 > 5
+
+all those elements can be removed.
+
+Why?
+
+Because 6:
+
+is larger
+is newer
+will remain in the window longer
+
+Therefore, none of those smaller elements can ever become the maximum again before 6 leaves.
+
+Code:
+
+while (!q.isEmpty() && nums[q.peekLast()] <= nums[i]) {
+    q.pollLast();
+}
+Step 3: Add current index
+q.offer(i);
+
+Now the deque remains monotonically decreasing by value.
+
+Your Code — Optimal Solution
+
+Your code is exactly the standard O(n) monotonic deque solution:
+
+class Solution {
+    public int[] maxSlidingWindow(int[] nums, int k) {
+        int n=nums.length;
+        int ans[]=new int[n-k+1];
+        Deque<Integer> q=new ArrayDeque<>();
+        int ind=0;
+
+
+        for(int i=0;i<n;i++){
+
+
+            // Remove indices which are outside the window
+            while(!q.isEmpty()&&q.peek()<i-k+1){
+                q.poll();
+            }
+
+
+            // Remove smaller elements from the back
+            while(!q.isEmpty()&&nums[q.peekLast()]<=nums[i]){
+                q.pollLast();
+            }
+
+
+            // Add current index
+            q.offer(i);
+
+
+            // Start storing answers when first window is complete
+            if(i>=k-1){
+                ans[ind++]=nums[q.peek()];
+            }
+        }
+
+
+        return ans;
+    }
+}
+Detailed Dry Run
+
+Let's take:
+
+nums = [1,3,-1,-3,5,3,6,7]
+k = 3
+
+We'll track:
+
+i
+nums[i]
+deque indices
+deque values
+answer
+i = 0
+nums[0] = 1
+
+Deque is empty.
+
+Add 0.
+
+Deque indices = [0]
+Deque values  = [1]
+
+Window isn't complete yet because:
+
+i < k - 1
+0 < 2
+i = 1
+nums[1] = 3
+
+Remove expired:
+
+none
+
+Remove smaller elements:
+
+nums[0] = 1 <= 3
+
+Remove index 0.
+
+Add index 1.
+
+Deque indices = [1]
+Deque values  = [3]
+
+Still no complete window.
+
+i = 2
+nums[2] = -1
+
+No expired elements.
+
+Check from back:
+
+nums[1] = 3 <= -1 ? No
+
+Add 2.
+
+Deque indices = [1,2]
+Deque values  = [3,-1]
+
+Now:
+
+i >= k-1
+2 >= 2
+
+So we have our first window:
+
+[1,3,-1]
+
+Maximum is at the front:
+
+nums[1] = 3
+
+Answer:
+
+[3]
+i = 3
+nums[3] = -3
+
+Current window:
+
+[3,-1,-3]
+
+Check expired:
+
+window start = 3 - 3 + 1
+             = 1
+
+Deque:
+
+[1,2]
+
+Both are valid.
+
+Check smaller elements:
+
+nums[2] = -1 <= -3 ? No
+
+Add 3.
+
+Deque indices = [1,2,3]
+Deque values  = [3,-1,-3]
+
+Maximum:
+
+nums[1] = 3
+
+Answer:
+
+[3,3]
+i = 4
+nums[4] = 5
+
+Current window:
+
+[-1,-3,5]
+
+First remove expired indices.
+
+Window starts at:
+
+4 - 3 + 1 = 2
+
+Index 1 is expired:
+
+deque = [2,3]
+
+Now remove smaller values from back:
+
+nums[3] = -3 <= 5
+
+Remove 3.
+
+Then:
+
+nums[2] = -1 <= 5
+
+Remove 2.
+
+Deque becomes empty.
+
+Add 4.
+
+Deque = [4]
+Values = [5]
+
+Maximum:
+
+5
+
+Answer:
+
+[3,3,5]
+i = 5
+nums[5] = 3
+
+Deque:
+
+[4]
+
+5 is not expired.
+
+Compare:
+
+nums[4] = 5 <= 3 ? No
+
+Add 5.
+
+Deque values = [5,3]
+
+Maximum:
+
+5
+
+Answer:
+
+[3,3,5,5]
+i = 6
+nums[6] = 6
+
+Window:
+
+[5,3,6]
+
+Deque currently:
+
+[4,5]
+
+Remove smaller values:
+
+5 <= 6 → remove
+3 <= 6 → remove
+
+Add 6.
+
+Deque = [6]
+
+Maximum:
+
+6
+
+Answer:
+
+[3,3,5,5,6]
+i = 7
+nums[7] = 7
+
+Window:
+
+[3,6,7]
+
+Remove:
+
+6 <= 7
+
+Then:
+
+7
+
+Add index 7.
+
+Deque:
+
+[7]
+
+Maximum:
+
+7
+
+Final answer:
+
+[3,3,5,5,6,7]
+Why Is the Deque O(n)?
+
+At first glance, we have while loops inside a for loop.
+
+You might think:
+
+O(n²)
+
+But that's not the case.
+
+Every index is:
+
+added to the deque once
+removed from the deque at most once
+
+For example:
+
+Index 1 → added → eventually removed
+Index 2 → added → eventually removed
+Index 3 → added → eventually removed
+...
+
+An element cannot be removed repeatedly.
+
+Therefore, across the entire algorithm, the total number of deque operations is at most proportional to 2n.
+
+Hence:
+
+Time = O(n)
+
+And the deque contains at most k elements:
+
+Space = O(k)
+
+Output array requires:
+
+O(n-k+1)
+
+additional space.
+
+Comparison of All Approaches
+Approach	Idea	Time	Extra Space
+Brute Force	Scan every window	O(nk)	O(1)
+Max Heap	Maintain maximum with heap	O(n log k)	O(k)
+Monotonic Deque	Maintain decreasing candidates	O(n)	O(k)
+The Most Important Intuition
+
+Remember this rule:
+
+If a new element is greater than an element behind it, that smaller element can never be the maximum again.
+
+For example:
+
+Deque:
+
+
+[8, 6, 4, 2]
+
+New element:
+
+7
+
+Remove:
+
+2
+4
+
+because:
+
+7 > 2
+7 > 4
+
+But stop at 8:
+
+[8, 6, 7]
+
+Actually, continue from the back:
+
+2 removed
+4 removed
+6 removed
+
+because 7 > 6.
+
+Final:
+
+[8, 7]
+
+Now 8 is still larger than 7, so the deque remains decreasing.
+
+This is the monotonic decreasing deque.
+
+One Small Detail in Your Code
+
+You used:
+
+while(!q.isEmpty()&&nums[q.peekLast()]<=nums[i]){
+    q.pollLast();
+}
+
+The <= is intentional.
+
+Suppose:
+
+nums = [5, 5]
+
+When the second 5 arrives, we remove the older 5.
+
+Why?
+
+Because both have the same value, but the newer one has a larger index, so it will stay in the sliding window longer.
+
+Thus:
+
+<=
+
+is generally preferable here.
+
+Interview Explanation
+
+If the interviewer asks "Explain your optimal approach", you can say:
+
+I use a monotonic decreasing deque that stores indices. The front of the deque always contains the index of the maximum element of the current window. For every new element, I first remove indices that are outside the current window. Then I remove elements from the back whose values are smaller than or equal to the current element, because they can never become the maximum while the current element is present. Finally, I add the current index. Once the first window is complete, the value at the front is the maximum. Each index is inserted and removed at most once, giving an overall time complexity of O(n) and auxiliary space of O(k).
+
+Pattern to remember
+Sliding Window Maximum
+        ↓
+Need maximum
+        ↓
+Can smaller elements become useful later?
+        ↓
+No, if a larger newer element exists
+        ↓
+Remove them
+        ↓
+Monotonic Deque
+        ↓
+Front = Maximum
+        ↓
+O(n)
+
+Final optimal code: your provided code is already an O(n) optimal solution; the main thing to master is why the two while loops allow the algorithm to stay linear.
