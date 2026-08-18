@@ -1,0 +1,48 @@
+ Pattern 4: Deque-Based Optimizations (Monotonic Deque)
+The most high-powered Queue pattern. Keeps elements inside the Deque sorted in strictly monotonic order while allowing elements to be dropped from both ends in $O(1)$ time.
+1. The Concept:
+When finding maximums or minimums over dynamic ranges:
+1. Remove from Tail (Back): Pop elements off the back if they are worse (e.g., smaller) than the incoming element, because they will never be selected again.
+2. Remove from Head (Front): Pop the front element if its index falls outside the active sliding window boundary.
+
+2. Java Blueprint (Sliding Window Maximum)
+
+Java:
+
+public int[] maxSlidingWindow(int[] nums, int k) {
+    if (nums == null || nums.length == 0) return new int[0];
+    
+    int n = nums.length;
+    int[] result = new int[n - k + 1];
+    int resultIdx = 0;
+    
+    // Deque stores INDICES, not values
+    Deque<Integer> deque = new ArrayDeque<>();
+    
+    for (int i = 0; i < nums.length; i++) {
+        // 1. Out-of-bounds check: Remove elements at front if outside window [i - k + 1, i]
+        if (!deque.isEmpty() && deque.peekFirst() < i - k + 1) {
+            deque.pollFirst();
+        }
+        
+        // 2. Maintain Monotonic Decreasing Order: Pop elements from back if smaller than nums[i]
+        while (!deque.isEmpty() && nums[deque.peekLast()] < nums[i]) {
+            deque.pollLast();
+        }
+        
+        // 3. Add current index to back
+        deque.offerLast(i);
+        
+        // 4. Record result once first window size 'k' is reached
+        if (i >= k - 1) {
+            result[resultIdx++] = nums[deque.peekFirst()]; // Maximum is always at the front!
+        }
+    }
+    return result;
+}
+
+3. Essential Interview Questions
+Hard: LeetCode 239 - Sliding Window Maximum (The exact template above)
+Hard: LeetCode 862 - Shortest Subarray with Sum at Least K: Uses a Monotonic Deque combined with Prefix Sums. Maintains a monotonic increasing deque of prefix sums to find the shortest sub-segment matching the sum condition in $O(N)$ time.
+Hard: LeetCode 1425 - Constrained Subsequence Sum: Dynamic Programming optimized by a Monotonic Deque.
+Medium: LeetCode 1696 - Jump Game VI: DP transition $dp[i] = nums[i] + \max(dp[i-k \dots i-1])$ optimized using a Monotonic Deque to reduce time complexity from $O(N \cdot K)$ down to $O(N)$.
