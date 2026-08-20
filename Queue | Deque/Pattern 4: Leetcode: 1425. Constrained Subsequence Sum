@@ -1,0 +1,852 @@
+LeetCode 1425 — Constrained Subsequence Sum
+From Brute Force → Most Optimal
+All approaches + code + explanation + dry run
+1. Problem Understanding
+
+Given:
+
+nums[]
+k
+
+Choose a subsequence such that for every two consecutive selected elements:
+
+index difference <= k
+
+We need to maximize the sum.
+
+Example
+nums = [10, 2, -10, 5, 20]
+k = 2
+
+One optimal subsequence is:
+
+10 → 2 → 5 → 20
+
+Sum:
+
+10 + 2 + 5 + 20 = 37
+
+Answer:
+
+37
+Key DP Observation
+
+Define:
+
+dp[i] = maximum sum of a valid subsequence ending at i
+
+At index i, we have two choices:
+
+Start a new subsequence
+dp[i] = nums[i]
+Extend a previous subsequence
+
+We can come from any index:
+
+i-k ... i-1
+
+So:
+
+dp[i] = nums[i] + max(0, dp[i-k ... i-1])
+
+Therefore:
+
+dp[i] = nums[i] + max(0, maximum dp in previous k positions)
+
+The entire problem becomes:
+
+Efficiently find the maximum DP value in a sliding window of size k.
+
+Approach 1 — Brute Force Recursion
+Idea
+
+At every index, try all possible previous indices within distance k.
+
+For every element:
+
+dp[i] = nums[i]
+
+
+for j = i-1 ... i-k:
+    dp[i] = max(dp[i], nums[i] + dp[j])
+
+This directly follows the recurrence.
+
+Code
+class Solution {
+    public int constrainedSubsetSum(int[] nums, int k) {
+
+
+        int n = nums.length;
+        int[] dp = new int[n];
+
+
+        int answer = nums[0];
+
+
+        for (int i = 0; i < n; i++) {
+
+
+            dp[i] = nums[i];
+
+
+            for (int j = Math.max(0, i - k); j < i; j++) {
+
+
+                dp[i] = Math.max(
+                    dp[i],
+                    nums[i] + dp[j]
+                );
+            }
+
+
+            answer = Math.max(answer, dp[i]);
+        }
+
+
+        return answer;
+    }
+}
+
+Although this is technically a DP solution, it is the straightforward/brute-force DP because we scan all k previous states.
+
+Complexity
+
+For every index, we may check k previous elements.
+
+Time  = O(n × k)
+Space = O(n)
+
+If:
+
+n = 10^5
+k = 10^5
+
+this can become too slow.
+
+Approach 2 — DP + Priority Queue / Max Heap
+
+The problem with Approach 1 is:
+
+max(dp[i-k ... i-1])
+
+takes O(k) if we scan the window.
+
+Instead, maintain the maximum DP value using a max heap.
+
+The heap stores:
+
+(dp value, index)
+
+At index i:
+
+Remove elements outside the window.
+Take the maximum DP from the heap.
+Calculate dp[i].
+Insert the new DP value.
+Code
+class Solution {
+    public int constrainedSubsetSum(int[] nums, int k) {
+
+
+        int n = nums.length;
+
+
+        int[] dp = new int[n];
+
+
+        PriorityQueue<int[]> pq =
+            new PriorityQueue<>(
+                (a, b) -> Integer.compare(b[0], a[0])
+            );
+
+
+        int answer = Integer.MIN_VALUE;
+
+
+        for (int i = 0; i < n; i++) {
+
+
+            // Remove indices outside the window
+            while (!pq.isEmpty() &&
+                   pq.peek()[1] < i - k) {
+
+
+                pq.poll();
+            }
+
+
+            // Best previous dp
+            if (!pq.isEmpty() && pq.peek()[0] > 0) {
+                dp[i] = nums[i] + pq.peek()[0];
+            } else {
+                dp[i] = nums[i];
+            }
+
+
+            answer = Math.max(answer, dp[i]);
+
+
+            pq.offer(new int[]{dp[i], i});
+        }
+
+
+        return answer;
+    }
+}
+
+Complexity
+
+Each element enters and leaves the heap once.
+
+Heap operation:
+
+O(log n)
+
+Therefore:
+
+Time  = O(n log n)
+Space = O(n)
+
+Better than O(nk), but we can do even better.
+
+Approach 3 — DP + Monotonic Deque ⭐
+
+This is the optimal approach.
+
+We need:
+
+maximum dp value
+
+inside the last k positions.
+
+Instead of a heap, maintain a monotonic decreasing deque.
+
+The deque contains DP values in decreasing order:
+
+largest
+   ↓
+[20, 15, 10, 5]
+
+Therefore:
+
+deque.front()
+
+is always the maximum DP value in the valid window.
+
+Why Can We Remove Smaller Values?
+
+Suppose the deque contains:
+
+[20, 15, 10]
+
+and we calculate:
+
+dp[i] = 25
+
+Then:
+
+[20, 15, 10]
+
+are all smaller than 25.
+
+Since 25 is newer and larger, those smaller values can never become the maximum before 25 expires.
+
+So remove them:
+
+[20, 15, 10]
+        ↓
+[25]
+
+This is the monotonic deque trick.
+
+Your Code
+
+Your solution uses an especially clever optimization: it stores the DP values directly back into A.
+
+class Solution {
+    public int constrainedSubsetSum(int[] A, int k) {
+
+
+        int res = A[0];
+
+
+        Deque<Integer> q = new ArrayDeque<>();
+
+
+        for (int i = 0; i < A.length; ++i) {
+
+
+            A[i] += !q.isEmpty() ? q.peek() : 0;
+
+
+            res = Math.max(res, A[i]);
+
+
+            while (!q.isEmpty() && A[i] > q.peekLast()) {
+                q.pollLast();
+            }
+
+
+            if (A[i] > 0) {
+                q.offer(A[i]);
+            }
+
+
+            if (i >= k &&
+                !q.isEmpty() &&
+                q.peek() == A[i - k]) {
+
+
+                q.poll();
+            }
+        }
+
+
+        return res;
+    }
+}
+
+Understanding Your Code
+
+There are four important operations.
+
+1. Add the best previous DP
+A[i] += !q.isEmpty() ? q.peek() : 0;
+
+Because:
+
+q.peek()
+
+is the maximum DP value among the previous valid positions.
+
+Therefore:
+
+A[i] = A[i] + max(previous DP)
+
+If the deque is empty:
+
+A[i] = A[i]
+
+This also automatically handles starting a new subsequence.
+
+2. Update answer
+res = Math.max(res, A[i]);
+
+We don't necessarily have to end at the final index.
+
+So every A[i] could potentially be the answer.
+
+3. Maintain decreasing deque
+while (!q.isEmpty() && A[i] > q.peekLast())
+    q.pollLast();
+
+Suppose:
+
+Deque:
+[20, 15, 10]
+
+and:
+
+A[i] = 25
+
+Then:
+
+25 > 10 → remove 10
+25 > 15 → remove 15
+25 > 20 → remove 20
+
+Deque becomes:
+
+[25]
+
+Thus the deque remains monotonically decreasing.
+
+4. Keep only positive DP values
+if (A[i] > 0)
+    q.offer(A[i]);
+
+Why?
+
+The recurrence is:
+
+dp[i] = nums[i] + max(0, previous dp)
+
+If the best previous DP is negative, using it would make the sum worse.
+
+Therefore we simply start a new subsequence.
+
+Example:
+
+nums[i] = 5
+best previous dp = -10
+
+We don't want:
+
+5 + (-10) = -5
+
+We choose:
+
+5
+
+That's why negative DP values don't need to enter the deque.
+
+5. Remove Expired Elements
+if (i >= k &&
+    !q.isEmpty() &&
+    q.peek() == A[i - k])
+    q.poll();
+
+The valid previous indices for i are:
+
+[i-k, i-1]
+
+When we move to the next index, an old value can leave the window.
+
+For example:
+
+i = 5
+k = 3
+
+Valid indices:
+
+2, 3, 4
+
+Index:
+
+5 - 3 = 2
+
+will eventually expire.
+
+Dry Run
+
+Use:
+
+nums = [10, 2, -10, 5, 20]
+k = 2
+
+Expected answer:
+
+37
+
+We'll track:
+
+i
+A[i] / dp[i]
+Deque
+res
+i = 0
+A[0] = 10
+
+Deque is empty.
+
+So:
+
+dp[0] = 10
+
+Answer:
+
+res = 10
+
+Add positive value:
+
+Deque = [10]
+i = 1
+
+Current:
+
+A[1] = 2
+
+Deque front:
+
+10
+
+So:
+
+A[1] = 2 + 10
+     = 12
+
+Answer:
+
+res = 12
+
+Now maintain decreasing order:
+
+12 > 10
+
+Remove 10.
+
+Deque:
+
+[12]
+i = 2
+
+Current:
+
+A[2] = -10
+
+Deque front:
+
+12
+
+Therefore:
+
+A[2] = -10 + 12
+     = 2
+
+Answer remains:
+
+12
+
+Now:
+
+2 > 12
+
+false.
+
+Add 2:
+
+Deque:
+[12, 2]
+
+Now index 0 is outside the window for i = 2 because:
+
+i - k = 0
+
+But the deque front is 12, which is A[1], not A[0].
+
+So nothing is removed.
+
+i = 3
+
+Current:
+
+A[3] = 5
+
+Best previous:
+
+Deque front = 12
+
+Therefore:
+
+A[3] = 5 + 12
+     = 17
+
+Answer:
+
+res = 17
+
+Now remove smaller values:
+
+17 > 2 → remove 2
+17 > 12 → remove 12
+
+Deque:
+
+[17]
+i = 4
+
+Current:
+
+A[4] = 20
+
+Best previous:
+
+17
+
+Therefore:
+
+A[4] = 20 + 17
+     = 37
+
+Answer:
+
+res = 37
+
+Now:
+
+37 > 17
+
+Remove 17.
+
+Deque:
+
+[37]
+
+Final:
+
+answer = 37
+DP Table
+
+Conceptually, the DP values are:
+
+nums:  10    2   -10    5    20
+        ↓    ↓    ↓     ↓     ↓
+dp:    10   12    2    17    37
+
+The optimal subsequence is:
+
+10 → 2 → 5 → 20
+
+Sum:
+
+10 + 2 + 5 + 20 = 37
+Why the Deque Gives O(n)
+
+Every DP value:
+
+1. enters the deque at most once
+2. is removed from the back at most once
+3. is removed from the front at most once
+
+Therefore total deque operations are linear.
+
+O(n) + O(n) + O(n)
+= O(n)
+
+Approach 4 — DP + Segment Tree
+
+Another possible solution is to maintain range maximum queries using a segment tree.
+
+For each i, query:
+
+max(dp[i-k ... i-1])
+
+Then:
+
+dp[i] = nums[i] + max(0, rangeMaximum)
+Code
+class Solution {
+
+
+    int[] tree;
+    int n;
+
+
+    void update(int node, int left, int right,
+                int index, int value) {
+
+
+        if (left == right) {
+            tree[node] = value;
+            return;
+        }
+
+
+        int mid = left + (right - left) / 2;
+
+
+        if (index <= mid) {
+            update(node * 2, left, mid, index, value);
+        } else {
+            update(node * 2 + 1, mid + 1, right, index, value);
+        }
+
+
+        tree[node] = Math.max(
+            tree[node * 2],
+            tree[node * 2 + 1]
+        );
+    }
+
+
+    int query(int node, int left, int right,
+              int ql, int qr) {
+
+
+        if (ql > right || qr < left) {
+            return Integer.MIN_VALUE;
+        }
+
+
+        if (ql <= left && right <= qr) {
+            return tree[node];
+        }
+
+
+        int mid = left + (right - left) / 2;
+
+
+        return Math.max(
+            query(node * 2, left, mid, ql, qr),
+            query(node * 2 + 1, mid + 1, right, ql, qr)
+        );
+    }
+
+
+    public int constrainedSubsetSum(int[] nums, int k) {
+
+
+        n = nums.length;
+        tree = new int[4 * n];
+
+
+        int[] dp = new int[n];
+
+
+        int answer = Integer.MIN_VALUE;
+
+
+        for (int i = 0; i < n; i++) {
+
+
+            int best = Integer.MIN_VALUE;
+
+
+            if (i > 0) {
+                int left = Math.max(0, i - k);
+                int right = i - 1;
+
+
+                best = query(
+                    1, 0, n - 1,
+                    left, right
+                );
+            }
+
+
+            dp[i] = nums[i];
+
+
+            if (best > 0) {
+                dp[i] += best;
+            }
+
+
+            update(
+                1, 0, n - 1,
+                i, dp[i]
+            );
+
+
+            answer = Math.max(answer, dp[i]);
+        }
+
+
+        return answer;
+    }
+}
+
+Complexity
+
+Range maximum:
+
+O(log n)
+
+Update:
+
+O(log n)
+
+For n elements:
+
+Time  = O(n log n)
+Space = O(n)
+
+It works, but the monotonic deque is simpler and faster.
+
+Complete Comparison
+Approach	Idea	Time	Space
+1. Brute Force DP	Check previous k states	O(nk)	O(n)
+2. Max Heap	Sliding-window maximum with heap	O(n log n)	O(n)
+3. Segment Tree	Range maximum query	O(n log n)	O(n)
+4. Monotonic Deque ⭐	Maintain maximum of last k DP values	O(n)	O(n)
+⭐ Most Optimal Solution
+
+Your code is the best approach:
+
+class Solution {
+    public int constrainedSubsetSum(int[] A, int k) {
+
+
+        int res = A[0];
+
+
+        Deque<Integer> q = new ArrayDeque<>();
+
+
+        for (int i = 0; i < A.length; ++i) {
+
+
+            // Add the best previous DP value
+            A[i] += !q.isEmpty() ? q.peek() : 0;
+
+
+            // Update global maximum
+            res = Math.max(res, A[i]);
+
+
+            // Maintain decreasing deque
+            while (!q.isEmpty() && A[i] > q.peekLast()) {
+                q.pollLast();
+            }
+
+
+            // Only positive DP values are useful
+            if (A[i] > 0) {
+                q.offer(A[i]);
+            }
+
+
+            // Remove expired value
+            if (i >= k &&
+                !q.isEmpty() &&
+                q.peek() == A[i - k]) {
+
+
+                q.poll();
+            }
+        }
+
+
+        return res;
+    }
+}
+
+⚠️ One Important Point About This Code
+
+This solution modifies the input array A.
+
+For example:
+
+A = [10, 2, -10, 5, 20]
+
+eventually becomes:
+
+A = [10, 12, 2, 17, 37]
+
+That's intentional: the array is being reused as the dp array.
+
+If you don't want to modify the input, use a separate dp[] array.
+
+🧠 Interview Pattern to Remember
+
+This problem belongs to:
+
+DP + Sliding Window Maximum
+
+The progression is:
+
+dp[i]
+ =
+nums[i] + max(0, dp[i-k ... i-1])
+
+Then:
+
+Need maximum in sliding window
+             ↓
+         Max Heap
+             ↓
+      Monotonic Deque
+             ↓
+           O(n)
+The key deque pattern:
+// Maximum is always at front
+q.peek()
+// Remove smaller useless values
+while (!q.isEmpty() && current > q.peekLast())
+    q.pollLast();
+// Remove expired values
+if (i >= k && q.peek() == expired)
+    q.poll();
+
+Final optimal complexity: O(n) time and O(n) space.
