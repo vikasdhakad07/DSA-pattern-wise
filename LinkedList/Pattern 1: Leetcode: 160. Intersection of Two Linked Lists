@@ -1,0 +1,616 @@
+LeetCode 160 — Intersection of Two Linked Lists
+5
+Problem
+
+Given two singly linked lists, return the node where they intersect.
+
+If they do not intersect, return:
+
+null
+Important
+
+Intersection means the same node/reference, not merely the same value.
+
+For example:
+
+A:  4 → 1
+          ↘
+            8 → 4 → 5
+          ↗
+B:  5 → 6 → 1
+
+The intersection node is the actual node containing 8.
+
+Approach 1 — Brute Force
+Idea
+
+For every node in List A, traverse the entire List B and check whether they are the same node.
+
+if (a == b)
+
+Not:
+
+if (a.val == b.val)
+
+because two different nodes can have the same value.
+
+Code
+
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+
+        ListNode a = headA;
+
+        while (a != null) {
+
+            ListNode b = headB;
+
+            while (b != null) {
+
+                if (a == b) {
+                    return a;
+                }
+
+                b = b.next;
+            }
+
+            a = a.next;
+        }
+
+        return null;
+    }
+}
+
+Dry Run
+
+Suppose:
+
+A: 1 → 2 → 8 → 9
+B: 3 → 4 → 8 → 9
+
+Assume 8 is the same node.
+
+Check A = 1
+
+Compare:
+
+1 == 3 ❌
+1 == 4 ❌
+1 == 8 ❌
+1 == 9 ❌
+Check A = 2
+2 == 3 ❌
+2 == 4 ❌
+2 == 8 ❌
+2 == 9 ❌
+Check A = 8
+8 == 3 ❌
+8 == 4 ❌
+8 == 8 ✅
+
+Return node 8.
+
+Complexity
+
+Let:
+
+m = length of A
+n = length of B
+Time  = O(m × n)
+Space = O(1)
+
+This is brute force.
+
+Approach 2 — HashSet
+Idea
+
+Store all nodes of List A in a HashSet.
+
+Then traverse List B.
+
+The first node already present in the set is the intersection.
+
+Important
+
+Store the node itself:
+
+set.add(curr);
+
+not:
+
+set.add(curr.val);
+
+because intersection is based on reference identity.
+
+Code
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+
+        Set<ListNode> set = new HashSet<>();
+
+        ListNode curr = headA;
+
+        while (curr != null) {
+            set.add(curr);
+            curr = curr.next;
+        }
+
+        curr = headB;
+
+        while (curr != null) {
+
+            if (set.contains(curr)) {
+                return curr;
+            }
+
+            curr = curr.next;
+        }
+
+        return null;
+    }
+}
+
+Dry Run
+A: 1 → 2 → 8 → 9
+B: 3 → 4 → 8 → 9
+Store A
+Set = {1, 2, 8, 9}
+
+Now traverse B.
+
+Node 3
+3 ∈ Set ? ❌
+Node 4
+4 ∈ Set ? ❌
+Node 8
+8 ∈ Set ? ✅
+
+Return 8.
+
+Complexity
+Time  = O(m + n)
+Space = O(m)
+
+Better time, but uses extra memory.
+
+Approach 3 — Find Lengths and Align Lists ⭐
+
+This is the approach in your code.
+
+Main Idea
+
+If the lists have different lengths, their starting positions are not aligned.
+
+Example:
+
+A: 1 → 2 → 3 → 8 → 9
+B:       4 → 5 → 8 → 9
+
+Lengths:
+
+A = 5
+B = 4
+
+Difference:
+
+5 - 4 = 1
+
+Move A forward by 1:
+
+A:       2 → 3 → 8 → 9
+B:       4 → 5 → 8 → 9
+
+Now both pointers have the same number of nodes remaining.
+
+Then move them together.
+
+Your Code
+
+Your code is essentially this:
+
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) {
+ *         val = x;
+ *         next = null;
+ *     }
+ * }
+ */
+
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+
+        int i = 1, j = 1;
+
+        ListNode head1 = headA;
+        ListNode head2 = headB;
+
+        while (head1 != null) {
+            head1 = head1.next;
+            i++;
+        }
+
+        while (head2 != null) {
+            head2 = head2.next;
+            j++;
+        }
+
+        while (i > j) {
+            headA = headA.next;
+            i--;
+        }
+
+        while (j > i) {
+            headB = headB.next;
+            j--;
+        }
+
+        while (headA != headB) {
+            headA = headA.next;
+            headB = headB.next;
+        }
+
+        return headB;
+    }
+}
+
+⚠️ Understanding i = 1 and j = 1
+
+Normally we calculate length as:
+
+int lenA = 0;
+
+while (headA != null) {
+    lenA++;
+    headA = headA.next;
+}
+
+Your code starts with:
+
+int i = 1;
+
+and increments after moving:
+
+while (head1 != null) {
+    head1 = head1.next;
+    i++;
+}
+
+So after traversing a list of length N, i becomes:
+
+N + 1
+
+The extra 1 exists for both lists, so the difference:
+
+i - j
+
+is still exactly the length difference.
+
+So your logic works.
+
+However, for readability, I recommend the standard len = 0 version.
+
+Dry Run — Length Alignment
+
+Consider:
+
+A: 1 → 2 → 3 → 8 → 9
+B:       4 → 5 → 8 → 9
+
+Assume:
+
+8A == 8B
+
+meaning they are actually the same node.
+
+Step 1 — Calculate lengths
+Length A = 5
+Length B = 4
+
+Difference:
+
+5 - 4 = 1
+
+Move A once:
+
+A: 2 → 3 → 8 → 9
+B: 4 → 5 → 8 → 9
+Step 2 — Move together
+
+Compare:
+
+2 == 4 ❌
+
+Move:
+
+A → 3
+B → 5
+
+Compare:
+
+3 == 5 ❌
+
+Move:
+
+A → 8
+B → 8
+
+Compare:
+
+8 == 8 ✅
+
+Return:
+
+8
+
+Standard Version of Approach 3
+
+I recommend writing it this way in interviews:
+
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+
+        int lenA = 0;
+        int lenB = 0;
+
+        ListNode currA = headA;
+        ListNode currB = headB;
+
+        // Calculate length of A
+        while (currA != null) {
+            lenA++;
+            currA = currA.next;
+        }
+
+        // Calculate length of B
+        while (currB != null) {
+            lenB++;
+            currB = currB.next;
+        }
+
+        // Align starting points
+        while (lenA > lenB) {
+            headA = headA.next;
+            lenA--;
+        }
+
+        while (lenB > lenA) {
+            headB = headB.next;
+            lenB--;
+        }
+
+        // Find intersection
+        while (headA != headB) {
+            headA = headA.next;
+            headB = headB.next;
+        }
+
+        return headA;
+    }
+}
+
+Complexity
+
+We traverse the lists a few times:
+
+Time  = O(m + n)
+Space = O(1)
+
+This is already optimal in time and space.
+
+Approach 4 — Two Pointer Switching ⭐⭐
+
+This is the most elegant solution.
+
+Idea
+
+Use two pointers:
+
+pA
+pB
+
+When pA reaches the end of A:
+
+pA = headB
+
+When pB reaches the end of B:
+
+pB = headA
+
+So each pointer travels:
+
+A + B
+
+and:
+
+B + A
+
+Therefore, they travel exactly the same total distance.
+
+Eventually they meet at the intersection.
+
+Code
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+
+        ListNode pA = headA;
+        ListNode pB = headB;
+
+        while (pA != pB) {
+
+            pA = (pA == null) ? headB : pA.next;
+            pB = (pB == null) ? headA : pB.next;
+        }
+
+        return pA;
+    }
+}
+
+Dry Run
+
+Use:
+
+A: 1 → 2 → 8 → 9
+B: 3 → 4 → 5 → 8 → 9
+
+Lengths:
+
+A = 4
+B = 5
+Initially
+pA = 1
+pB = 3
+
+Not equal.
+
+Move:
+
+pA = 2
+pB = 4
+Next
+pA = 8
+pB = 5
+Next
+pA = 9
+pB = 8
+Next
+
+pA reaches null.
+
+So:
+
+pA = headB;
+
+Now:
+
+pA = 3
+pB = 9
+Next
+pA = 4
+pB = null
+
+Since pB == null:
+
+pB = headA;
+
+So:
+
+pA = 4
+pB = 1
+
+Continue:
+
+pA = 5
+pB = 2
+
+Then:
+
+pA = 8
+pB = 8
+
+Now:
+
+pA == pB
+
+Return 8.
+
+Why Does Pointer Switching Work?
+
+Suppose:
+
+A = a + c
+B = b + c
+
+where:
+
+a = unique part of A
+b = unique part of B
+c = common part
+
+Pointer A travels:
+
+A + B
+= a + c + b + c
+
+Pointer B travels:
+
+B + A
+= b + c + a + c
+
+They are equal:
+
+a + c + b + c
+=
+b + c + a + c
+
+Therefore they reach the intersection at the same time.
+
+Case: No Intersection
+
+Consider:
+
+A: 1 → 2 → 3
+B: 4 → 5
+
+Pointer A travels:
+
+1 → 2 → 3 → null → 4 → 5 → null
+
+Pointer B travels:
+
+4 → 5 → null → 1 → 2 → 3 → null
+
+Eventually:
+
+pA = null
+pB = null
+
+Therefore:
+
+pA == pB
+
+and return:
+
+null
+
+So we don't need a separate "no intersection" check.
+
+All Approaches Comparison
+Approach	Idea	Time	Space
+1. Brute Force	Compare every A node with every B node	O(m × n)	O(1)
+2. HashSet	Store A nodes	O(m + n)	O(m)
+3. Length Alignment ⭐	Find lengths and align starts	O(m + n)	O(1)
+4. Two Pointer Switching ⭐⭐	Traverse A+B and B+A	O(m + n)	O(1)
+Interview Recommendation
+If asked for brute force:
+Nested loops
+If asked for better:
+HashSet
+If asked for O(1) extra space:
+Length + Alignment
+Best / Most Elegant:
+Two Pointer Switching
+🧠 Pattern to Remember
+
+This is a classic two-pointer linked-list alignment problem.
+
+The most important code to remember is:
+
+while (pA != pB) {
+    pA = (pA == null) ? headB : pA.next;
+    pB = (pB == null) ? headA : pB.next;
+}
+Mental shortcut
+Pointer A → A + B
+Pointer B → B + A
+
+Same total distance → they meet at the intersection.
+
+Final optimal complexity: O(m + n) time and O(1) extra space.
