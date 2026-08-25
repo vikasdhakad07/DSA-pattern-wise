@@ -1,0 +1,54 @@
+Pattern 1: Multi-Pointer Techniques (Fast/Slow & Gapped)
+Used to locate structural landmarks (middle, cycle start, tail distance) without calculating the total length in advance.
+
+1. The Concept
+
+1). Fast & Slow (Floyd's Algorithm): Advance slow by 1 step and fast by 2 steps. If a cycle exists, they will eventually meet inside the loop. To find the middle of a list, when fast reaches the end, slow sits exactly at the midpoint.
+2). Gapped Pointers: Advance pointer $A$ by $N$ steps ahead of pointer $B$. Then advance both by 1 step until $A$ reaches the end. Pointer $B$ is now positioned at the $N$-th node from the end.
+
+2. Java Blueprint (Middle of List & Cycle Detection)
+
+Java
+
+1. Finding the Middle Node
+public ListNode findMiddle(ListNode head) {
+    ListNode slow = head;
+    ListNode fast = head;
+    
+    // For odd length: slow stops at exact middle
+    // For even length: slow stops at second middle node
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+    }
+    return slow;
+}
+
+// 2. Remove Nth Node From End of List
+public ListNode removeNthFromEnd(ListNode head, int n) {
+    ListNode dummy = new ListNode(0);
+    dummy.next = head;
+    ListNode first = dummy;
+    ListNode second = dummy;
+
+    // Advance first pointer so the gap between first and second is 'n' nodes
+    for (int i = 0; i <= n; i++) {
+        first = first.next;
+    }
+
+    // Move both until first hits the end
+    while (first != null) {
+        first = first.next;
+        second = second.next;
+    }
+
+    // Unlink the target node
+    second.next = second.next.next;
+    return dummy.next;
+}
+
+3. Essential Interview Questions
+Easy: LeetCode 141 - Linked List Cycle: Basic fast/slow pointer collision detection.
+Medium: LeetCode 142 - Linked List Cycle II: Once fast and slow collide, reset slow to head. Move both 1 step at a time; their next meeting point is the exact start of the cycle.
+Medium: LeetCode 19 - Remove Nth Node From End of List
+Medium: LeetCode 160 - Intersection of Two Linked Lists: Advance two pointers; when one hits null, redirect it to the head of the other list. They will travel equal overall lengths and collide at the intersection node.
