@@ -1,0 +1,421 @@
+LeetCode 2130 — Maximum Twin Sum of a Linked List
+Problem Understanding
+
+You are given a singly linked list of even length.
+
+For every node at index i, its twin is the node at index:
+
+$$ n-1-i $$
+
+So we need:
+
+Maximum Twin Sum = max(left node value + corresponding right node value)
+
+Example:
+
+1 → 2 → 3 → 4
+↑           ↑
+twin pair: 1 + 4 = 5
+
+    2 → 3
+    twin pair: 2 + 3 = 5
+
+Answer = 5
+
+We can solve this from brute force → optimal.
+
+Approach 1 — Convert Linked List to ArrayList
+Idea
+
+Since linked lists don't support random access efficiently, first copy all values into an ArrayList.
+
+Then use two pointers:
+
+i → beginning
+j → end
+
+Calculate:
+
+al[i] + al[j]
+
+and move both toward the center.
+
+Code
+
+class Solution {
+    public int pairSum(ListNode head) {
+        ArrayList<Integer> al = new ArrayList<>();
+
+        while (head != null) {
+            al.add(head.val);
+            head = head.next;
+        }
+
+        int i = 0;
+        int j = al.size() - 1;
+        int ans = 0;
+
+        while (i <= j) {
+            ans = Math.max(ans, al.get(i) + al.get(j));
+            i++;
+            j--;
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+
+Consider:
+
+5 → 4 → 2 → 1
+
+Array:
+
+[5, 4, 2, 1]
+i	j	Pair	Sum	ans
+0	3	5 + 1	6	6
+1	2	4 + 2	6	6
+
+Answer:
+
+6
+Complexity
+Time: O(n)
+Space: O(n)
+
+The extra space is needed for the array.
+
+Approach 2 — Stack
+Idea
+
+A stack gives us access to elements in reverse order.
+
+We can:
+
+Traverse the linked list and push every value into a stack.
+Traverse the linked list again.
+For each node, pop its twin from the stack.
+Calculate the sum.
+
+Because the stack contains:
+
+top → last element
+       second last
+       ...
+       first element
+
+it naturally gives us the twin from the opposite side.
+
+Code
+
+class Solution {
+    public int pairSum(ListNode head) {
+        Stack<Integer> st = new Stack<>();
+
+        ListNode curr = head;
+
+        while (curr != null) {
+            st.push(curr.val);
+            curr = curr.next;
+        }
+
+        int ans = 0;
+        curr = head;
+
+        while (curr != null) {
+            ans = Math.max(ans, curr.val + st.pop());
+            curr = curr.next;
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+1 → 2 → 3 → 4
+
+After pushing:
+
+Stack:
+
+4 ← top
+3
+2
+1
+
+Traverse the linked list again:
+
+Current	Stack Pop	Sum	ans
+1	4	5	5
+2	3	5	5
+3	2	5	5
+4	1	5	5
+
+Answer:
+
+5
+
+We technically calculate every pair twice. We could stop after n/2 nodes, but the complexity remains the same.
+
+Complexity
+Time: O(n)
+Space: O(n)
+
+Approach 3 — Reverse the Second Half ⭐
+
+This is the optimal approach.
+
+Core Idea
+
+We don't actually need an array or stack.
+
+We can manipulate the linked list itself.
+
+Use three steps:
+
+1. Find middle
+2. Reverse second half
+3. Compare first half with reversed second half
+
+For:
+
+1 → 2 → 3 → 4
+
+Find middle:
+
+1 → 2 → 3 → 4
+        ↑
+       slow
+
+Reverse from slow:
+
+1 → 2       4 → 3
+
+Now compare:
+
+1 + 4 = 5
+2 + 3 = 5
+
+Answer:
+5
+
+Your Optimal Code
+
+class Solution {
+    public int pairSum(ListNode head) {
+        ListNode slow = head;
+        ListNode fast = head;
+
+        // Find the beginning of the second half
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+
+        // Reverse the second half
+        ListNode prev = null;
+
+        while (slow != null) {
+            ListNode next = slow.next;
+            slow.next = prev;
+            prev = slow;
+            slow = next;
+        }
+
+        // Compare both halves
+        int ans = 0;
+
+        while (prev != null) {
+            ans = Math.max(ans, head.val + prev.val);
+            head = head.next;
+            prev = prev.next;
+        }
+
+        return ans;
+    }
+}
+
+Dry Run — Approach 3
+
+Consider:
+
+5 → 4 → 2 → 1
+Step 1: Find Middle
+
+Initially:
+
+slow = 5
+fast = 5
+Iteration 1
+slow = 4
+fast = 2
+Iteration 2
+slow = 2
+fast = null
+
+So:
+
+slow = 2
+
+The list is divided conceptually into:
+
+5 → 4 | 2 → 1
+        ↑
+       slow
+Step 2: Reverse Second Half
+
+Original second half:
+
+2 → 1
+
+Reverse it:
+
+1 → 2
+
+Now:
+
+First half:   5 → 4
+
+Second half:  1 → 2
+
+prev points to:
+
+1 → 2
+↑
+prev
+Step 3: Compare
+
+First pair:
+
+head = 5
+prev = 1
+
+5 + 1 = 6
+ans = 6
+
+Move:
+
+head = 4
+prev = 2
+
+Second pair:
+
+4 + 2 = 6
+
+Therefore:
+
+answer = 6
+Another Dry Run
+
+Input:
+
+4 → 2 → 2 → 3
+
+Twin pairs are:
+
+4 + 3 = 7
+2 + 2 = 4
+Find middle
+4 → 2 → 2 → 3
+        ↑
+       slow
+
+Second half:
+
+2 → 3
+
+Reverse:
+
+3 → 2
+
+Now compare:
+
+4 + 3 = 7
+2 + 2 = 4
+
+Therefore:
+
+ans = 7
+Why Does Reversing Work?
+
+Suppose:
+
+a → b → c → d
+
+Twin pairs are:
+
+a ↔ d
+b ↔ c
+
+After reversing the second half:
+
+a → b
+
+d → c
+
+Now both lists move in the same direction:
+
+a → b
+↑
+head
+
+d → c
+↑
+prev
+
+Therefore:
+
+head.val + prev.val
+
+automatically gives the twin sum.
+
+Complexity Comparison
+Approach	Idea	Time	Extra Space
+1. ArrayList	Copy values to array	O(n)	O(n)
+2. Stack	Store values in reverse order	O(n)	O(n)
+3. Reverse 2nd Half	Find middle + reverse + compare	O(n)	O(1)
+Best Approach
+
+Approach 3 — Reverse the second half
+
+Because:
+
+Time  = O(n)
+Space = O(1)
+
+This is the expected interview solution.
+
+Important Pattern to Remember
+
+This problem is another classic Linked List Fast & Slow Pointer + Reversal problem.
+
+Whenever you see:
+
+"Compare first half with corresponding elements from the end"
+
+Think:
+
+Find Middle
+     ↓
+Reverse Second Half
+     ↓
+Compare
+
+This same pattern is extremely useful for:
+
+Palindrome Linked List — 234
+Maximum Twin Sum — 2130
+Interview Template
+Linked List
+     ↓
+Slow + Fast → Find middle
+     ↓
+Reverse second half
+     ↓
+Traverse first half + reversed half
+     ↓
+Calculate required result
+
+One small improvement: because the list is guaranteed to have even length, your while (prev != null) comparison loop is sufficient. You don't need to compare beyond the second half.
