@@ -1,0 +1,667 @@
+LeetCode 234 — Palindrome Linked List
+From Brute Force → Most Optimal
+All approaches + code + explanation + dry run
+1. Problem Understanding
+
+Given the head of a singly linked list, determine whether the linked list is a palindrome.
+
+A palindrome reads the same from left to right and right to left.
+
+Example
+1 → 2 → 2 → 1
+
+is a palindrome:
+
+1 2 2 1
+
+But:
+
+1 → 2 → 3
+
+is not:
+
+1 2 3 ≠ 3 2 1
+
+Approach 1 — Brute Force: Convert to Array/List
+Idea
+
+A linked list does not allow direct backward traversal.
+
+So:
+
+Copy all values into an ArrayList.
+Use two pointers:
+one from the beginning
+one from the end
+Compare them.
+
+Code
+class Solution {
+    public boolean isPalindrome(ListNode head) {
+
+        ArrayList<Integer> list = new ArrayList<>();
+
+        ListNode curr = head;
+
+        // Store linked list values
+        while (curr != null) {
+            list.add(curr.val);
+            curr = curr.next;
+        }
+
+        // Compare from both ends
+        int left = 0;
+        int right = list.size() - 1;
+
+        while (left < right) {
+
+            if (!list.get(left).equals(list.get(right))) {
+                return false;
+            }
+
+            left++;
+            right--;
+        }
+
+        return true;
+    }
+}
+
+Dry Run
+
+Input:
+
+1 → 2 → 3 → 2 → 1
+
+Convert to array:
+
+[1, 2, 3, 2, 1]
+
+Compare:
+
+left = 0 → 1
+right = 4 → 1
+1 == 1 ✓
+
+Move:
+
+left = 1
+right = 3
+2 == 2 ✓
+
+Move:
+
+left = 2
+right = 2
+
+Stop.
+
+Return:
+
+true
+Complexity
+Time  = O(n)
+Space = O(n)
+
+Very simple, but extra memory is required.
+
+Approach 2 — Stack
+Idea
+
+A stack follows LIFO:
+
+Last In → First Out
+
+For a palindrome, the second half should match the reverse of the first half.
+
+We can:
+
+Push all nodes/values into a stack.
+Traverse the list again.
+Compare each value with stack.pop().
+
+Code
+class Solution {
+    public boolean isPalindrome(ListNode head) {
+
+        Stack<Integer> stack = new Stack<>();
+
+        ListNode curr = head;
+
+        // Push all values
+        while (curr != null) {
+            stack.push(curr.val);
+            curr = curr.next;
+        }
+
+        // Compare with reverse order
+        curr = head;
+
+        while (curr != null) {
+
+            if (curr.val != stack.pop()) {
+                return false;
+            }
+
+            curr = curr.next;
+        }
+
+        return true;
+    }
+}
+
+Dry Run
+1 → 2 → 3 → 2 → 1
+
+After pushing:
+
+Stack:
+
+TOP
+ ↓
+1
+2
+3
+2
+1
+
+Traverse list:
+
+curr = 1
+stack.pop() = 1
+✓
+
+Next:
+
+2 == 2 ✓
+
+Next:
+
+3 == 3 ✓
+
+Next:
+
+2 == 2 ✓
+
+Next:
+
+1 == 1 ✓
+
+Return:
+
+true
+Complexity
+Time  = O(n)
+Space = O(n)
+
+Same asymptotic complexity as the array approach.
+
+Approach 3 — Compare First Half With Reversed Second Half ⭐
+
+This is the optimal approach.
+
+Main Idea
+
+We don't need an array or stack.
+
+Instead:
+
+Step 1
+
+Find the middle of the linked list using:
+
+slow + fast
+Step 2
+
+Reverse the second half.
+
+Step 3
+
+Compare:
+
+first half
+     ↓
+second half reversed
+Step 4
+
+If every value matches → palindrome.
+
+Your Code
+
+Your code implements exactly this approach:
+
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) {
+ *         this.val = val;
+ *         this.next = next;
+ *     }
+ * }
+ */
+
+class Solution {
+
+    public ListNode findMid(ListNode head) {
+
+        ListNode slow = head;
+        ListNode fast = head;
+
+        while (fast != null && fast.next != null) {
+
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+
+        return slow;
+    }
+
+    public ListNode reverse(ListNode head) {
+
+        ListNode curr = head;
+        ListNode prev = null;
+        ListNode next = null;
+
+        while (curr != null) {
+
+            next = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+
+        return prev;
+    }
+
+    public boolean isPalindrome(ListNode head) {
+
+        ListNode mid = findMid(head);
+
+        ListNode last = reverse(mid);
+
+        ListNode curr = head;
+
+        while (last != null) {
+
+            if (curr.val != last.val) {
+                return false;
+            }
+
+            curr = curr.next;
+            last = last.next;
+        }
+
+        return true;
+    }
+}
+Step 1 — Find Middle
+
+The important code is:
+
+ListNode slow = head;
+ListNode fast = head;
+
+while (fast != null && fast.next != null) {
+    slow = slow.next;
+    fast = fast.next.next;
+}
+
+slow moves:
+
+1 step
+
+fast moves:
+
+2 steps
+
+Therefore, when fast reaches the end, slow is around the middle.
+
+Dry Run — Odd Length
+
+Consider:
+
+1 → 2 → 3 → 2 → 1
+
+Initially:
+
+slow = 1
+fast = 1
+Iteration 1
+slow = 2
+fast = 3
+Iteration 2
+slow = 3
+fast = 1
+Next
+
+fast.next == null
+
+Stop.
+
+So:
+
+slow = 3
+
+Middle:
+
+1 → 2 → [3] → 2 → 1
+Step 2 — Reverse Second Half
+
+Your code does:
+
+ListNode last = reverse(mid);
+
+For:
+
+1 → 2 → 3 → 2 → 1
+          ↑
+         mid
+
+The portion beginning at mid is:
+
+3 → 2 → 1
+
+Reverse it:
+
+1 → 2 → 3
+
+So conceptually we compare:
+
+Original:
+
+1 → 2 → 3 → 2 → 1
+↑
+curr
+
+Reversed second half:
+
+1 → 2 → 3
+↑
+last
+Step 3 — Compare
+
+Your code:
+
+while (last != null) {
+
+    if (curr.val != last.val) {
+        return false;
+    }
+
+    curr = curr.next;
+    last = last.next;
+}
+
+Comparison:
+
+curr = 1
+last = 1
+
+1 == 1 ✓
+
+Next:
+
+2 == 2 ✓
+
+Next:
+
+3 == 3 ✓
+
+last == null.
+
+Return:
+
+true
+Dry Run — Non-Palindrome
+
+Consider:
+
+1 → 2 → 3 → 4
+Find middle
+slow = 1
+fast = 1
+
+After first iteration:
+
+slow = 2
+fast = 3
+
+After second:
+
+slow = 3
+fast = null
+
+So:
+
+mid = 3
+
+Reverse from 3:
+
+3 → 4
+
+becomes:
+
+4 → 3
+
+Now compare:
+
+curr = 1
+last = 4
+1 != 4
+
+Immediately:
+
+return false
+⚠️ Odd vs Even Length
+
+Your findMid() returns the second middle for an even-sized list.
+
+For:
+
+1 → 2 → 2 → 1
+
+the slow pointer ends at the second 2.
+
+So:
+
+1 → 2 | 2 → 1
+        ↑
+       mid
+
+Reverse:
+
+2 → 1
+
+becomes:
+
+1 → 2
+
+Compare:
+
+1 == 1 ✓
+2 == 2 ✓
+
+Therefore:
+
+true
+
+Your implementation handles both odd and even lengths.
+
+Approach 4 — Optimal + Restore the Linked List ⭐⭐
+
+There is one improvement worth knowing.
+
+The previous approach reverses part of the linked list.
+
+If the problem requires preserving the original list structure, we can:
+
+Find middle.
+Reverse second half.
+Compare.
+Reverse second half again to restore the list.
+Code
+class Solution {
+
+    public ListNode reverse(ListNode head) {
+
+        ListNode prev = null;
+        ListNode curr = head;
+
+        while (curr != null) {
+
+            ListNode next = curr.next;
+
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+
+        return prev;
+    }
+
+    public boolean isPalindrome(ListNode head) {
+
+        if (head == null || head.next == null) {
+            return true;
+        }
+
+        ListNode slow = head;
+        ListNode fast = head;
+
+        // Find second middle
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+
+        // Reverse second half
+        ListNode secondHalf = reverse(slow);
+
+        ListNode firstHalf = head;
+        ListNode temp = secondHalf;
+
+        boolean palindrome = true;
+
+        // Compare
+        while (temp != null) {
+
+            if (firstHalf.val != temp.val) {
+                palindrome = false;
+                break;
+            }
+
+            firstHalf = firstHalf.next;
+            temp = temp.next;
+        }
+
+        // Restore second half
+        reverse(secondHalf);
+
+        return palindrome;
+    }
+}
+
+Dry Run of Restoration
+
+Suppose:
+
+1 → 2 → 3 → 2 → 1
+
+After reversing second half:
+
+1 → 2 → 3
+          ↑
+original first portion
+
+reversed portion:
+1 → 2 → 3
+
+After comparison:
+
+1 == 1
+2 == 2
+3 == 3
+
+Then reverse the second half again.
+
+It goes back to:
+
+1 → 2 → 3 → 2 → 1
+
+So the input structure is preserved.
+
+Approach Comparison
+Approach	Technique	Time	Extra Space
+1. ArrayList	Copy values + two pointers	O(n)	O(n)
+2. Stack	Push all values	O(n)	O(n)
+3. Reverse second half ⭐	Slow/Fast + Reverse	O(n)	O(1)
+4. Reverse + Restore ⭐⭐	Same + restore list	O(n)	O(1)
+Why Approach 3 Is Optimal
+
+We cannot do better than:
+
+O(n)
+
+because we need to inspect the nodes to determine whether they form a palindrome.
+
+And we can achieve:
+
+Space = O(1)
+
+by manipulating the linked list itself.
+
+Therefore:
+
+Time  = O(n)
+Space = O(1)
+
+is optimal.
+
+🧠 Interview Pattern
+
+Remember this pattern:
+
+Linked List Palindrome
+        ↓
+Find Middle
+        ↓
+Reverse Second Half
+        ↓
+Compare Both Halves
+        ↓
+Optional: Restore
+The three reusable linked-list techniques are:
+1. Slow + Fast Pointer
+2. Reverse Linked List
+3. Two Pointer Comparison
+
+These three techniques appear together in many linked-list problems.
+
+⭐ Code to Remember
+
+Your solution's core is excellent:
+
+ListNode mid = findMid(head);
+ListNode last = reverse(mid);
+
+ListNode curr = head;
+
+while (last != null) {
+    if (curr.val != last.val) {
+        return false;
+    }
+
+    curr = curr.next;
+    last = last.next;
+}
+
+return true;
+Complexity
+Time  → O(n)
+Space → O(1)
+
+This is the most optimal approach for LeetCode 234.
