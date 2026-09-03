@@ -1,0 +1,118 @@
+Approach 1: Brute Force (Simulate Step-by-Step)
+
+Intuition:
+Perform the right rotation $k$ times. In each single rotation, move the last node (tail) to the front to become the new head.
+
+Algorithm:
+1). If the list is empty or has 1 node, return head.
+2). Repeat $k$ times:
+Traverse to the second-to-last node.
+Disconnect the last node and make it point to the current head.
+Update head to be this last node.
+
+Dry Run
+head = [1, 2, 3, 4, 5], k = 2
+Iteration 1 ($k=1$):Find second-to-last node: 4. Tail: 5.Set 4.next = null.Set 5.next = 1.head becomes 5 $\rightarrow$ [5, 1, 2, 3, 4]
+Iteration 2 ($k=2$):Find second-to-last node: 3. Tail: 4.Set 3.next = null.Set 4.next = 5.head becomes 4 $\rightarrow$ [4, 5, 1, 2, 3]
+
+Java Code
+
+Javaclass Solution {
+    public ListNode rotateRight(ListNode head, int k) {
+        if (head == null || head.next == null || k == 0) return head;
+
+        for (int i = 0; i < k; i++) {
+            ListNode prev = null;
+            ListNode curr = head;
+
+            // Move to the last node
+            while (curr.next != null) {
+                prev = curr;
+                curr = curr.next;
+            }
+
+            // Move last node to front
+            prev.next = null;
+            curr.next = head;
+            head = curr;
+        }
+
+        return head;
+    }
+}
+
+
+Complexity AnalysisTime Complexity: $O(k \times N)$, where $N$ is the number of nodes. 
+This TLEs (Time Limit Exceeded) when $k$ is large ($k \le 2 \times 10^9$).
+
+Space Complexity: 
+$O(1)$ auxiliary space.
+
+Approach 2: Optimal (Connect Ring & Cut at Breakpoint)
+
+Intuition: Rotating a list of length $N$ by $k$ times is equivalent to rotating it by $k \pmod N$ times because every $N$ rotations restore the list to its original configuration.
+Instead of moving nodes one by one:
+Connect the tail to the head to form a circular linked list.
+Find the new tail at index $(N - (k \pmod N) - 1)$ (0-indexed).
+The new head is at newTail.next.Break the ring by setting newTail.next = null.
+
+Dry Run
+head = [1, 2, 3, 4, 5], k = 2
+
+Calculate Length & Connect Tail to Head:
+Traverse from 1: Length $N = 5$, tail dummy points to 5.
+Connect ring: dummy.next = head (5.next = 1).Compute Effective Rotations:position = k % length = 2 % 5 = 2.
+Locate New Breakpoint:Target index from start: $5 - 2 - 1 = 2$ (which corresponds to node 3).
+Loop i = 0 to i < 2:$i=0 \implies$ curr moves to 2.$i=1 \implies$ curr moves to 3.Split and Re-link:newHead = curr.next $\implies$ node 4.curr.next = null $\implies$ 3.
+next = null.dummy.next = head was executed in setup.Resulting list starting from newHead: [4, 5, 1, 2, 3].
+
+Java Code
+
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+ * }
+ */
+
+class Solution {
+    public ListNode rotateRight(ListNode head, int k) {
+        if (k <= 0 || head == null || head.next == null) {
+            return head;
+        }
+
+        // 1. Calculate length and locate tail
+        int length = 1;
+        ListNode dummy = head;
+        while (dummy.next != null) {
+            dummy = dummy.next;
+            length++;
+        }
+
+        // 2. Reduce k using modulo
+        int position = k % length;
+        if (position == 0) {
+            return head;
+        }
+
+        // 3. Find the node before the new head
+        ListNode curr = head;
+        for (int i = 0; i < length - position - 1; i++) {
+            curr = curr.next;
+        }
+
+        // 4. Update head, break circle, and connect original tail
+        ListNode newHead = curr.next;
+        curr.next = null;
+        dummy.next = head;
+
+        return newHead;
+    }
+}
+
+Complexity Analysis
+Time Complexity: $O(N)$, where $N$ is the total number of nodes. We traverse the list once to get the length ($N$ steps) and once more to find the split point (at most $N$ steps).
+Space Complexity: $O(1)$ auxiliary space as pointers are updated in place.
