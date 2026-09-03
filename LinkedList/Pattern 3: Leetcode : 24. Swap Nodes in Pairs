@@ -1,0 +1,493 @@
+LeetCode 24 — Swap Nodes in Pairs
+Problem Understanding
+
+Given a linked list, swap every two adjacent nodes.
+
+You must swap the nodes themselves, not just their values.
+
+Example:
+
+Input:
+1 → 2 → 3 → 4
+
+Output:
+2 → 1 → 4 → 3
+
+For an odd-length list:
+
+1 → 2 → 3 → 4 → 5
+
+2 → 1 → 4 → 3 → 5
+
+The last node remains unchanged because it has no pair.
+
+Approach 1 — Brute Force: Swap Values
+Idea
+
+The easiest solution is to traverse the list two nodes at a time and simply swap their val.
+
+⚠️ This does not actually swap nodes. It swaps their values.
+
+It is generally not preferred when the problem explicitly asks to swap nodes, but it is useful as the brute-force starting point.
+
+Code
+class Solution {
+    public ListNode swapPairs(ListNode head) {
+        ListNode curr = head;
+
+        while (curr != null && curr.next != null) {
+            int temp = curr.val;
+            curr.val = curr.next.val;
+            curr.next.val = temp;
+
+            curr = curr.next.next;
+        }
+
+        return head;
+    }
+}
+
+Dry Run
+
+Input:
+
+1 → 2 → 3 → 4
+
+First pair:
+
+1 ↔ 2
+
+Swap values:
+
+2 → 1 → 3 → 4
+
+Move two nodes.
+
+Second pair:
+
+3 ↔ 4
+
+Swap:
+
+2 → 1 → 4 → 3
+
+Answer:
+
+2 → 1 → 4 → 3
+Complexity
+Time: O(n)
+Space: O(1)
+Why isn't this the ideal solution?
+
+Because the nodes themselves haven't moved.
+
+For example, if the nodes are:
+
+NodeA(1) → NodeB(2)
+
+we want:
+
+NodeB(2) → NodeA(1)
+
+but value swapping gives:
+
+NodeA(2) → NodeB(1)
+
+So let's actually manipulate the links.
+
+Approach 2 — Recursive Swapping
+Idea
+
+For every pair:
+
+first → second → remaining
+
+we want:
+
+second → first → remaining
+
+Then recursively swap the remaining list.
+
+The key operation is:
+
+second.next = first
+first.next = swapPairs(remaining)
+
+Code
+class Solution {
+    public ListNode swapPairs(ListNode head) {
+        // 0 or 1 node
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        ListNode first = head;
+        ListNode second = head.next;
+
+        // Swap first two nodes
+        first.next = swapPairs(second.next);
+        second.next = first;
+
+        return second;
+    }
+}
+
+Dry Run
+
+Input:
+
+1 → 2 → 3 → 4
+
+First pair:
+
+first = 1
+second = 2
+
+We need:
+
+2 → 1 → swap(3 → 4)
+
+Now recursively process:
+
+3 → 4
+
+This becomes:
+
+4 → 3
+
+So:
+
+2 → 1 → 4 → 3
+Recursion Visualization
+swapPairs(1 → 2 → 3 → 4)
+
+        ↓
+
+2 → 1 → swapPairs(3 → 4)
+
+                 ↓
+
+              4 → 3
+
+        ↓
+
+2 → 1 → 4 → 3
+Complexity
+Time: O(n)
+Space: O(n) due to recursion stack
+
+Approach 3 — Iterative Using Three Pointers
+
+Now we can perform the same node swapping iteratively.
+
+For every pair:
+
+prev → first → second → next
+
+we want:
+
+prev → second → first → next
+Pointer Changes
+
+Before:
+
+prev → first → second → next
+
+First:
+
+first.next = second.next
+
+Gives:
+
+prev → first    second → next
+
+Then:
+
+second.next = first
+
+Gives:
+
+prev → first ← second
+
+second → first → next
+
+Finally:
+
+prev.next = second
+
+Result:
+
+prev → second → first → next
+
+Code
+class Solution {
+    public ListNode swapPairs(ListNode head) {
+
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        ListNode prev = dummy;
+
+        while (prev.next != null && prev.next.next != null) {
+
+            ListNode first = prev.next;
+            ListNode second = first.next;
+
+            // Swap
+            first.next = second.next;
+            second.next = first;
+            prev.next = second;
+
+            // Move to next pair
+            prev = first;
+        }
+
+        return dummy.next;
+    }
+}
+
+This is essentially the same optimal iterative solution you provided.
+
+Dry Run of Your Code
+
+Input:
+
+1 → 2 → 3 → 4
+
+Initially:
+
+dummy → 1 → 2 → 3 → 4
+  ↑
+ prev
+First Iteration
+ListNode first = prev.next;
+ListNode second = first.next;
+
+So:
+
+first  = 1
+second = 2
+
+Current:
+
+dummy → 1 → 2 → 3 → 4
+         ↑   ↑
+       first second
+Step 1
+first.next = second.next;
+
+Now:
+
+1 → 3 → 4
+
+and:
+
+2
+
+is temporarily disconnected from first.
+
+Step 2
+second.next = first;
+
+Now:
+
+2 → 1 → 3 → 4
+Step 3
+prev.next = second;
+
+So:
+
+dummy → 2 → 1 → 3 → 4
+Step 4
+prev = first;
+
+Therefore:
+
+prev
+ ↓
+ 1 → 3 → 4
+
+We are ready for the next pair.
+
+Second Iteration
+
+Now:
+
+dummy → 2 → 1 → 3 → 4
+              ↑
+             prev
+
+Therefore:
+
+first = 3
+second = 4
+
+Before:
+
+1 → 3 → 4
+
+After swapping:
+
+1 → 4 → 3
+
+Final:
+
+2 → 1 → 4 → 3
+Odd-Length Example
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+
+First swap:
+
+2 → 1 → 3 → 4 → 5
+
+Second swap:
+
+2 → 1 → 4 → 3 → 5
+
+Now:
+
+prev.next = 5
+prev.next.next = null
+
+So the loop stops.
+
+Final:
+
+2 → 1 → 4 → 3 → 5
+
+The last node stays unchanged.
+
+Why Do We Need a Dummy Node?
+
+Without a dummy node, the first swap is special because the head changes.
+
+For:
+
+1 → 2 → 3 → 4
+
+after swapping the first pair:
+
+2 → 1 → 3 → 4
+↑
+new head
+
+A dummy node removes this special case:
+
+dummy → 1 → 2 → 3 → 4
+
+After swapping:
+
+dummy → 2 → 1 → 3 → 4
+
+Therefore:
+
+return dummy.next;
+
+always gives us the correct head.
+
+Approach 4 — Most Optimal Iterative Solution ⭐
+
+The iterative pointer manipulation is already asymptotically optimal.
+
+Your code is the best approach:
+
+class Solution {
+    public ListNode swapPairs(ListNode head) {
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        ListNode prev = dummy;
+
+        while (prev.next != null && prev.next.next != null) {
+
+            ListNode first = prev.next;
+            ListNode second = first.next;
+
+            first.next = second.next;
+            second.next = first;
+            prev.next = second;
+
+            prev = first;
+        }
+
+        return dummy.next;
+    }
+}
+
+Complexity
+Time: O(n)
+Space: O(1)
+
+No recursion, no array, no stack.
+
+Complexity Comparison
+Approach	Technique	Time	Extra Space	Actually swaps nodes?
+1	Swap values	O(n)	O(1)	❌
+2	Recursion	O(n)	O(n)	✅
+3	Iterative pointers	O(n)	O(1)	✅
+4	Dummy + iterative pointers	O(n)	O(1)	✅
+Most Important Pointer Pattern
+
+The key pattern is:
+
+Before:
+
+prev → first → second → next
+
+We want:
+
+After:
+
+prev → second → first → next
+
+The three pointer updates are:
+
+first.next = second.next;
+second.next = first;
+prev.next = second;
+
+Then:
+
+prev = first;
+
+This is the main thing to remember for interviews.
+
+🧠 Interview Pattern
+
+Whenever you see:
+
+"Swap/rearrange nodes in groups"
+
+Think:
+
+Dummy Node
+    ↓
+prev
+    ↓
+first → second
+    ↓
+change links
+    ↓
+prev = first
+    ↓
+next pair
+
+For Swap Nodes in Pairs, the mental template is:
+
+dummy → first → second → remaining
+
+              ↓
+
+dummy → second → first → remaining
+Remember
+
+Don't move the values. Move the links.
+
+first.next  = second.next
+second.next = first
+prev.next   = second
+
+That gives O(n) time + O(1) space, which is the optimal solution.
