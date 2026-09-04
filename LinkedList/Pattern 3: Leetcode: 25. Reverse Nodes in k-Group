@@ -1,0 +1,864 @@
+LeetCode 25 — Reverse Nodes in k-Group
+1. Problem Understanding
+
+Given a linked list and an integer k, reverse the nodes every k nodes.
+
+Important rule:
+
+If fewer than k nodes remain at the end, do not reverse them.
+
+Example 1
+Input:
+1 → 2 → 3 → 4 → 5
+k = 2
+
+Output:
+2 → 1 → 4 → 3 → 5
+Example 2
+Input:
+1 → 2 → 3 → 4 → 5
+k = 3
+
+Output:
+3 → 2 → 1 → 4 → 5
+
+The last two nodes remain unchanged because there are only 2 nodes, which is less than k = 3.
+
+Approaches
+
+We can solve this problem from:
+
+Brute Force — ArrayList
+
+Stack
+Recursive k-group reversal
+Iterative k-group reversal — Optimal
+Your supplied recursive code
+Approach 1 — Brute Force Using ArrayList
+Idea
+
+Convert the linked list into an ArrayList.
+
+Then process the values in groups of k:
+
+1 2 3 | 4 5 6 | 7
+
+Reverse each complete group in the array.
+
+Finally create a new linked list.
+
+Code
+class Solution {
+    public ListNode reverseKGroup(ListNode head, int k) {
+
+        ArrayList<Integer> arr = new ArrayList<>();
+
+        ListNode curr = head;
+
+        // Store values
+        while (curr != null) {
+            arr.add(curr.val);
+            curr = curr.next;
+        }
+
+        // Reverse every complete group
+        for (int i = 0; i + k <= arr.size(); i += k) {
+            int left = i;
+            int right = i + k - 1;
+
+            while (left < right) {
+                int temp = arr.get(left);
+                arr.set(left, arr.get(right));
+                arr.set(right, temp);
+
+                left++;
+                right--;
+            }
+        }
+
+        // Create new linked list
+        ListNode dummy = new ListNode(0);
+        curr = dummy;
+
+        for (int value : arr) {
+            curr.next = new ListNode(value);
+            curr = curr.next;
+        }
+
+        return dummy.next;
+    }
+}
+
+Dry Run
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+k = 3
+
+Array:
+
+[1, 2, 3, 4, 5]
+
+First group:
+
+[1, 2, 3]
+
+Reverse:
+
+[3, 2, 1]
+
+Remaining:
+
+[4, 5]
+
+Since:
+
+2 < 3
+
+don't reverse.
+
+Final array:
+
+[3, 2, 1, 4, 5]
+
+Result:
+
+3 → 2 → 1 → 4 → 5
+Complexity
+Time: O(n)
+Space: O(n)
+
+This is easy to understand but doesn't actually manipulate the original nodes.
+
+Approach 2 — Stack
+Idea
+
+Process the linked list group by group.
+
+For every k nodes:
+
+Push them into a stack.
+Pop them to get reversed order.
+Connect them to the result.
+
+If fewer than k nodes remain, leave them as they are.
+
+Code
+
+class Solution {
+    public ListNode reverseKGroup(ListNode head, int k) {
+
+        ListNode dummy = new ListNode(0);
+        ListNode tail = dummy;
+
+        ListNode curr = head;
+
+        while (curr != null) {
+
+            Stack<ListNode> stack = new Stack<>();
+
+            ListNode temp = curr;
+            int count = 0;
+
+            // Collect k nodes
+            while (temp != null && count < k) {
+                stack.push(temp);
+                temp = temp.next;
+                count++;
+            }
+
+            // Fewer than k nodes
+            if (count < k) {
+                tail.next = curr;
+                break;
+            }
+
+            // Pop in reverse order
+            while (!stack.isEmpty()) {
+                ListNode node = stack.pop();
+
+                tail.next = node;
+                tail = node;
+            }
+
+            curr = temp;
+        }
+
+        tail.next = null;
+
+        return dummy.next;
+    }
+}
+
+Dry Run
+1 → 2 → 3 → 4 → 5
+k = 3
+
+First group:
+
+1
+2
+3
+
+Stack:
+
+3 ← top
+2
+1
+
+Pop:
+
+3 → 2 → 1
+
+Remaining:
+
+4 → 5
+
+Only 2 nodes remain.
+
+Since:
+
+2 < 3
+
+leave them unchanged.
+
+Final:
+
+3 → 2 → 1 → 4 → 5
+Complexity
+Time: O(n)
+Space: O(k)
+
+Better than storing the entire list, but we can do this without extra data structures.
+
+Approach 3 — Recursive k-Group Reversal
+
+This is the clean recursive approach.
+
+Core Idea
+
+For:
+
+1 → 2 → 3 → 4 → 5
+k = 2
+
+First reverse:
+
+1 → 2
+
+into:
+
+2 → 1
+
+Then recursively process:
+
+3 → 4 → 5
+
+which becomes:
+
+4 → 3 → 5
+
+Final:
+
+2 → 1 → 4 → 3 → 5
+
+Code
+class Solution {
+
+    public ListNode reverseKGroup(ListNode head, int k) {
+
+        // Check whether k nodes are available
+        ListNode temp = head;
+
+        for (int i = 0; i < k; i++) {
+            if (temp == null) {
+                return head;
+            }
+            temp = temp.next;
+        }
+
+        // Reverse first k nodes
+        ListNode curr = head;
+        ListNode prev = null;
+
+        for (int i = 0; i < k; i++) {
+            ListNode next = curr.next;
+
+            curr.next = prev;
+            prev = curr;
+            curr = next;
+        }
+
+        // head is now the last node of reversed group
+        head.next = reverseKGroup(curr, k);
+
+        return prev;
+    }
+}
+
+Dry Run — Recursive Approach
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+k = 2
+Call 1
+
+Check two nodes:
+
+1, 2
+
+Enough nodes.
+
+Reverse:
+
+2 → 1
+
+Then:
+
+1.next = reverseKGroup(3 → 4 → 5, 2)
+Call 2
+
+Check:
+
+3, 4
+
+Enough.
+
+Reverse:
+
+4 → 3
+
+Then:
+
+3.next = reverseKGroup(5, 2)
+Call 3
+
+Only:
+
+5
+
+Available.
+
+But:
+
+1 < 2
+
+So return:
+
+5
+
+Now connect everything:
+
+4 → 3 → 5
+
+Then:
+
+2 → 1 → 4 → 3 → 5
+
+Final answer:
+
+2 → 1 → 4 → 3 → 5
+Complexity
+Time: O(n)
+Space: O(n/k) recursion stack
+Worst-case auxiliary space: O(n)
+
+Approach 4 — Your Supplied Code
+
+Your code uses a very similar recursive technique, but it first calculates the complete list size using size1().
+
+Your Code
+class Solution {
+
+    public static int size1(ListNode head) {
+        int size = 0;
+
+        while (head != null) {
+            head = head.next;
+            size++;
+        }
+
+        return size;
+    }
+
+    public ListNode reverseKGroup(ListNode head, int k) {
+
+        ListNode curr = head;
+        ListNode prev = null;
+        ListNode nxt = curr;
+
+        int count = 0;
+        int size = 0;
+
+        if (size1(head) < k && nxt != null) {
+            return nxt;
+        } else {
+
+            while (curr != null && count < k) {
+
+                nxt = curr.next;
+
+                curr.next = prev;
+
+                prev = curr;
+                curr = nxt;
+
+                count++;
+            }
+
+            if (curr != null) {
+                head.next = reverseKGroup(nxt, k);
+            }
+        }
+
+        return prev;
+    }
+}
+
+This is a valid recursive solution.
+
+However, there is an important efficiency issue.
+
+Dry Run of Your Code
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+k = 2
+First call
+
+First:
+
+size1(head)
+
+calculates:
+
+size = 5
+
+Since:
+
+5 >= 2
+
+we reverse the first 2 nodes.
+
+Reversal
+
+Initially:
+
+curr = 1
+prev = null
+
+After processing 1:
+
+prev = 1
+curr = 2
+
+After processing 2:
+
+prev = 2 → 1
+curr = 3
+
+So:
+
+2 → 1
+
+Then:
+
+head.next = reverseKGroup(nxt, k);
+
+Remember:
+
+head = 1
+nxt = 3
+
+Therefore:
+
+1.next = reverseKGroup(3, 2)
+Second recursive call
+
+List:
+
+3 → 4 → 5
+
+size1() gives:
+
+3
+
+Reverse:
+
+4 → 3
+
+Then recursively process:
+
+5
+Third recursive call
+
+List:
+
+5
+
+size1() gives:
+
+1
+
+Since:
+
+1 < 2
+
+return:
+
+5
+
+Now:
+
+4 → 3 → 5
+
+Then first call connects:
+
+2 → 1 → 4 → 3 → 5
+
+Final answer:
+
+2 → 1 → 4 → 3 → 5
+Important Issue With Your Code
+
+You have:
+
+size1(head)
+
+inside every recursive call.
+
+For example:
+
+1 → 2 → 3 → 4 → 5 → 6 → ...
+
+You calculate the remaining list size repeatedly:
+
+size(n)
+size(n-k)
+size(n-2k)
+...
+
+So you are traversing many nodes more than once.
+
+The solution is still correct, but the repeated size calculation makes it less clean and can lead to O(n²) total traversal in the worst case.
+
+Approach 5 — Iterative Pointer Manipulation ⭐ Most Optimal
+
+We can solve everything by directly manipulating links.
+
+This is the best interview solution because:
+
+Time  = O(n)
+Space = O(1)
+
+No:
+
+ArrayList
+Stack
+Recursion
+Repeated size calculation
+Core Idea
+
+Suppose:
+
+prev → 1 → 2 → 3 → 4 → 5
+
+and:
+
+k = 3
+
+We reverse:
+
+1 → 2 → 3
+
+into:
+
+3 → 2 → 1
+
+and connect:
+
+prev → 3 → 2 → 1 → 4 → 5
+
+Then repeat.
+
+Code
+class Solution {
+    public ListNode reverseKGroup(ListNode head, int k) {
+
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        ListNode groupPrev = dummy;
+
+        while (true) {
+
+            // Find kth node
+            ListNode kth = groupPrev;
+
+            for (int i = 0; i < k; i++) {
+                kth = kth.next;
+
+                if (kth == null) {
+                    return dummy.next;
+                }
+            }
+
+            ListNode groupNext = kth.next;
+
+            // Reverse current group
+            ListNode prev = groupNext;
+            ListNode curr = groupPrev.next;
+
+            while (curr != groupNext) {
+                ListNode next = curr.next;
+
+                curr.next = prev;
+                prev = curr;
+                curr = next;
+            }
+
+            // Connect previous part with reversed group
+            ListNode temp = groupPrev.next;
+
+            groupPrev.next = kth;
+
+            groupPrev = temp;
+        }
+    }
+}
+
+Detailed Dry Run — Optimal Approach
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+k = 3
+
+Initially:
+
+dummy → 1 → 2 → 3 → 4 → 5
+  ↑
+groupPrev
+Step 1 — Find kth Node
+
+Start:
+
+groupPrev = dummy
+
+Move 3 times:
+
+1st → 1
+2nd → 2
+3rd → 3
+
+Therefore:
+
+kth = 3
+
+And:
+
+groupNext = 4
+
+So our group is:
+
+1 → 2 → 3 | 4 → 5
+Step 2 — Reverse Group
+
+Initially:
+
+prev = 4
+curr = 1
+
+Why is:
+
+prev = groupNext
+
+important?
+
+Because after reversal, the first group must connect to:
+
+4 → 5
+Reverse 1
+1.next = 4
+
+Now:
+
+1 → 4
+Reverse 2
+2 → 1 → 4
+Reverse 3
+3 → 2 → 1 → 4
+
+So:
+
+prev = 3
+Step 3 — Connect Group
+
+Before:
+
+dummy → 1
+
+After reversal:
+
+3 → 2 → 1 → 4 → 5
+
+Connect dummy:
+
+dummy → 3 → 2 → 1 → 4 → 5
+
+Now:
+
+groupPrev = 1
+
+because 1 is now the last node of the reversed group.
+
+Second Group
+
+Remaining:
+
+4 → 5
+
+We need:
+
+k = 3
+
+But only 2 nodes exist.
+
+While finding kth:
+
+groupPrev = 1
+
+Move:
+
+1st → 4
+2nd → 5
+3rd → null
+
+kth == null.
+
+Therefore:
+
+return dummy.next;
+
+Final:
+
+3 → 2 → 1 → 4 → 5
+Another Dry Run — k = 2
+
+Input:
+
+1 → 2 → 3 → 4 → 5
+k = 2
+First group
+1 → 2
+
+Reverse:
+
+2 → 1
+
+List:
+
+2 → 1 → 3 → 4 → 5
+Second group
+3 → 4
+
+Reverse:
+
+4 → 3
+
+List:
+
+2 → 1 → 4 → 3 → 5
+Last group
+5
+
+Only one node.
+
+Since:
+
+1 < 2
+
+don't reverse.
+
+Final:
+
+2 → 1 → 4 → 3 → 5
+Why dummy Is Important
+
+Without a dummy node, the first group's head changes.
+
+For:
+
+1 → 2 → 3
+
+after reversing:
+
+3 → 2 → 1
+
+The head changed from 1 to 3.
+
+The dummy node makes this easy:
+
+dummy → 1 → 2 → 3
+
+After reversal:
+
+dummy → 3 → 2 → 1
+
+So:
+
+return dummy.next;
+
+always gives the correct head.
+
+Complexity Comparison
+Approach	Time	Space	Notes
+ArrayList	O(n)	O(n)	Easy but doesn't manipulate nodes
+Stack	O(n)	O(k)	Uses extra data structure
+Simple Recursion	O(n)	O(n/k)	Clean recursive solution
+Your size1() recursion	O(n²) worst case	O(n/k)	Recalculates size every call
+Iterative pointers	O(n)	O(1)	⭐ Optimal
+⭐ Most Optimal Solution
+
+For interviews, remember this pattern:
+
+1. Create dummy
+2. Find kth node
+3. Save node after kth
+4. Reverse current k nodes
+5. Connect previous part
+6. Move groupPrev
+7. Repeat
+
+The most important pointer structure is:
+
+Before:
+
+groupPrev → 1 → 2 → 3 → groupNext
+
+After:
+
+groupPrev → 3 → 2 → 1 → groupNext
+Mental Template
+Find kth
+   ↓
+Save groupNext
+   ↓
+Reverse k nodes
+   ↓
+Connect groupPrev → kth
+   ↓
+Move groupPrev to old first node
+   ↓
+Repeat
+Final Interview Answer
+
+Use the iterative pointer approach:
+
+Time:  O(n)
+Space: O(1)
+
+This is better than your recursive implementation because it avoids the repeated size1(head) traversal and achieves constant auxiliary space.
