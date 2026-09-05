@@ -1,0 +1,841 @@
+LeetCode 148 — Sort List
+Problem Understanding
+
+You are given the head of a singly linked list. Sort the linked list in ascending order.
+
+Example:
+
+Input:
+4 → 2 → 1 → 3
+
+Output:
+1 → 2 → 3 → 4
+
+The important constraint is that the expected optimal solution should achieve:
+
+O(n log n) time
+O(1) auxiliary space for the fully optimized iterative version
+
+Because linked lists don't support random access efficiently, Merge Sort is a natural fit.
+
+Approaches
+
+We can solve it from brute force to optimal:
+
+Convert to ArrayList + Sort — O(n log n), O(n)
+Insertion Sort on Linked List — O(n²), O(1)
+Recursive Merge Sort — O(n log n), O(log n) recursion
+Bottom-Up Iterative Merge Sort — O(n log n), O(1) ⭐
+
+Your supplied code is Approach 3: Recursive Merge Sort.
+
+Approach 1 — ArrayList + Collections.sort()
+Idea
+
+Since sorting an array is easy:
+
+Traverse the linked list.
+Store all values in an ArrayList.
+Sort the array.
+Either create a new list or overwrite the existing node values.
+
+This is simple but uses extra memory.
+
+Code
+
+class Solution {
+    public ListNode sortList(ListNode head) {
+
+        ArrayList<Integer> arr = new ArrayList<>();
+
+        ListNode curr = head;
+
+        while (curr != null) {
+            arr.add(curr.val);
+            curr = curr.next;
+        }
+
+        Collections.sort(arr);
+
+        curr = head;
+        int i = 0;
+
+        while (curr != null) {
+            curr.val = arr.get(i++);
+            curr = curr.next;
+        }
+
+        return head;
+    }
+}
+
+Dry Run
+
+Input:
+
+4 → 2 → 1 → 3
+
+Store:
+
+[4, 2, 1, 3]
+
+Sort:
+
+[1, 2, 3, 4]
+
+Put values back:
+
+1 → 2 → 3 → 4
+Complexity
+Time: O(n log n)
+Space: O(n)
+
+The sorting time is good, but the extra array is unnecessary.
+
+Approach 2 — Insertion Sort
+Idea
+
+We can sort the linked list directly using Insertion Sort.
+
+Maintain a sorted portion:
+
+sorted → 1 → 4
+
+Take the next node:
+
+3
+
+Find its correct position:
+
+1 → 3 → 4
+
+Then continue.
+
+This works nicely with linked lists because inserting a node doesn't require shifting elements like an array.
+
+Code
+
+class Solution {
+    public ListNode sortList(ListNode head) {
+
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        ListNode dummy = new ListNode(0);
+
+        ListNode curr = head;
+
+        while (curr != null) {
+
+            ListNode next = curr.next;
+
+            ListNode prev = dummy;
+
+            while (prev.next != null &&
+                   prev.next.val < curr.val) {
+                prev = prev.next;
+            }
+
+            curr.next = prev.next;
+            prev.next = curr;
+
+            curr = next;
+        }
+
+        return dummy.next;
+    }
+}
+
+Dry Run
+
+Input:
+
+4 → 2 → 1 → 3
+Insert 4
+4
+Insert 2
+
+2 should come before 4:
+
+2 → 4
+Insert 1
+
+1 goes to the beginning:
+
+1 → 2 → 4
+Insert 3
+
+3 goes between 2 and 4:
+
+1 → 2 → 3 → 4
+Complexity
+
+Worst case:
+
+n + (n-1) + (n-2) + ... + 1
+
+Therefore:
+
+Time: O(n²)
+Space: O(1)
+
+This is better in space but much worse in time.
+
+Approach 3 — Recursive Merge Sort ⭐
+
+This is the approach in your code.
+
+Why Merge Sort?
+
+A linked list can be split efficiently using:
+
+slow + fast pointers
+
+Then each half can be recursively sorted.
+
+Finally, merge the two sorted halves.
+
+The pattern is:
+
+List
+ ↓
+Split into two halves
+ ↓
+Sort left
+ ↓
+Sort right
+ ↓
+Merge
+
+For example:
+
+4 → 2 → 1 → 3
+
+Split:
+
+4 → 2     1 → 3
+
+Sort:
+
+2 → 4     1 → 3
+
+Merge:
+
+1 → 2 → 3 → 4
+Your Code
+
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode() {}
+ *     ListNode(int val) { this.val = val; }
+ *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }
+ * }
+ */
+
+class Solution {
+    public ListNode sortList(ListNode head) {
+        if(head==null||head.next==null){
+            return head;
+        }
+
+        ListNode prev=null, slow=head, fast=head;
+        while(fast!=null&&fast.next!=null){
+            prev=slow;
+            slow=slow.next;
+            fast=fast.next.next;
+        }
+
+        prev.next=null;
+
+        ListNode l1= sortList(head);
+        ListNode l2= sortList(slow);
+
+        return merge(l1, l2);
+    }
+
+    public ListNode merge(ListNode l1, ListNode l2){
+        ListNode l=new ListNode(0),p=l;
+        while(l1!=null&&l2!=null){
+            if(l1.val<l2.val){
+                p.next=l1;
+                l1=l1.next;
+            } else{
+                p.next=l2;
+                l2=l2.next;
+            }
+            p=p.next;
+        }
+
+        if(l1!=null){
+            p.next=l1;
+        }
+
+        if(l2!=null){
+            p.next=l2;
+        }
+
+        return l.next;
+    }
+}
+
+Detailed Dry Run
+
+Let's take:
+
+4 → 2 → 1 → 3
+Step 1 — Split the List
+
+Initially:
+
+slow = 4
+fast = 4
+prev = null
+
+First iteration:
+
+slow = 2
+fast = 1
+prev = 4
+
+Second iteration:
+
+slow = 1
+fast = null
+prev = 2
+
+Now:
+
+4 → 2 → 1 → 3
+    ↑     ↑
+   prev  slow
+
+Then:
+
+prev.next = null;
+
+Splits the list:
+
+4 → 2
+
+1 → 3
+
+So:
+
+head = 4
+slow = 1
+Step 2 — Recursively Sort Left Half
+
+We call:
+
+sortList(4 → 2)
+
+Split:
+
+4
+2
+
+Each contains one node, so both are already sorted.
+
+Merge:
+
+2 → 4
+
+Therefore:
+
+l1 = 2 → 4
+Step 3 — Recursively Sort Right Half
+
+We call:
+
+sortList(1 → 3)
+
+Split:
+
+1
+3
+
+Both are already sorted.
+
+Merge:
+
+1 → 3
+
+Therefore:
+
+l2 = 1 → 3
+Step 4 — Merge Both Sorted Lists
+
+We now have:
+
+l1 = 2 → 4
+l2 = 1 → 3
+
+Compare:
+
+2 vs 1
+
+Take 1:
+
+1
+
+Then:
+
+2 vs 3
+
+Take 2:
+
+1 → 2
+
+Then:
+
+4 vs 3
+
+Take 3:
+
+1 → 2 → 3
+
+Now l2 is empty.
+
+Append remaining 4:
+
+1 → 2 → 3 → 4
+
+Final answer:
+
+1 → 2 → 3 → 4
+Merge Sort Recursion Tree
+
+For:
+
+4 → 2 → 1 → 3
+
+The recursion looks like:
+
+             4 2 1 3
+             /     \
+           4 2     1 3
+           / \     / \
+          4   2   1   3
+           \ /     \ /
+           2 4     1 3
+              \   /
+             1 2 3 4
+
+The important thing is:
+
+Divide → Divide → Base Case
+                    ↓
+             Merge → Merge
+Why prev.next = null Is Important
+
+This line in your code is critical:
+
+prev.next = null;
+
+Before:
+
+4 → 2 → 1 → 3
+    ↑
+   prev
+
+If we don't disconnect the list, the two recursive calls may still belong to the same linked list.
+
+After:
+
+4 → 2    1 → 3
+      X
+
+Now we have two independent lists.
+
+Why Slow/Fast Works
+
+You use:
+
+while(fast != null && fast.next != null){
+    prev = slow;
+    slow = slow.next;
+    fast = fast.next.next;
+}
+
+slow moves one step:
+
+slow → +1
+
+fast moves two:
+
+fast → +2
+
+Therefore, when fast reaches the end, slow is around the middle.
+
+But notice that you maintain prev.
+
+Why?
+
+Because you need:
+
+prev.next = null;
+
+to actually cut the list.
+
+That's a very useful linked-list pattern.
+
+Approach 4 — Bottom-Up Iterative Merge Sort ⭐⭐⭐
+
+This is the most optimal approach in terms of auxiliary space.
+
+Recursive Merge Sort:
+
+Time:  O(n log n)
+Space: O(log n)
+
+The recursion stack consumes O(log n).
+
+We can remove recursion entirely by doing Merge Sort bottom-up.
+
+Idea
+
+Start with groups of size 1.
+
+For:
+
+4 → 2 → 1 → 3
+
+Initially:
+
+[4] [2] [1] [3]
+
+Merge pairs:
+
+[2,4] [1,3]
+
+Then merge:
+
+[1,2,3,4]
+
+In general:
+
+size = 1
+size = 2
+size = 4
+size = 8
+...
+
+Code
+class Solution {
+
+    public ListNode sortList(ListNode head) {
+
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        // Find length
+        int length = 0;
+        ListNode curr = head;
+
+        while (curr != null) {
+            length++;
+            curr = curr.next;
+        }
+
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        // Merge blocks of size 1, 2, 4, 8...
+        for (int size = 1; size < length; size *= 2) {
+
+            ListNode prev = dummy;
+            curr = dummy.next;
+
+            while (curr != null) {
+
+                // First half
+                ListNode left = curr;
+
+                ListNode right = split(left, size);
+
+                // Remaining part
+                curr = split(right, size);
+
+                // Merge left and right
+                ListNode merged = merge(left, right);
+
+                prev.next = merged;
+
+                // Move prev to the end of merged list
+                while (prev.next != null) {
+                    prev = prev.next;
+                }
+            }
+        }
+
+        return dummy.next;
+    }
+
+    // Split first 'size' nodes and return remaining list
+    private ListNode split(ListNode head, int size) {
+
+        if (head == null) {
+            return null;
+        }
+
+        for (int i = 1; i < size && head.next != null; i++) {
+            head = head.next;
+        }
+
+        ListNode second = head.next;
+        head.next = null;
+
+        return second;
+    }
+
+    private ListNode merge(ListNode l1, ListNode l2) {
+
+        ListNode dummy = new ListNode(0);
+        ListNode curr = dummy;
+
+        while (l1 != null && l2 != null) {
+
+            if (l1.val <= l2.val) {
+                curr.next = l1;
+                l1 = l1.next;
+            } else {
+                curr.next = l2;
+                l2 = l2.next;
+            }
+
+            curr = curr.next;
+        }
+
+        curr.next = (l1 != null) ? l1 : l2;
+
+        return dummy.next;
+    }
+}
+
+Note
+
+The above is the bottom-up idea, but the while (prev.next != null) walk can add unnecessary traversal. A cleaner fully optimized implementation tracks the tail during merge:
+
+class Solution {
+
+    public ListNode sortList(ListNode head) {
+
+        if (head == null || head.next == null) {
+            return head;
+        }
+
+        int length = 0;
+        ListNode curr = head;
+
+        while (curr != null) {
+            length++;
+            curr = curr.next;
+        }
+
+        ListNode dummy = new ListNode(0);
+        dummy.next = head;
+
+        for (int size = 1; size < length; size *= 2) {
+
+            ListNode prev = dummy;
+            curr = dummy.next;
+
+            while (curr != null) {
+
+                ListNode left = curr;
+                ListNode right = split(left, size);
+                curr = split(right, size);
+
+                ListNode[] result = merge(left, right);
+
+                prev.next = result[0];
+                prev = result[1];
+            }
+        }
+
+        return dummy.next;
+    }
+
+    private ListNode split(ListNode head, int size) {
+
+        if (head == null) {
+            return null;
+        }
+
+        for (int i = 1; i < size && head.next != null; i++) {
+            head = head.next;
+        }
+
+        ListNode second = head.next;
+        head.next = null;
+
+        return second;
+    }
+
+    private ListNode[] merge(ListNode l1, ListNode l2) {
+
+        ListNode dummy = new ListNode(0);
+        ListNode tail = dummy;
+
+        while (l1 != null && l2 != null) {
+
+            if (l1.val <= l2.val) {
+                tail.next = l1;
+                l1 = l1.next;
+            } else {
+                tail.next = l2;
+                l2 = l2.next;
+            }
+
+            tail = tail.next;
+        }
+
+        tail.next = (l1 != null) ? l1 : l2;
+
+        while (tail.next != null) {
+            tail = tail.next;
+        }
+
+        return new ListNode[]{dummy.next, tail};
+    }
+}
+
+For interview purposes, the recursive version you supplied is usually much easier to explain and write correctly.
+
+Bottom-Up Dry Run
+
+Input:
+
+4 → 2 → 1 → 3
+Pass 1 — size = 1
+
+Treat every node as a sorted block:
+
+[4] [2] [1] [3]
+
+Merge:
+
+[2 → 4] [1 → 3]
+Pass 2 — size = 2
+
+Now:
+
+[2 → 4] [1 → 3]
+
+Merge:
+
+1 → 2 → 3 → 4
+
+Done.
+
+Complexity Comparison
+Approach	Time	Extra Space	Notes
+ArrayList + Sort	O(n log n)	O(n)	Simple
+Insertion Sort	O(n²)	O(1)	Good only for small/nearly sorted lists
+Recursive Merge Sort	O(n log n)	O(log n)	Your solution
+Bottom-Up Merge Sort	O(n log n)	O(1)	⭐ Most optimal
+⭐ Why Merge Sort Is Best for Linked Lists
+
+Merge Sort is particularly suitable for linked lists because:
+
+1. Splitting is easy
+
+Use:
+
+slow
+fast
+
+to find the middle.
+
+2. Merging is easy
+
+We can rearrange pointers:
+
+l1 → ...
+l2 → ...
+
+without moving elements.
+
+3. No random access required
+
+Unlike some array-based sorting algorithms, Merge Sort doesn't need:
+
+arr[i]
+arr[mid]
+arr[j]
+
+random access.
+
+Your Code — What You Should Remember
+
+Your solution follows exactly this pattern:
+
+             Linked List
+                  ↓
+           Find Middle
+          /           \
+      Left             Right
+       ↓                 ↓
+   sort(left)        sort(right)
+       ↓                 ↓
+          \           /
+             Merge
+               ↓
+          Sorted List
+
+The three most important lines are:
+
+Find middle
+while (fast != null && fast.next != null) {
+    prev = slow;
+    slow = slow.next;
+    fast = fast.next.next;
+}
+Cut the list
+prev.next = null;
+Recursively sort + merge
+ListNode l1 = sortList(head);
+ListNode l2 = sortList(slow);
+
+return merge(l1, l2);
+🧠 Interview Pattern
+
+When you see:
+
+Sort a Linked List
+
+Immediately think:
+
+Linked List + O(n log n)
+          ↓
+      Merge Sort
+          ↓
+Slow/Fast → Split
+          ↓
+Recursive/Iterative sort
+          ↓
+      Merge
+If interviewer asks for simplest optimal solution:
+
+Use your recursive Merge Sort:
+
+Time  = O(n log n)
+Space = O(log n)
+If interviewer specifically asks:
+
+"Can you do it with O(1) extra space?"
+
+Then use:
+
+Bottom-Up Iterative Merge Sort
+
+Time  = O(n log n)
+Space = O(1)
+One-line memory trick
+
+Linked List Sorting → Split with Slow/Fast → Merge Sort → Merge sorted halves.
