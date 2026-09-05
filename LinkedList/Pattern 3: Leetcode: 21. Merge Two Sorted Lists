@@ -1,0 +1,663 @@
+LeetCode 21 — Merge Two Sorted Lists
+Problem Understanding
+
+You are given two sorted linked lists:
+
+list1 = 1 → 2 → 4
+list2 = 1 → 3 → 4
+
+Merge them into one sorted linked list:
+
+1 → 1 → 2 → 3 → 4 → 4
+
+Important:
+
+Both lists are already sorted.
+We should preserve sorted order.
+We can reuse the existing nodes instead of creating new nodes.
+
+Approach 1 — Brute Force: Store Values + Sort
+Idea
+
+The simplest approach is:
+
+Traverse list1 and store all values.
+Traverse list2 and store all values.
+Sort the combined array.
+Create a new linked list.
+
+This ignores the fact that the input lists are already sorted, so it is not optimal.
+
+Code
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+
+        ArrayList<Integer> arr = new ArrayList<>();
+
+        while (list1 != null) {
+            arr.add(list1.val);
+            list1 = list1.next;
+        }
+
+        while (list2 != null) {
+            arr.add(list2.val);
+            list2 = list2.next;
+        }
+
+        Collections.sort(arr);
+
+        ListNode dummy = new ListNode(0);
+        ListNode curr = dummy;
+
+        for (int value : arr) {
+            curr.next = new ListNode(value);
+            curr = curr.next;
+        }
+
+        return dummy.next;
+    }
+}
+
+Dry Run
+
+Input:
+
+list1 = 1 → 2 → 4
+list2 = 1 → 3 → 4
+
+Store values:
+
+[1, 2, 4, 1, 3, 4]
+
+Sort:
+
+[1, 1, 2, 3, 4, 4]
+
+Create linked list:
+
+1 → 1 → 2 → 3 → 4 → 4
+Complexity
+Time: O((n + m) log(n + m))
+Space: O(n + m)
+
+Approach 2 — Using ArrayList Without Sorting
+
+We already know both lists are sorted.
+
+So we can perform the same merge operation as merge sort:
+
+Compare current elements
+        ↓
+Take smaller
+        ↓
+Move that list forward
+        ↓
+Repeat
+
+Instead of directly connecting nodes, store the result in an ArrayList.
+
+Code
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+
+        ArrayList<Integer> arr = new ArrayList<>();
+
+        while (list1 != null && list2 != null) {
+
+            if (list1.val <= list2.val) {
+                arr.add(list1.val);
+                list1 = list1.next;
+            } else {
+                arr.add(list2.val);
+                list2 = list2.next;
+            }
+        }
+
+        while (list1 != null) {
+            arr.add(list1.val);
+            list1 = list1.next;
+        }
+
+        while (list2 != null) {
+            arr.add(list2.val);
+            list2 = list2.next;
+        }
+
+        ListNode dummy = new ListNode(0);
+        ListNode curr = dummy;
+
+        for (int value : arr) {
+            curr.next = new ListNode(value);
+            curr = curr.next;
+        }
+
+        return dummy.next;
+    }
+}
+
+Dry Run
+list1 = 1 → 2 → 4
+list2 = 1 → 3 → 4
+Compare 1 and 1
+1 <= 1
+
+Take from list1:
+
+result = [1]
+
+Now:
+
+list1 = 2 → 4
+list2 = 1 → 3 → 4
+Compare 2 and 1
+
+Take 1:
+
+result = [1, 1]
+Compare 2 and 3
+
+Take 2:
+
+result = [1, 1, 2]
+Compare 4 and 3
+
+Take 3:
+
+result = [1, 1, 2, 3]
+Compare 4 and 4
+
+Take 4 from list1:
+
+result = [1, 1, 2, 3, 4]
+
+Now list1 is empty.
+
+Append remaining:
+
+4
+
+Final:
+
+[1, 1, 2, 3, 4, 4]
+Complexity
+Time: O(n + m)
+Space: O(n + m)
+
+Better time, but still unnecessary extra space.
+
+Approach 3 — Recursive Merge
+
+Now we can directly connect nodes.
+
+Idea
+
+Compare the first nodes:
+
+1 → 2 → 4
+1 → 3 → 4
+
+Take the smaller one.
+
+If list1.val <= list2.val, then:
+
+list1.next = merge(list1.next, list2)
+
+Otherwise:
+
+list2.next = merge(list1, list2.next)
+
+Code
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+
+        if (list1 == null) {
+            return list2;
+        }
+
+        if (list2 == null) {
+            return list1;
+        }
+
+        if (list1.val <= list2.val) {
+            list1.next = mergeTwoLists(list1.next, list2);
+            return list1;
+        } else {
+            list2.next = mergeTwoLists(list1, list2.next);
+            return list2;
+        }
+    }
+}
+
+Dry Run — Recursive Approach
+
+Input:
+
+list1 = 1 → 2 → 4
+list2 = 1 → 3 → 4
+Call 1
+
+Compare:
+
+1 and 1
+
+Take list1:
+
+1 → merge(2 → 4, 1 → 3 → 4)
+Call 2
+
+Compare:
+
+2 and 1
+
+Take list2:
+
+1 → merge(2 → 4, 3 → 4)
+Call 3
+
+Compare:
+
+2 and 3
+
+Take 2:
+
+2 → merge(4, 3 → 4)
+Call 4
+
+Compare:
+
+4 and 3
+
+Take 3:
+
+3 → merge(4, 4)
+Call 5
+
+Compare:
+
+4 and 4
+
+Take first 4:
+
+4 → merge(null, 4)
+Call 6
+
+list1 == null, so return:
+
+4
+
+Now the recursion connects everything:
+
+1 → 1 → 2 → 3 → 4 → 4
+Complexity
+Time: O(n + m)
+Space: O(n + m) recursion stack in the worst case
+
+The time is optimal, but the recursion consumes stack space.
+
+Approach 4 — Iterative Two-Pointer ⭐
+
+This is the most optimal approach.
+
+Idea
+
+Use a dummy node and a pointer list.
+
+We have:
+
+list1 → 1 → 2 → 4
+
+list2 → 1 → 3 → 4
+
+Compare:
+
+list1.val
+list2.val
+
+Take the smaller node and attach it to the result.
+
+Then move that list forward.
+
+When one list finishes, attach the remaining list directly.
+
+Your Code — Optimal Solution
+
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+
+        ListNode list = new ListNode(0);
+        ListNode head = list;
+
+        while (list1 != null && list2 != null) {
+
+            if (list1.val < list2.val) {
+                list.next = list1;
+                list1 = list1.next;
+            } else {
+                list.next = list2;
+                list2 = list2.next;
+            }
+
+            list = list.next;
+        }
+
+        while (list1 != null) {
+            list.next = list1;
+            list1 = list1.next;
+            list = list.next;
+        }
+
+        while (list2 != null) {
+            list.next = list2;
+            list2 = list2.next;
+            list = list.next;
+        }
+
+        list.next = null;
+
+        return head.next;
+    }
+}
+
+Detailed Dry Run
+
+Input:
+
+list1 = 1 → 2 → 4
+list2 = 1 → 3 → 4
+
+Initially:
+
+dummy → null
+  ↑
+ list
+
+head points to the dummy so that we can later return:
+
+head.next
+Step 1
+
+Compare:
+
+list1 = 1
+list2 = 1
+
+Condition:
+
+list1.val < list2.val
+
+is false.
+
+So take list2.
+
+dummy → 1
+
+Move:
+
+list2 → 3
+list → 1
+
+Current:
+
+list1 = 1 → 2 → 4
+list2 = 3 → 4
+result = 1
+Step 2
+
+Compare:
+
+1 vs 3
+
+Take list1:
+
+dummy → 1 → 1
+
+Move:
+
+list1 → 2
+list → second 1
+Step 3
+
+Compare:
+
+2 vs 3
+
+Take 2:
+
+dummy → 1 → 1 → 2
+
+Move:
+
+list1 → 4
+Step 4
+
+Compare:
+
+4 vs 3
+
+Take 3:
+
+dummy → 1 → 1 → 2 → 3
+
+Move:
+
+list2 → 4
+Step 5
+
+Compare:
+
+4 vs 4
+
+Your condition is:
+
+list1.val < list2.val
+
+Since 4 < 4 is false, we take from list2.
+
+dummy → 1 → 1 → 2 → 3 → 4
+
+Now:
+
+list2 = null
+list1 = 4
+Step 6 — Append Remaining List
+
+list2 is empty, so the first loop stops.
+
+Now:
+
+while(list1 != null)
+
+runs.
+
+Attach remaining node:
+
+dummy → 1 → 1 → 2 → 3 → 4 → 4
+
+Now both lists are exhausted.
+
+Final:
+
+1 → 1 → 2 → 3 → 4 → 4
+
+Return:
+
+return head.next;
+Why Do We Use a Dummy Node?
+
+Without a dummy node, we would need to separately determine the first node of the merged list.
+
+For example:
+
+1 → 2 → 4
+1 → 3 → 4
+
+Which 1 should become the head?
+
+A dummy node eliminates this special case:
+
+dummy → ...
+
+Every selected node simply gets attached using:
+
+list.next = selectedNode;
+
+At the end:
+
+return head.next;
+Why Can We Attach the Remaining List Directly?
+
+Suppose:
+
+list1 = 7 → 8 → 10
+list2 = null
+
+Because list1 was already sorted, we don't need to compare anything anymore.
+
+The remaining portion can simply be attached:
+
+result → 7 → 8 → 10
+
+That's why these loops are useful:
+
+while (list1 != null) {
+    list.next = list1;
+    list1 = list1.next;
+    list = list.next;
+}
+
+while (list2 != null) {
+    list.next = list2;
+    list2 = list2.next;
+    list = list.next;
+}
+
+Actually, after the first main loop, you can make the code even shorter:
+
+list.next = (list1 != null) ? list1 : list2;
+Slightly Cleaner Optimal Version
+
+Same algorithm, fewer lines:
+
+class Solution {
+    public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+
+        ListNode dummy = new ListNode(0);
+        ListNode curr = dummy;
+
+        while (list1 != null && list2 != null) {
+
+            if (list1.val <= list2.val) {
+                curr.next = list1;
+                list1 = list1.next;
+            } else {
+                curr.next = list2;
+                list2 = list2.next;
+            }
+
+            curr = curr.next;
+        }
+
+        curr.next = (list1 != null) ? list1 : list2;
+
+        return dummy.next;
+    }
+}
+
+This is the version I'd use in an interview.
+
+Edge Cases
+1. Both lists empty
+list1 = null
+list2 = null
+
+Result:
+
+null
+2. One list empty
+list1 = null
+list2 = 1 → 2 → 3
+
+Result:
+
+1 → 2 → 3
+3. Different lengths
+list1 = 1 → 4 → 7
+list2 = 2 → 3
+
+Process:
+
+1
+2
+3
+
+Then append remaining:
+
+4 → 7
+
+Result:
+
+1 → 2 → 3 → 4 → 7
+4. Duplicate values
+list1 = 1 → 1 → 3
+list2 = 1 → 2 → 3
+
+Result:
+
+1 → 1 → 1 → 2 → 3 → 3
+Complexity Comparison
+Approach	Technique	Time	Extra Space
+1	Store + Sort	O((n+m) log(n+m))	O(n+m)
+2	ArrayList Two Pointer	O(n+m)	O(n+m)
+3	Recursive	O(n+m)	O(n+m) recursion
+4	Iterative Two Pointer	O(n+m)	O(1)
+⭐ Most Optimal Approach
+
+The key pattern is:
+
+Two Sorted Lists
+       ↓
+Compare current nodes
+       ↓
+Take smaller node
+       ↓
+Move that list
+       ↓
+Repeat
+       ↓
+Attach remaining list
+Remember this template:
+ListNode dummy = new ListNode(0);
+ListNode curr = dummy;
+
+while (list1 != null && list2 != null) {
+
+    if (list1.val <= list2.val) {
+        curr.next = list1;
+        list1 = list1.next;
+    } else {
+        curr.next = list2;
+        list2 = list2.next;
+    }
+
+    curr = curr.next;
+}
+
+curr.next = (list1 != null) ? list1 : list2;
+
+return dummy.next;
+Interview Pattern 🧠
+
+This problem is essentially the Linked List version of the Merge step in Merge Sort.
+
+Think:
+
+Two sorted sequences → compare front elements → take smaller → move forward.
+
+Final complexity:
+
+Time = O(n + m)
+Space = O(1)
+
+Your supplied solution is already optimal; the only simplification I'd recommend is replacing the two final while loops with:
+
+curr.next = (list1 != null) ? list1 : list2;
