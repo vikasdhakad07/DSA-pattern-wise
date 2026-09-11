@@ -1,0 +1,14 @@
+Pattern 1: DFS Traversals (Pre, In, Post Order)
+Depth-First Search explores as deep as possible along each branch before backtracking.
+
+Pre-Order (Root $\rightarrow$ Left $\rightarrow$ Right): Clones trees or constructs prefix expressions.
+
+In-Order (Left $\rightarrow$ Root $\rightarrow$ Right): Processes nodes in strictly non-decreasing order for Binary Search Trees (BST).
+
+Post-Order (Left $\rightarrow$ Right $\rightarrow$ Root): Essential for deletion or calculating child properties before processing the root.
+
+High-Frequency Interview Questions:
+Easy: LeetCode 94 - Binary Tree Inorder Traversal (Iterative using Stack)
+Medium: LeetCode 105 - Construct Binary Tree from Preorder and Inorder Traversal
+Medium: LeetCode 230 - Kth Smallest Element in a BST: Perform iterative in-order traversal; stop at the $K$-th popped node.
+Hard: LeetCode 297 - Serialize and Deserialize Binary Tree: Use Pre-order traversal with null markers.
