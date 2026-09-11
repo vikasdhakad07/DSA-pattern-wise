@@ -1,0 +1,618 @@
+LeetCode 94 — Binary Tree Inorder Traversal
+
+Difficulty: Easy
+Pattern: Tree Traversal / DFS
+Traversal: Left → Root → Right
+
+We need to return the inorder traversal of a binary tree as a List<Integer>.
+
+Example:
+
+        1
+         \
+          2
+         /
+        3
+
+Inorder:
+
+Left → Root → Right
+     → 1 → 3 → 2
+
+1. Brute Force — Recursive DFS
+
+The most straightforward approach is recursion.
+
+For every node:
+
+Traverse the left subtree.
+Add the current node.
+Traverse the right subtree.
+
+Code
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+
+        List<Integer> result = new ArrayList<>();
+
+        inorder(root, result);
+
+        return result;
+    }
+
+    public void inorder(TreeNode root, List<Integer> result) {
+
+        if (root == null) {
+            return;
+        }
+
+        // Left
+        inorder(root.left, result);
+
+        // Root
+        result.add(root.val);
+
+        // Right
+        inorder(root.right, result);
+    }
+}
+
+Dry Run
+
+Tree:
+
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Call:
+
+inorder(1)
+
+Go left:
+
+inorder(2)
+
+Go left:
+
+inorder(4)
+
+4.left = null
+
+Add 4
+
+result = [4]
+
+4.right = null
+
+Return to 2.
+
+Add 2:
+
+result = [4, 2]
+
+Go right → 5
+
+Add 5:
+
+result = [4, 2, 5]
+
+Return to 1.
+
+Add 1:
+
+result = [4, 2, 5, 1]
+
+Go right → 3
+
+Add 3:
+
+result = [4, 2, 5, 1, 3]
+Complexity
+Time: O(n)
+Extra Space: O(h) recursion stack
+h = height of tree
+Worst case: O(n) for a skewed tree
+Balanced tree: O(log n)
+
+2. Iterative — Using Stack
+
+Recursion internally uses a call stack.
+
+So we can simulate the same process manually using a Stack<TreeNode>.
+
+This is the standard iterative solution.
+
+Main idea
+
+Keep going left and push every node into the stack.
+
+When there is no more left node:
+
+Pop from stack.
+Add its value.
+Move to its right subtree.
+Again go as far left as possible.
+Code — Your Approach
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+        List<Integer> li=new ArrayList<>();
+        Stack<TreeNode> st=new Stack<>();
+        TreeNode node=root;
+        while(true){
+            if(node!=null){
+                st.push(node);
+                node=node.left;
+            } else {
+                if(st.isEmpty()){
+                    break;
+                }
+                node=st.pop();
+                li.add(node.val);
+                node=node.right;
+            }
+        }
+        return li;
+    }
+}
+
+This is a correct and optimal O(n)-time iterative solution.
+
+Dry Run
+
+Consider:
+
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Initially:
+
+node = 1
+stack = []
+result = []
+Step 1
+
+node = 1
+
+Push 1 and go left:
+
+stack = [1]
+node = 2
+Step 2
+
+node = 2
+
+Push 2 and go left:
+
+stack = [1, 2]
+node = 4
+Step 3
+
+node = 4
+
+Push 4 and go left:
+
+stack = [1, 2, 4]
+node = null
+Step 4
+
+node == null
+
+Pop:
+
+node = 4
+stack = [1, 2]
+
+Add 4:
+
+result = [4]
+
+Move right:
+
+node = 4.right = null
+Step 5
+
+Again node == null.
+
+Pop:
+
+node = 2
+stack = [1]
+
+Add:
+
+result = [4, 2]
+
+Move right:
+
+node = 5
+Step 6
+
+Push 5:
+
+stack = [1, 5]
+node = null
+
+Pop 5:
+
+result = [4, 2, 5]
+
+Move right:
+
+node = null
+Step 7
+
+Pop 1:
+
+stack = []
+result = [4, 2, 5, 1]
+
+Move right:
+
+node = 3
+Step 8
+
+Push 3:
+
+stack = [3]
+node = null
+
+Pop 3:
+
+result = [4, 2, 5, 1, 3]
+
+Now:
+
+stack = []
+node = null
+
+Break.
+
+Final Answer
+[4, 2, 5, 1, 3]
+
+3. Iterative — Cleaner Stack Version
+
+The same idea can be written using the common while (curr != null || !stack.isEmpty()) pattern.
+
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+
+        List<Integer> result = new ArrayList<>();
+        Stack<TreeNode> stack = new Stack<>();
+
+        TreeNode curr = root;
+
+        while (curr != null || !stack.isEmpty()) {
+
+            // Go completely left
+            while (curr != null) {
+                stack.push(curr);
+                curr = curr.left;
+            }
+
+            // Process node
+            curr = stack.pop();
+            result.add(curr.val);
+
+            // Move right
+            curr = curr.right;
+        }
+
+        return result;
+    }
+}
+
+Why this version is popular
+
+Instead of:
+
+while(true)
+
+with an explicit break, we directly express the condition:
+
+while (curr != null || !stack.isEmpty())
+
+The logic is exactly the same.
+
+4. Morris Traversal — Most Space Efficient
+
+Now we can improve the auxiliary space.
+
+The recursive approach uses:
+
+O(h)
+
+stack space.
+
+The iterative stack approach also uses:
+
+O(h)
+
+stack space.
+
+Morris Traversal performs inorder traversal using:
+
+O(1) extra space
+
+It temporarily modifies the tree by creating links called threads.
+
+Idea
+
+For current node:
+
+If there is no left child:
+visit current
+move right
+If there is a left child:
+Find the rightmost node of the left subtree.
+If its right is null, connect it to current.
+Move left.
+If its right already points to current, remove the connection.
+Visit current.
+Move right.
+
+Code
+class Solution {
+    public List<Integer> inorderTraversal(TreeNode root) {
+
+        List<Integer> result = new ArrayList<>();
+
+        TreeNode curr = root;
+
+        while (curr != null) {
+
+            // No left subtree
+            if (curr.left == null) {
+
+                result.add(curr.val);
+                curr = curr.right;
+
+            } else {
+
+                // Find inorder predecessor
+                TreeNode predecessor = curr.left;
+
+                while (predecessor.right != null &&
+                       predecessor.right != curr) {
+                    predecessor = predecessor.right;
+                }
+
+                // Create thread
+                if (predecessor.right == null) {
+
+                    predecessor.right = curr;
+                    curr = curr.left;
+
+                } 
+                // Thread already exists
+                else {
+
+                    predecessor.right = null;
+
+                    result.add(curr.val);
+                    curr = curr.right;
+                }
+            }
+        }
+
+        return result;
+    }
+}
+
+Morris Dry Run
+
+Tree:
+
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+Start:
+
+curr = 1
+
+1 has left child.
+
+Find predecessor of 1:
+
+1.left = 2
+rightmost node of 2's subtree = 5
+
+Create thread:
+
+5.right = 1
+
+Move left:
+
+curr = 2
+
+At 2, it has left child 4.
+
+Find predecessor:
+
+4
+
+Create:
+
+4.right = 2
+
+Move left:
+
+curr = 4
+
+At 4:
+
+4.left == null
+
+Visit:
+
+result = [4]
+
+Move:
+
+curr = 4.right
+
+Because of the temporary thread:
+
+curr = 2
+
+At 2:
+
+Its predecessor is 4.
+
+But now:
+
+4.right == 2
+
+This means we've already processed the left subtree.
+
+Remove thread:
+
+4.right = null
+
+Visit 2:
+
+result = [4, 2]
+
+Move right:
+
+curr = 5
+
+At 5:
+
+No left child.
+
+Visit:
+
+result = [4, 2, 5]
+
+Move right.
+
+Because of our earlier thread:
+
+5.right = 1
+
+So:
+
+curr = 1
+
+At 1:
+
+We find predecessor 5.
+
+Now:
+
+5.right == 1
+
+Remove thread:
+
+5.right = null
+
+Visit 1:
+
+result = [4, 2, 5, 1]
+
+Move right:
+
+curr = 3
+
+Visit 3:
+
+result = [4, 2, 5, 1, 3]
+
+Done.
+
+Complexity Comparison
+Approach	Time	Extra Space	Difficulty
+Recursion	O(n)	O(h)	Easy
+Iterative Stack	O(n)	O(h)	Easy
+Cleaner Stack	O(n)	O(h)	Easy
+Morris Traversal	O(n)	O(1)	Advanced
+
+Where h is the height of the tree.
+
+For a balanced tree:
+
+h = O(log n)
+
+For a completely skewed tree:
+
+h = O(n)
+Which One Should You Use in Interview?
+If asked for the simplest solution
+
+Use recursion:
+
+Left → Root → Right
+If specifically asked for iterative
+
+Use Stack — your solution is excellent:
+
+Go left → Push
+No left → Pop → Visit → Go right
+If asked for O(1) extra space
+
+Use Morris Traversal.
+
+Most Important Pattern to Remember
+
+For Inorder Traversal:
+
+LEFT → ROOT → RIGHT
+
+Think:
+
+while current exists OR stack isn't empty:
+
+    go LEFT as much as possible
+
+    POP
+    VISIT
+
+    go RIGHT
+
+The iterative template to memorize is:
+
+while (curr != null || !stack.isEmpty()) {
+
+    while (curr != null) {
+        stack.push(curr);
+        curr = curr.left;
+    }
+
+    curr = stack.pop();
+    result.add(curr.val);
+
+    curr = curr.right;
+}
+Tree Traversal Cheat Sheet
+Inorder   = Left → Root → Right
+Preorder  = Root → Left → Right
+Postorder = Left → Right → Root
+Levelorder = BFS / Queue
+
+Interview takeaway: For LeetCode 94, your iterative stack code is the standard optimal practical solution: O(n) time and O(h) auxiliary space. Morris is only needed when the interviewer specifically requires O(1) extra space.
