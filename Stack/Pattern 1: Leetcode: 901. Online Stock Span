@@ -1,0 +1,713 @@
+LeetCode 901 — Online Stock Span
+
+Difficulty: Medium
+Pattern: Monotonic Stack
+Concept: Previous Greater Element + Span Compression
+
+1. Problem Understanding
+
+We receive stock prices one at a time.
+
+For each price, return the number of consecutive days ending today where:
+
+previous day's price <= today's price
+
+In other words, the stock span is:
+
+The number of consecutive days going backward, including today, whose price is less than or equal to today's price.
+
+Example
+prices = [100, 80, 60, 70, 60, 75, 85]
+
+Spans:
+
+100 → 1
+80  → 1
+60  → 1
+70  → 2
+60  → 1
+75  → 4
+85  → 6
+
+Answer:
+[1, 1, 1, 2, 1, 4, 6]
+
+Approach 1 — Brute Force
+
+For every incoming price:
+
+Start from today.
+Move backward.
+Keep counting while previous prices are <= current price.
+Stop when we encounter a greater price.
+
+Since we process prices online, we need to store all previous prices.
+
+Code
+class StockSpanner {
+
+    ArrayList<Integer> prices;
+
+    public StockSpanner() {
+        prices = new ArrayList<>();
+    }
+
+    public int next(int price) {
+
+        prices.add(price);
+
+        int span = 1;
+
+        for (int i = prices.size() - 2; i >= 0; i--) {
+
+            if (prices.get(i) <= price) {
+                span++;
+            } else {
+                break;
+            }
+        }
+
+        return span;
+    }
+}
+
+Dry Run
+
+Input:
+
+100, 80, 60, 70, 60, 75, 85
+next(100)
+prices = [100]
+
+No previous day.
+
+span = 1
+
+Output:
+
+1
+next(80)
+
+Check backward:
+
+100 > 80
+
+Stop immediately.
+
+span = 1
+
+Output:
+
+1
+next(60)
+80 > 60
+
+Stop.
+
+span = 1
+
+Output:
+
+1
+next(70)
+
+Backward:
+
+60 <= 70  → count
+80 > 70   → stop
+
+Therefore:
+
+span = 2
+
+Output:
+
+2
+next(75)
+
+Backward:
+
+60 <= 75  → count
+70 <= 75  → count
+60 <= 75  → count
+80 > 75   → stop
+
+Therefore:
+
+span = 4
+Complexity
+
+For each next():
+
+Worst-case time: O(n)
+Space: O(n)
+
+For n calls:
+
+O(n²)
+
+This is too slow for a large number of prices.
+
+Approach 2 — Stack of Prices
+
+We can use a monotonic decreasing stack.
+
+Instead of repeatedly checking all previous prices, maintain only the prices that can potentially act as a previous greater element.
+
+Idea
+
+For current price:
+
+while stack.top <= price:
+    pop
+
+After popping:
+
+If stack is empty → today's span includes all previous days.
+Otherwise → stack top is the previous greater price.
+
+But there is a problem.
+
+If we store only prices, we still need to know how many days each popped price represents.
+
+So we need another structure to store spans.
+
+Approach 3 — Stack of (price, span)
+
+Store:
+
+(price, span)
+
+For every new price:
+
+span = 1
+
+Then:
+
+while top.price <= price:
+    span += top.span
+    pop
+
+Finally:
+
+push(price, span)
+
+This is the key optimization.
+
+Code
+class Node {
+    int price;
+    int span;
+
+    Node(int price, int span) {
+        this.price = price;
+        this.span = span;
+    }
+}
+
+class StockSpanner {
+
+    Stack<Node> stack;
+
+    public StockSpanner() {
+        stack = new Stack<>();
+    }
+
+    public int next(int price) {
+
+        int span = 1;
+
+        while (!stack.isEmpty() && stack.peek().price <= price) {
+
+            Node node = stack.pop();
+
+            span += node.span;
+        }
+
+        stack.push(new Node(price, span));
+
+        return span;
+    }
+}
+
+This is essentially the same idea as your solution.
+
+Approach 4 — Your Solution ⭐
+
+Your implementation is the standard optimal solution.
+
+You use a Node containing:
+
+data  → stock price
+count → span represented by that price
+Your Code
+class Node{
+    int data;
+    int count;
+    
+    Node(int data, int count){
+        this.data=data;
+        this.count=count;
+    }
+}
+
+class StockSpanner {
+    private Stack<Node> stack;
+    
+    public StockSpanner() {
+        stack=new Stack<Node>();
+    }
+    
+    public int next(int price) {
+        int count=1;
+        
+        while(!stack.isEmpty()&&stack.peek().data<=price){
+            Node node=stack.pop();
+            count=count+node.count;
+        }
+
+        stack.push(new Node(price, count));
+        
+        return count;
+    }
+}
+
+Why does this work?
+
+Suppose our stack is:
+
+(100,1)
+(80,1)
+(60,1)
+(70,2)
+
+The node:
+
+(70,2)
+
+means:
+
+Price 70 represents 2 consecutive days: 70 and 60.
+
+Therefore, when a new price 75 arrives, instead of individually checking 70 and 60, we can simply do:
+
+75 >= 70
+
+and add:
+
+2
+
+to the span.
+
+This is called span compression.
+
+Detailed Dry Run
+
+Let's process:
+
+100, 80, 60, 70, 60, 75, 85
+
+We'll maintain:
+
+Stack: bottom → top
+Day 1 — 100
+
+Start:
+
+count = 1
+stack = []
+
+Nothing to pop.
+
+Push:
+
+(100,1)
+
+Stack:
+
+[(100,1)]
+
+Return:
+
+1
+Day 2 — 80
+count = 1
+
+Check top:
+
+100 <= 80 ? NO
+
+Push:
+
+(80,1)
+
+Stack:
+
+[(100,1), (80,1)]
+
+Return:
+
+1
+Day 3 — 60
+count = 1
+
+Check:
+
+80 <= 60 ? NO
+
+Push:
+
+(60,1)
+
+Stack:
+
+[(100,1), (80,1), (60,1)]
+
+Return:
+
+1
+Day 4 — 70
+
+Start:
+
+count = 1
+
+Stack:
+
+[(100,1), (80,1), (60,1)]
+
+Top:
+
+60 <= 70
+
+Pop:
+
+(60,1)
+
+Update:
+
+count = 1 + 1
+      = 2
+
+Now stack:
+
+[(100,1), (80,1)]
+
+Check top:
+
+80 <= 70 ? NO
+
+Push:
+
+(70,2)
+
+Stack:
+
+[(100,1), (80,1), (70,2)]
+
+Return:
+
+2
+Day 5 — 60
+
+Start:
+
+count = 1
+
+Top:
+
+70 <= 60 ? NO
+
+Push:
+
+(60,1)
+
+Stack:
+
+[(100,1), (80,1), (70,2), (60,1)]
+
+Return:
+
+1
+Day 6 — 75
+
+Start:
+
+count = 1
+
+Stack:
+
+[(100,1), (80,1), (70,2), (60,1)]
+Pop (60,1)
+
+Because:
+
+60 <= 75
+
+So:
+
+count = 1 + 1 = 2
+
+Stack:
+
+[(100,1), (80,1), (70,2)]
+Pop (70,2)
+
+Because:
+
+70 <= 75
+
+Add its entire span:
+
+count = 2 + 2 = 4
+
+Stack:
+
+[(100,1), (80,1)]
+Check 80
+80 <= 75 ? NO
+
+Stop.
+
+Push:
+
+(75,4)
+
+Stack:
+
+[(100,1), (80,1), (75,4)]
+
+Return:
+
+4
+Why 4?
+
+The previous 4 prices are:
+
+60, 70, 60, 75
+
+All are <= 75.
+
+But:
+
+80 > 75
+
+So span = 4.
+
+Day 7 — 85
+
+Start:
+
+count = 1
+
+Stack:
+
+[(100,1), (80,1), (75,4)]
+Pop (75,4)
+75 <= 85
+count = 1 + 4 = 5
+
+Stack:
+
+[(100,1), (80,1)]
+Pop (80,1)
+80 <= 85
+count = 5 + 1 = 6
+
+Stack:
+
+[(100,1)]
+Check 100
+100 <= 85 ? NO
+
+Stop.
+
+Push:
+
+(85,6)
+
+Stack:
+
+[(100,1), (85,6)]
+
+Return:
+
+6
+
+Therefore:
+
+Input:
+100 80 60 70 60 75 85
+
+Output:
+1  1  1  2  1  4  6
+Why Is the Stack Monotonic?
+
+Look at the prices in the stack:
+
+100
+80
+75
+
+They are decreasing from bottom to top.
+
+100 > 80 > 75
+
+Whenever a new price arrives, all smaller/equal prices are removed.
+
+For example, when 85 arrives:
+
+100
+80
+75
+
+75 is removed because:
+
+75 <= 85
+
+Then 80 is removed:
+
+80 <= 85
+
+But 100 stays:
+
+100 > 85
+
+So 100 becomes the previous greater element.
+
+Why Can We Pop an Entire Span?
+
+This is the most important part of the problem.
+
+Suppose stack contains:
+
+(80,1)
+(70,2)
+
+(70,2) represents:
+
+70
+60
+
+Now 75 arrives.
+
+Instead of checking:
+
+75 >= 70
+75 >= 60
+
+we already know that the span represented by 70 is 2.
+
+So:
+
+count += 2
+
+This gives:
+
+1 + 2 = 3
+
+That's why storing the span along with the price makes the algorithm efficient.
+
+Complexity
+Brute Force
+
+For each price, we may scan all previous prices.
+
+Time per next() = O(n)
+
+Over n calls:
+
+O(n²)
+
+Space:
+
+O(n)
+Monotonic Stack
+
+Each price is:
+
+pushed exactly once
+popped at most once
+
+Therefore, although one particular next() can pop many elements, across all calls each element is popped only once.
+
+Total:
+
+O(n)
+
+Space:
+
+O(n)
+Final complexity
+Time  = O(n) amortized
+Space = O(n)
+
+For the next() operation, we usually say amortized O(1).
+
+Approach Comparison
+Approach	Idea	Time	Space
+Brute Force	Scan backward every time	O(n²) total	O(n)
+Stack of Prices	Monotonic stack	O(n) total*	O(n)
+Stack (price, span)	Compress previous spans	O(n) total	O(n)
+Your Node Stack	Same (price, span) optimization	O(n) total	O(n)
+
+*A stack containing only prices isn't enough by itself to directly recover spans efficiently unless additional indexing/span information is maintained.
+
+The Core Pattern
+
+This problem is a variation of:
+
+Previous Greater Element
+
+For every current price, we want to find the closest previous price that is:
+
+> current price
+
+Everything between that greater price and today contributes to the span.
+
+The monotonic stack efficiently finds that boundary.
+
+Monotonic Stack Pattern
+
+When you see:
+
+Stock Span
+Next Greater Element
+Daily Temperatures
+Previous Greater Element
+Largest Rectangle in Histogram
+Remove smaller elements while processing
+
+Think:
+
+MONOTONIC STACK
+
+For this problem:
+
+while stack.top.price <= currentPrice:
+    pop
+    add popped.span
+
+push(currentPrice, span)
+⭐ Interview Remember Trick
+
+Remember this 4-step pattern:
+
+1. count = 1
+
+2. Remove all smaller/equal prices
+
+3. Add their stored spans
+
+4. Push (price, count)
+
+Or simply:
+
+POP → ADD SPAN → PUSH
+
+Your code is already the optimal practical solution for LeetCode 901:
+
+O(n) amortized time
+O(n) space
+
+The key insight isn't just "use a stack"; it's store (price, span) so that multiple previous days can be skipped in one pop.
