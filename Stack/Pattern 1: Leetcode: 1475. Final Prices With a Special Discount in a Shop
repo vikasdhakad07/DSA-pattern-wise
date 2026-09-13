@@ -1,0 +1,639 @@
+LeetCode 1475 — Final Prices With a Special Discount in a Shop
+
+Difficulty: Easy
+Pattern: Monotonic Stack
+Core Pattern: Next Smaller or Equal Element
+
+1. Problem Understanding
+
+You are given:
+
+prices[i]
+
+For every item i, find the first item to its right whose price is:
+
+<= prices[i]
+
+If such a price exists, subtract it as a discount.
+
+Otherwise, no discount is applied.
+
+Example
+prices = [8, 4, 6, 2, 3]
+
+For 8:
+
+first <= 8 → 4
+8 - 4 = 4
+
+For 4:
+
+first <= 4 → 2
+4 - 2 = 2
+
+For 6:
+
+first <= 6 → 2
+6 - 2 = 4
+
+For 2:
+
+first <= 2 → none
+2
+
+For 3:
+
+none
+3
+
+Answer:
+[4, 2, 4, 2, 3]
+
+Approach 1 — Brute Force
+
+For every prices[i]:
+
+Start from i + 1.
+Search from left to right.
+Find the first price <= prices[i].
+Apply the discount.
+Stop immediately.
+
+Code
+class Solution {
+    public int[] finalPrices(int[] prices) {
+
+        int n = prices.length;
+        int[] ans = new int[n];
+
+        for (int i = 0; i < n; i++) {
+
+            ans[i] = prices[i];
+
+            for (int j = i + 1; j < n; j++) {
+
+                if (prices[j] <= prices[i]) {
+                    ans[i] = prices[i] - prices[j];
+                    break;
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+prices = [8, 4, 6, 2, 3]
+i = 0
+
+Current:
+
+8
+
+Search right:
+
+4 <= 8
+
+So:
+
+8 - 4 = 4
+i = 1
+
+Current:
+
+4
+
+Search:
+
+6 <= 4 ? NO
+2 <= 4 ? YES
+
+Therefore:
+
+4 - 2 = 2
+i = 2
+
+Current:
+
+6
+
+Search:
+
+2 <= 6
+
+Therefore:
+
+6 - 2 = 4
+i = 3
+
+Current:
+
+2
+
+Search:
+
+3 <= 2 ? NO
+
+No discount:
+
+2
+i = 4
+
+No element to the right.
+
+3
+
+Final:
+
+[4, 2, 4, 2, 3]
+Complexity
+
+For every element, we may scan all elements to the right.
+
+Time  = O(n²)
+Space = O(n)
+
+O(n) space is for the answer array.
+Auxiliary space is O(1).
+
+Approach 2 — Using Stack, But Searching From Left to Right
+
+We can process prices from left to right and maintain indices whose discount has not yet been found.
+
+For every current price:
+
+while stack.top >= current price:
+    stack.top gets current price as discount
+
+Code
+class Solution {
+    public int[] finalPrices(int[] prices) {
+
+        int n = prices.length;
+        int[] ans = Arrays.copyOf(prices, n);
+
+        Stack<Integer> st = new Stack<>();
+
+        for (int i = 0; i < n; i++) {
+
+            while (!st.isEmpty() && prices[st.peek()] >= prices[i]) {
+
+                int index = st.pop();
+
+                ans[index] = prices[index] - prices[i];
+            }
+
+            st.push(i);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+prices = [8, 4, 6, 2, 3]
+
+Stack stores indices.
+
+8
+stack = []
+
+Push index 0:
+
+stack = [0]
+4
+
+Check:
+
+prices[0] = 8
+8 >= 4
+
+So 4 is the discount for 8.
+
+ans[0] = 8 - 4 = 4
+
+Pop 0.
+
+Push 1.
+
+stack = [1]
+6
+prices[1] = 4
+4 >= 6 ? NO
+
+Push 2.
+
+stack = [1, 2]
+2
+
+Top:
+
+prices[2] = 6
+6 >= 2
+
+Therefore:
+
+ans[2] = 6 - 2 = 4
+
+Pop 2.
+
+Next:
+
+prices[1] = 4
+4 >= 2
+
+Therefore:
+
+ans[1] = 4 - 2 = 2
+
+Pop 1.
+
+Push 3.
+
+stack = [3]
+3
+
+Top:
+
+prices[3] = 2
+2 >= 3 ? NO
+
+Push 4.
+
+stack = [3, 4]
+
+Final:
+
+[4, 2, 4, 2, 3]
+
+Approach 3 — Your Code ⭐
+
+Your approach scans right → left.
+
+The stack maintains possible discount prices.
+
+For the current price:
+
+while (!st.isEmpty() && st.peek() > prices[i]) {
+    st.pop();
+}
+
+After removing prices greater than the current price:
+
+stack.peek() is the first smaller-or-equal price to the right.
+If stack is empty → no discount.
+
+Your Code
+class Solution {
+    public int[] finalPrices(int[] prices) {
+        
+        int n=prices.length;
+        int ans[]=new int[n];
+        Stack<Integer> st=new Stack<>();
+        
+        for(int i=n-1;i>=0;i--){
+            
+            while(!st.isEmpty()&&st.peek()>prices[i]){
+                st.pop();
+            }
+
+            if(!st.isEmpty()){
+                ans[i]=prices[i]-st.peek();
+            } else {
+                ans[i]=prices[i];
+            }
+            
+            st.push(prices[i]);
+        }
+        
+        return ans;
+    }
+}
+
+This is an optimal O(n) solution.
+
+Why Does Your Stack Work?
+
+Suppose:
+
+prices = [8, 4, 6, 2, 3]
+
+When processing 6, the elements to its right are:
+
+2, 3
+
+We need the first price <= 6.
+
+That's:
+
+2
+
+The stack helps us remove elements that cannot be the answer.
+
+The rule:
+
+st.peek() > prices[i]
+
+means:
+
+If the stack top is greater than the current price, it can never be the discount for the current price.
+
+So remove it.
+
+Detailed Dry Run of Your Code
+
+Input:
+
+prices = [8, 4, 6, 2, 3]
+
+We process from:
+
+right → left
+Step 1 — i = 4
+prices[4] = 3
+
+Stack:
+
+[]
+
+Nothing to pop.
+
+Stack is empty, so:
+
+ans[4] = 3
+
+Push 3:
+
+stack = [3]
+Step 2 — i = 3
+prices[3] = 2
+
+Stack:
+
+[3]
+
+Check:
+
+3 > 2
+
+Pop:
+
+stack = []
+
+No discount exists.
+
+ans[3] = 2
+
+Push 2:
+
+stack = [2]
+Step 3 — i = 2
+prices[2] = 6
+
+Stack:
+
+[2]
+
+Check:
+
+2 > 6 ? NO
+
+So 2 is the first valid discount.
+
+ans[2] = 6 - 2
+       = 4
+
+Push 6:
+
+stack = [2, 6]
+Step 4 — i = 1
+prices[1] = 4
+
+Stack:
+
+[2, 6]
+
+Top:
+
+6 > 4
+
+Pop:
+
+stack = [2]
+
+Now:
+
+2 > 4 ? NO
+
+So:
+
+ans[1] = 4 - 2
+       = 2
+
+Push 4:
+
+stack = [2, 4]
+Step 5 — i = 0
+prices[0] = 8
+
+Stack:
+
+[2, 4]
+
+Top:
+
+4 > 8 ? NO
+
+Therefore:
+
+ans[0] = 8 - 4
+       = 4
+
+Push 8:
+
+stack = [2, 4, 8]
+
+Final:
+
+ans = [4, 2, 4, 2, 3]
+Why Do We Use > Instead of >=?
+
+This is an important detail.
+
+The problem says the discount price can be:
+
+<= current price
+
+So equal prices are valid discounts.
+
+Suppose:
+
+prices = [5, 5]
+
+For the first 5, the second 5 is a valid discount.
+
+Answer:
+
+[0, 5]
+
+Therefore we must keep equal values.
+
+Your condition:
+
+st.peek() > prices[i]
+
+correctly removes only values that are strictly greater.
+
+If you wrote:
+
+st.peek() >= prices[i]
+
+you would incorrectly remove equal prices.
+
+Why Can We Remove Greater Elements?
+
+Consider:
+
+[8, 4, 6]
+
+While processing 8, 4 is the answer.
+
+But what about 6?
+
+6 is greater than 4.
+
+For future elements to the left, 4 is at an earlier position than 6 and is smaller/equal to more candidates.
+
+Therefore, 6 is often useless once a smaller element like 4 is already available in the appropriate stack order.
+
+This is the core monotonic stack elimination idea:
+
+Remove elements that can never become the answer for future elements.
+
+Complexity
+
+Every price is:
+
+pushed exactly once
+popped at most once
+
+Therefore:
+
+Total pushes = O(n)
+Total pops   = O(n)
+
+So:
+
+Time  = O(n)
+Space = O(n)
+
+Although one iteration can perform many pops, across the entire algorithm each element is popped only once.
+
+This is called amortized O(1) per element.
+
+Approach Comparison
+Approach	Direction	Time	Auxiliary Space
+Brute Force	Left → Right	O(n²)	O(1)
+Monotonic Stack with indices	Left → Right	O(n)	O(n)
+Your Monotonic Stack	Right → Left	O(n)	O(n)
+Connection With Other Problems
+
+This problem is directly related to:
+
+496 — Next Greater Element I
+Find first greater element
+739 — Daily Temperatures
+Find next greater element
+503 — Next Greater Element II
+Next greater + circular array
+901 — Online Stock Span
+Find previous greater element
++
+compress span
+1475 — Final Prices
+Find next smaller/equal element
+907 — Sum of Subarray Minimums
+Previous smaller
++
+Next smaller
++
+Contribution
+
+So the progression is:
+
+496
+ ↓
+739
+ ↓
+503
+ ↓
+901
+ ↓
+1475
+ ↓
+907
+
+You're essentially learning the same monotonic-stack engine from different angles.
+
+🧠 Pattern to Memorize
+
+For Next Smaller or Equal:
+
+Scan RIGHT → LEFT
+
+Maintain a stack.
+
+For current element:
+
+while (!stack.isEmpty() && stack.peek() > current) {
+    stack.pop();
+}
+
+Then:
+
+if (!stack.isEmpty()) {
+    // stack.peek() is the answer
+}
+
+Finally:
+
+stack.push(current);
+Template
+for (int i = n - 1; i >= 0; i--) {
+
+    while (!st.isEmpty() && st.peek() > arr[i]) {
+        st.pop();
+    }
+
+    if (!st.isEmpty()) {
+        // next smaller or equal = st.peek()
+    }
+
+    st.push(arr[i]);
+}
+⭐ Interview Shortcut
+
+When you see:
+
+"Find the first element to the right that is smaller/equal"
+
+Immediately think:
+
+NEXT SMALLER/EQUAL
+       ↓
+RIGHT → LEFT
+       ↓
+MONOTONIC STACK
+
+For 1475, the final formula is simply:
+
+if next smaller/equal exists:
+
+    finalPrice = currentPrice - discount
+
+else:
+
+    finalPrice = currentPrice
+
+Your provided solution is already optimal: O(n) time and O(n) space.
