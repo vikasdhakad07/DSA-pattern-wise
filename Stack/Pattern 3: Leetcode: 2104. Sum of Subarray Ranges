@@ -1,0 +1,1179 @@
+2104. Sum of Subarray Ranges
+
+LeetCode 2104
+
+We need to find:
+
+sum of (maximum - minimum)
+
+for every subarray.
+
+We'll go through:
+
+Brute Force — O(n³)
+Better Brute Force — O(n²)
+Contribution using boundaries — concept
+Optimal Monotonic Stack — O(n)
+Your code — corrected and explained
+Detailed dry run of every approach
+Duplicate handling
+Complexity comparison
+Interview pattern
+1. Problem Understanding
+
+Suppose:
+
+nums = [1, 3, 2]
+
+All subarrays are:
+
+[1]       → max=1, min=1 → range=0
+
+[3]       → max=3, min=3 → range=0
+
+[2]       → max=2, min=2 → range=0
+
+[1,3]     → max=3, min=1 → range=2
+
+[3,2]     → max=3, min=2 → range=1
+
+[1,3,2]   → max=3, min=1 → range=2
+
+Therefore:
+
+answer = 0 + 0 + 0 + 2 + 1 + 2
+       = 5
+
+The key transformation is:
+
+Σ(max - min)
+=
+Σ(max) - Σ(min)
+
+So we can solve two problems:
+
+1. Sum of all subarray maximums
+2. Sum of all subarray minimums
+
+Then:
+answer = maximumSum - minimumSum
+
+2. Approach 1 — Brute Force O(n³)
+Idea
+
+Generate every subarray.
+
+For every subarray:
+
+Find its minimum.
+Find its maximum.
+Add max - min.
+
+We need three loops.
+
+Code
+class Solution {
+    public long subArrayRanges(int[] nums) {
+
+        int n = nums.length;
+        long ans = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            for (int j = i; j < n; j++) {
+
+                int min = Integer.MAX_VALUE;
+                int max = Integer.MIN_VALUE;
+
+                for (int k = i; k <= j; k++) {
+
+                    min = Math.min(min, nums[k]);
+                    max = Math.max(max, nums[k]);
+                }
+
+                ans += max - min;
+            }
+        }
+
+        return ans;
+    }
+}
+
+Dry Run — Approach 1
+
+Take:
+
+nums = [1, 3, 2]
+i = 0, j = 0
+
+Subarray:
+
+[1]
+min = 1
+max = 1
+
+range = 1 - 1 = 0
+ans = 0
+i = 0, j = 1
+
+Subarray:
+
+[1,3]
+
+Scan:
+
+1 → min=1, max=1
+3 → min=1, max=3
+
+Therefore:
+
+range = 3 - 1 = 2
+ans = 2
+i = 0, j = 2
+
+Subarray:
+
+[1,3,2]
+
+Scan:
+
+1 → min=1, max=1
+3 → min=1, max=3
+2 → min=1, max=3
+range = 3 - 1 = 2
+ans = 4
+i = 1, j = 1
+[3]
+range = 0
+ans = 4
+i = 1, j = 2
+[3,2]
+min = 2
+max = 3
+
+range = 1
+ans = 5
+i = 2, j = 2
+[2]
+range = 0
+
+Final:
+
+answer = 5
+Complexity
+
+Number of subarrays:
+
+O(n²)
+
+Finding min/max:
+
+O(n)
+
+Therefore:
+
+Time  = O(n³)
+Space = O(1)
+
+3. Approach 2 — Better Brute Force O(n²)
+
+We don't need the third loop.
+
+While extending the subarray, we can maintain the current minimum and maximum.
+
+For each starting index i:
+
+min = nums[i]
+max = nums[i]
+
+Then move j forward:
+
+min = Math.min(min, nums[j])
+max = Math.max(max, nums[j])
+
+Now we immediately know the range.
+
+Code
+class Solution {
+    public long subArrayRanges(int[] nums) {
+
+        int n = nums.length;
+        long ans = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            int min = nums[i];
+            int max = nums[i];
+
+            for (int j = i; j < n; j++) {
+
+                min = Math.min(min, nums[j]);
+                max = Math.max(max, nums[j]);
+
+                ans += max - min;
+            }
+        }
+
+        return ans;
+    }
+}
+
+Dry Run — Approach 2
+
+Again:
+
+nums = [1,3,2]
+Start i = 0
+
+Initially:
+
+min = 1
+max = 1
+j = 0
+[1]
+min = 1
+max = 1
+range = 0
+
+ans = 0
+j = 1
+
+Add 3:
+
+[1,3]
+min = min(1,3) = 1
+max = max(1,3) = 3
+
+range = 2
+ans = 2
+j = 2
+
+Add 2:
+
+[1,3,2]
+min = min(1,2) = 1
+max = max(3,2) = 3
+
+range = 2
+ans = 4
+Start i = 1
+min = 3
+max = 3
+
+j = 1:
+
+[3]
+range = 0
+ans = 4
+
+j = 2:
+
+[3,2]
+
+min = 2
+max = 3
+
+range = 1
+ans = 5
+Start i = 2
+[2]
+
+range = 0
+
+Final:
+
+answer = 5
+Complexity
+
+Only two loops:
+
+Time  = O(n²)
+Space = O(1)
+
+This is a good solution if constraints are small.
+
+But for large n, we need O(n).
+
+4. Approach 3 — Contribution Technique
+
+This is where the problem becomes interesting.
+
+Instead of asking:
+
+What is the range of every subarray?
+
+ask:
+
+How much does each element contribute to the answer?
+
+Because:
+
+range = maximum - minimum
+
+we can separately calculate:
+
+Sum of maximums
+
+and
+
+Sum of minimums
+
+Then:
+
+answer = SumMaximums - SumMinimums
+5. Contribution of an Element as a Minimum
+
+Consider:
+
+nums = [1, 3, 2]
+
+Take:
+
+nums[1] = 3
+
+Is 3 the minimum of any subarray?
+
+Only:
+
+[3]
+
+So its minimum contribution is:
+
+3 × 1 = 3
+
+Now consider 2.
+
+2 is minimum in:
+
+[2]
+[3,2]
+[1,3,2]
+
+So:
+
+2 × 3 = 6
+
+We need to efficiently determine how many subarrays use an element as their minimum.
+
+6. Finding Boundaries for Minimum
+
+For every nums[i], find:
+
+Previous Smaller-or-Equal
+
+Nearest valid boundary on the left.
+
+Call:
+
+left[i]
+Next Smaller
+
+Nearest valid boundary on the right.
+
+Call:
+
+right[i]
+
+Then:
+
+left choices = i - left[i]
+
+and:
+
+right choices = right[i] - i
+
+Therefore number of subarrays where nums[i] is selected as the minimum:
+
+(i - left[i]) × (right[i] - i)
+
+Contribution:
+
+nums[i]
+×
+(i - left[i])
+×
+(right[i] - i)
+
+7. Contribution of an Element as a Maximum
+
+Exactly the same idea.
+
+Find:
+
+Previous Greater-or-Equal
+up[i]
+Next Greater
+down[i]
+
+Then:
+
+number of subarrays
+=
+(i - up[i])
+×
+(down[i] - i)
+
+Contribution:
+
+nums[i]
+×
+(i - up[i])
+×
+(down[i] - i)
+8. Your Monotonic Stack Code
+
+Your approach is the optimal O(n) approach.
+
+However, there is one important error in the final return statement.
+
+You currently have:
+
+return min-max;
+
+It must be:
+
+return max-min;
+
+because the problem asks:
+
+maximum - minimum
+
+Your boundary logic itself is valid.
+
+9. Your Corrected Code
+class Solution {
+    public long subArrayRanges(int[] nums) {
+
+        int n = nums.length;
+
+        int left[] = new int[n];
+        int right[] = new int[n];
+
+        int up[] = new int[n];
+        int down[] = new int[n];
+
+        Stack<Integer> st = new Stack<>();
+        Stack<Integer> st1 = new Stack<>();
+
+        // -----------------------------
+        // Minimum: Next Smaller
+        // -----------------------------
+        for (int i = n - 1; i >= 0; i--) {
+
+            while (!st.isEmpty() &&
+                   nums[st.peek()] >= nums[i]) {
+                st.pop();
+            }
+
+            if (!st.isEmpty()) {
+                right[i] = st.peek();
+            } else {
+                right[i] = n;
+            }
+
+            st.push(i);
+        }
+
+        // -----------------------------
+        // Minimum: Previous Smaller or Equal
+        // -----------------------------
+        for (int i = 0; i < n; i++) {
+
+            while (!st1.isEmpty() &&
+                   nums[st1.peek()] > nums[i]) {
+                st1.pop();
+            }
+
+            if (!st1.isEmpty()) {
+                left[i] = st1.peek();
+            } else {
+                left[i] = -1;
+            }
+
+            st1.push(i);
+        }
+
+        st.clear();
+        st1.clear();
+
+        // -----------------------------
+        // Maximum: Next Greater
+        // -----------------------------
+        for (int i = n - 1; i >= 0; i--) {
+
+            while (!st.isEmpty() &&
+                   nums[st.peek()] <= nums[i]) {
+                st.pop();
+            }
+
+            if (!st.isEmpty()) {
+                down[i] = st.peek();
+            } else {
+                down[i] = n;
+            }
+
+            st.push(i);
+        }
+
+        // -----------------------------
+        // Maximum: Previous Greater or Equal
+        // -----------------------------
+        for (int i = 0; i < n; i++) {
+
+            while (!st1.isEmpty() &&
+                   nums[st1.peek()] < nums[i]) {
+                st1.pop();
+            }
+
+            if (!st1.isEmpty()) {
+                up[i] = st1.peek();
+            } else {
+                up[i] = -1;
+            }
+
+            st1.push(i);
+        }
+
+        long max = 0;
+        long min = 0;
+
+        for (int i = 0; i < n; i++) {
+
+            max += (long) (i - up[i])
+                    * (down[i] - i)
+                    * nums[i];
+
+            min += (long) (i - left[i])
+                    * (right[i] - i)
+                    * nums[i];
+        }
+
+        return max - min;
+    }
+}
+
+10. Understanding Your Four Arrays
+
+This is the most important part of your code.
+
+You have:
+
+int left[];
+int right[];
+int up[];
+int down[];
+
+Think of them as:
+
+left  → minimum boundary on LEFT
+right → minimum boundary on RIGHT
+
+up    → maximum boundary on LEFT
+down  → maximum boundary on RIGHT
+
+More specifically:
+
+Array	Meaning	Stack Type
+left[i]	Previous Smaller-or-Equal	Increasing
+right[i]	Next Smaller	Increasing
+up[i]	Previous Greater-or-Equal	Decreasing
+down[i]	Next Greater	Decreasing
+11. Why These Comparisons?
+
+Your minimum logic:
+
+// Right
+while (!st.isEmpty() && nums[st.peek()] >= nums[i])
+    st.pop();
+
+This leaves a strictly smaller element.
+
+Therefore:
+
+right = Next Smaller
+
+Your left logic:
+
+while (!st1.isEmpty() && nums[st1.peek()] > nums[i])
+    st1.pop();
+
+This leaves a smaller-or-equal element.
+
+Therefore:
+
+left = Previous Smaller-or-Equal
+
+This asymmetric handling is important for duplicate values.
+
+For maximum:
+
+// Right
+while (!st.isEmpty() && nums[st.peek()] <= nums[i])
+    st.pop();
+
+leaves:
+
+Next Greater
+
+And:
+
+while (!st1.isEmpty() && nums[st1.peek()] < nums[i])
+    st1.pop();
+
+leaves:
+
+Previous Greater-or-Equal
+12. Complete Dry Run — Optimal Approach
+
+Let's use:
+
+nums = [1, 3, 2]
+
+We know:
+
+answer = 5
+
+We'll calculate:
+
+maximum sum
+
+and:
+
+minimum sum
+Part A — Minimum Contribution
+
+We need:
+
+left[i]  = Previous Smaller-or-Equal
+right[i] = Next Smaller
+Calculate right[]
+
+Scan from right to left.
+
+i = 2
+nums[2] = 2
+
+Stack empty:
+
+right[2] = 3
+
+Push 2.
+
+stack = [2]
+i = 1
+nums[1] = 3
+
+Stack top:
+
+nums[2] = 2
+
+Check:
+
+2 >= 3 ?
+No
+
+Therefore:
+
+right[1] = 2
+
+Push 1.
+
+stack = [2,1]
+i = 0
+nums[0] = 1
+
+Stack top is 3.
+
+3 >= 1 → pop
+
+Now stack top is 2.
+
+2 >= 1 → pop
+
+Stack becomes empty.
+
+Therefore:
+
+right[0] = 3
+
+Final:
+
+right = [3, 2, 3]
+Calculate left[]
+
+Scan left to right.
+
+i = 0
+
+Stack empty:
+
+left[0] = -1
+
+Push 0.
+
+i = 1
+nums[1] = 3
+
+Top:
+
+nums[0] = 1
+
+Check:
+
+1 > 3 ?
+No
+
+Therefore:
+
+left[1] = 0
+i = 2
+nums[2] = 2
+
+Top is 3.
+
+3 > 2 → pop
+
+Now top is 1.
+
+1 > 2 ?
+No
+
+Therefore:
+
+left[2] = 0
+
+Final:
+
+left = [-1, 0, 0]
+Calculate Minimum Contributions
+
+Formula:
+
+nums[i]
+×
+(i - left[i])
+×
+(right[i] - i)
+i = 0
+nums[0] = 1
+left[0] = -1
+right[0] = 3
+
+Left choices:
+
+0 - (-1) = 1
+
+Right choices:
+
+3 - 0 = 3
+
+Contribution:
+
+1 × 1 × 3 = 3
+i = 1
+nums[1] = 3
+left[1] = 0
+right[1] = 2
+
+Left choices:
+
+1 - 0 = 1
+
+Right choices:
+
+2 - 1 = 1
+
+Contribution:
+
+3 × 1 × 1 = 3
+i = 2
+nums[2] = 2
+left[2] = 0
+right[2] = 3
+
+Left choices:
+
+2 - 0 = 2
+
+Right choices:
+
+3 - 2 = 1
+
+Contribution:
+
+2 × 2 × 1 = 4
+
+Therefore:
+
+minimumSum = 3 + 3 + 4
+            = 10
+Part B — Maximum Contribution
+
+Now we calculate:
+
+up[]   = Previous Greater-or-Equal
+down[] = Next Greater
+Calculate down[]
+
+Scan right to left.
+
+i = 2
+nums[2] = 2
+
+Stack empty:
+
+down[2] = 3
+i = 1
+nums[1] = 3
+
+Top is 2.
+
+2 <= 3 → pop
+
+Stack empty:
+
+down[1] = 3
+i = 0
+nums[0] = 1
+
+Top is 3.
+
+3 <= 1 ?
+No
+
+Therefore:
+
+down[0] = 1
+
+Final:
+
+down = [1, 3, 3]
+Calculate up[]
+
+Scan left to right.
+
+i = 0
+up[0] = -1
+i = 1
+nums[1] = 3
+
+Top is 1.
+
+1 < 3 → pop
+
+Stack empty:
+
+up[1] = -1
+i = 2
+nums[2] = 2
+
+Top is 3.
+
+3 < 2 ?
+No
+
+Therefore:
+
+up[2] = 1
+
+Final:
+
+up = [-1, -1, 1]
+Calculate Maximum Contributions
+
+Formula:
+
+nums[i]
+×
+(i - up[i])
+×
+(down[i] - i)
+i = 0
+nums[0] = 1
+up[0] = -1
+down[0] = 1
+
+Choices:
+
+left  = 0 - (-1) = 1
+right = 1 - 0 = 1
+
+Contribution:
+
+1 × 1 × 1 = 1
+i = 1
+nums[1] = 3
+up[1] = -1
+down[1] = 3
+
+Choices:
+
+left  = 1 - (-1) = 2
+right = 3 - 1 = 2
+
+Contribution:
+
+3 × 2 × 2 = 12
+i = 2
+nums[2] = 2
+up[2] = 1
+down[2] = 3
+
+Choices:
+
+left  = 2 - 1 = 1
+right = 3 - 2 = 1
+
+Contribution:
+
+2 × 1 × 1 = 2
+
+Therefore:
+
+maximumSum = 1 + 12 + 2
+            = 15
+Final Answer
+maximumSum = 15
+minimumSum = 10
+
+Therefore:
+
+answer = maximumSum - minimumSum
+
+       = 15 - 10
+
+       = 5
+
+Which matches our brute-force answer.
+
+13. Why Does the Contribution Formula Work?
+
+Suppose:
+
+nums[i] = 5
+
+and its boundaries are:
+
+left[i] = 2
+right[i] = 6
+
+So:
+
+       left        i        right
+        ↓         ↓          ↓
+...  2  ...  ...  5  ...  ...  6 ...
+
+For 5 to remain the minimum:
+
+Starting point
+
+Can start anywhere from:
+
+i
+
+back to:
+
+left[i] + 1
+
+Number of choices:
+
+i - left[i]
+Ending point
+
+Can end anywhere from:
+
+i
+
+to:
+
+right[i] - 1
+
+Number of choices:
+
+right[i] - i
+
+Therefore:
+
+total subarrays
+=
+(i-left[i]) × (right[i]-i)
+
+If nums[i] = 5:
+
+contribution
+=
+5 × (i-left[i]) × (right[i]-i)
+
+That's the entire mathematical trick.
+
+14. Duplicate Values — The Important Part
+
+Consider:
+
+nums = [2, 2]
+
+There are three subarrays:
+
+[2] → range 0
+[2] → range 0
+[2,2] → range 0
+
+The problem is deciding which 2 owns [2,2].
+
+If both elements claim the same subarray as their minimum, we'd double-count.
+
+That's why your code uses asymmetric comparisons.
+
+For minimum:
+
+// Previous
+nums[stack.peek()] > nums[i]
+
+// Next
+nums[stack.peek()] >= nums[i]
+
+This means:
+
+Previous → Smaller or Equal
+Next     → Smaller
+
+For maximum:
+
+// Previous
+nums[stack.peek()] < nums[i]
+
+// Next
+nums[stack.peek()] <= nums[i]
+
+This means:
+
+Previous → Greater or Equal
+Next     → Greater
+
+This tie-breaking ensures each subarray gets counted exactly once.
+
+15. One Important Correction to Your Code
+
+Your original final section was:
+
+long max=0;
+long min=0;
+
+for(int i=0;i<n;i++){
+    max+=(long)(i-left[i])*(right[i]-i)*nums[i];
+    min+=(long)(i-up[i])*(down[i]-i)*nums[i];
+}
+
+return min-max;
+
+There is a naming mismatch here.
+
+Your arrays mean:
+
+left/right → MINIMUM boundaries
+up/down    → MAXIMUM boundaries
+
+Therefore the contributions should be:
+
+min += (long)(i-left[i]) * (right[i]-i) * nums[i];
+
+max += (long)(i-up[i]) * (down[i]-i) * nums[i];
+
+And the final answer must be:
+
+return max - min;
+
+So the corrected final portion is:
+
+long max = 0;
+long min = 0;
+
+for(int i = 0; i < n; i++) {
+
+    max += (long)(i - up[i])
+            * (down[i] - i)
+            * nums[i];
+
+    min += (long)(i - left[i])
+            * (right[i] - i)
+            * nums[i];
+}
+
+return max - min;
+Your boundary calculations are fine; the final subtraction was reversed.
+16. Complexity Comparison
+Approach	Time	Space	Technique
+Brute Force	O(n³)	O(1)	Check every element of every subarray
+Better	O(n²)	O(1)	Maintain min/max
+Contribution	O(n²) if boundaries searched normally	O(n)	Count contribution
+Monotonic Stack	O(n)	O(n)	Find all boundaries efficiently
+
+Why is the stack O(n)?
+
+Although there are while loops, each index is pushed once and popped at most once per stack.
+
+So:
+
+push operations = O(n)
+pop operations  = O(n)
+
+Therefore:
+
+O(n) + O(n) = O(n)
+🧠 Final Pattern to Remember
+
+This problem is basically an advanced version of 907. Sum of Subarray Minimums.
+
+907
+Sum of all subarray minimums
+2104
+Sum of all subarray ranges
+
+= Sum of all maximums
+- Sum of all minimums
+
+And each contribution follows:
+
+                    value
+                      ×
+              left choices
+                      ×
+             right choices
+
+So memorize:
+
+Contribution =
+nums[i]
+×
+(i - leftBoundary)
+×
+(rightBoundary - i)
+
+For minimum:
+
+Previous Smaller-or-Equal
+Next Smaller
+
+For maximum:
+
+Previous Greater-or-Equal
+Next Greater
+🔥 Your four-array mental model
+                nums[i]
+                   |
+        ┌──────────┴──────────┐
+        ↓                     ↓
+      MIN                     MAX
+        ↓                     ↓
+   left / right            up / down
+        ↓                     ↓
+ Previous <=             Previous >=
+ Next <                  Next >
+        ↓                     ↓
+   MIN contribution       MAX contribution
+        │                     │
+        └──────────┬──────────┘
+                   ↓
+             MAX - MIN
+
+This is the key monotonic-stack pattern behind 907 + 2104.
