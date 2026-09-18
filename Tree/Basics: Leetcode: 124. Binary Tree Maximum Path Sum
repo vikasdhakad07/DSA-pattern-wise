@@ -1,0 +1,1036 @@
+124. Binary Tree Maximum Path Sum
+
+LeetCode 124
+
+This is one of the most important Tree DFS / Tree DP problems. It builds directly on the same postorder idea used in 543. Diameter of Binary Tree, but there is an extra twist: negative values and choosing whether to take a subtree at all.
+
+We'll cover:
+
+Problem understanding
+Approach 1 — Brute Force
+Approach 2 — Better DFS + recomputation
+Approach 3 — Optimal Postorder DFS
+Your code
+Detailed dry run of every approach
+Why Math.max(..., 0) is necessary
+Why the returned value is different from ans
+Complexity comparison
+Interview pattern
+1. Problem Understanding
+
+A path is a sequence of nodes where:
+
+Every pair of adjacent nodes is connected by an edge.
+A node cannot be visited more than once.
+The path can start and end at any nodes.
+It does not have to pass through the root.
+It can go from the left subtree → current node → right subtree.
+
+We need the maximum possible sum of node values on such a path.
+
+Example
+        1
+       / \
+      2   3
+
+Possible maximum path:
+
+2 → 1 → 3
+
+Sum:
+
+2 + 1 + 3 = 6
+
+Answer:
+
+6
+2. Very Important Difference From Diameter
+
+For 543. Diameter of Binary Tree, we calculated:
+
+leftHeight + rightHeight
+
+For 124. Binary Tree Maximum Path Sum, we calculate:
+
+leftGain + root.val + rightGain
+
+But there's a critical difference:
+
+leftGain = max(leftGain, 0)
+rightGain = max(rightGain, 0)
+
+Why?
+
+Because if a subtree contributes a negative value, we simply don't include it.
+
+For example:
+
+        5
+       / \
+     -10   4
+
+We don't want:
+
+-10 + 5 + 4 = -1
+
+We can simply ignore -10:
+
+5 + 4 = 9
+
+Approach 1 — Brute Force
+Idea
+
+A path can have arbitrary starting and ending nodes.
+
+One straightforward idea is:
+
+Consider every node as a possible starting point.
+Find the maximum path sum starting from that node.
+Explore possible paths through its children.
+Keep the maximum.
+
+A simple way to implement this is to calculate the maximum path starting from every node.
+
+For every node:
+
+max path through node
+=
+root.val
++
+maximum gain from left
++
+maximum gain from right
+
+But if we independently calculate the gain for every node, the same subtrees get traversed repeatedly.
+
+Brute Force Code
+class Solution {
+
+    public int maxPathSum(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int leftPath = maxPathFromNode(root.left);
+        int rightPath = maxPathFromNode(root.right);
+
+        int current = root.val
+                    + Math.max(leftPath, 0)
+                    + Math.max(rightPath, 0);
+
+        int leftAnswer = maxPathSum(root.left);
+        int rightAnswer = maxPathSum(root.right);
+
+        return Math.max(
+            current,
+            Math.max(leftAnswer, rightAnswer)
+        );
+    }
+
+    // Maximum downward path starting from this node
+    private int maxPathFromNode(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int left = maxPathFromNode(root.left);
+        int right = maxPathFromNode(root.right);
+
+        return root.val + Math.max(
+            0,
+            Math.max(left, right)
+        );
+    }
+}
+
+Dry Run — Approach 1
+
+Consider:
+
+        1
+       / \
+      2   3
+
+Start:
+
+maxPathSum(1)
+Calculate gain from left subtree
+maxPathFromNode(2)
+
+Node 2 has no children:
+
+left = 0
+right = 0
+
+Therefore:
+
+gain = 2 + max(0,0)
+     = 2
+Calculate gain from right subtree
+maxPathFromNode(3)
+
+Therefore:
+
+gain = 3
+Path through node 1
+leftGain = 2
+rightGain = 3
+
+Therefore:
+
+current = 1 + 2 + 3
+        = 6
+
+Now we also calculate:
+
+maxPathSum(2) = 2
+maxPathSum(3) = 3
+
+Therefore:
+
+answer = max(6,2,3)
+       = 6
+Why Is This Brute Force?
+
+The problem is that maxPathFromNode() repeatedly traverses the same subtree.
+
+For example, in a skewed tree:
+
+1
+ \
+  2
+   \
+    3
+     \
+      4
+
+When calculating the answer for 1, we traverse:
+
+2 → 3 → 4
+
+Then when calculating the answer for 2, we traverse:
+
+3 → 4
+
+Then again:
+
+4
+
+So the same nodes are processed repeatedly.
+
+Complexity
+
+Worst case:
+
+Time  = O(n²)
+Space = O(h)
+
+Approach 2 — Better: Memoization
+
+The problem in Approach 1 is repeated calculation.
+
+For example:
+
+maxPathFromNode(3)
+
+may be calculated multiple times.
+
+We can store the maximum downward gain for every node.
+
+Use:
+
+Map<TreeNode, Integer>
+
+Then each node's gain is calculated only once.
+
+Code
+
+class Solution {
+
+    Map<TreeNode, Integer> memo = new HashMap<>();
+
+    public int maxPathSum(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int left = Math.max(getGain(root.left), 0);
+        int right = Math.max(getGain(root.right), 0);
+
+        int current = root.val + left + right;
+
+        int leftAnswer = maxPathSum(root.left);
+        int rightAnswer = maxPathSum(root.right);
+
+        return Math.max(
+            current,
+            Math.max(leftAnswer, rightAnswer)
+        );
+    }
+
+    private int getGain(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        if (memo.containsKey(root)) {
+            return memo.get(root);
+        }
+
+        int left = getGain(root.left);
+        int right = getGain(root.right);
+
+        int gain = root.val + Math.max(
+            0,
+            Math.max(left, right)
+        );
+
+        memo.put(root, gain);
+
+        return gain;
+    }
+}
+
+Dry Run — Approach 2
+
+Use:
+
+        -10
+        /  \
+       9   20
+          /  \
+         15   7
+
+Expected answer:
+
+42
+
+because:
+
+15 → 20 → 7
+
+gives:
+
+15 + 20 + 7 = 42
+Node 9
+left = 0
+right = 0
+gain = 9
+
+Store:
+
+memo[9] = 9
+Node 15
+gain = 15
+
+Store:
+
+memo[15] = 15
+Node 7
+gain = 7
+
+Store:
+
+memo[7] = 7
+Node 20
+
+Retrieve:
+
+leftGain = 15
+rightGain = 7
+
+Current path:
+
+15 + 20 + 7 = 42
+
+Gain returned upward:
+
+20 + max(15,7)
+= 35
+
+Store:
+
+memo[20] = 35
+Node -10
+
+Left gain:
+
+9
+
+Right gain:
+
+35
+
+Path through -10:
+
+9 + (-10) + 35
+= 34
+
+But the best path in the right subtree is:
+
+42
+
+So:
+
+answer = max(34,42)
+       = 42
+Complexity
+
+Every gain is calculated once:
+
+Time = O(n)
+
+But we use a HashMap:
+
+Space = O(n)
+
+plus recursion stack.
+
+This is good, but we can eliminate the HashMap completely.
+
+Approach 3 — Optimal: Postorder DFS + Global Answer
+
+This is the standard optimal solution.
+
+The key insight is:
+
+For every node, calculate the maximum gain that this node can provide to its parent.
+
+A node can provide only one side to its parent.
+
+Why?
+
+Suppose:
+
+        X
+       / \
+      A   B
+
+If X sends a path to its parent, it can go:
+
+parent → X → A
+
+or:
+
+parent → X → B
+
+It cannot send:
+
+parent → X → A
+             ↓
+             B
+
+because that would require branching at X.
+
+So the value returned to the parent is:
+
+root.val + max(leftGain, rightGain)
+
+But the answer itself can use both sides:
+
+leftGain + root.val + rightGain
+
+That's the central idea.
+
+Your Code
+
+Your code is the optimal approach:
+
+class Solution {
+    int ans = Integer.MIN_VALUE;
+
+    public int maxPathSum(TreeNode root) {
+        helper(root);
+        return ans;
+    }
+
+    int helper(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int left = Math.max(helper(root.left), 0);
+        int right = Math.max(helper(root.right), 0);
+
+        int pathsum = root.val + left + right;
+
+        ans = Math.max(ans, pathsum);
+
+        return root.val + Math.max(left, right);
+    }
+}
+
+This is O(n) time and O(h) recursion space.
+
+4. Detailed Dry Run — Optimal Approach
+
+Let's take the most useful example:
+
+        -10
+        /  \
+       9   20
+          /  \
+         15   7
+
+Expected:
+
+15 → 20 → 7
+
+Answer:
+
+42
+Start
+ans = Integer.MIN_VALUE
+
+Call:
+
+helper(-10)
+
+Because this is postorder, we first process the children.
+
+Step 1 — Node 9
+        9
+       / \
+    null null
+
+Left:
+
+helper(null) = 0
+
+Right:
+
+helper(null) = 0
+
+Then:
+
+left = max(0,0) = 0
+right = max(0,0) = 0
+
+Path through 9:
+
+pathsum = 9 + 0 + 0
+        = 9
+
+Update:
+
+ans = max(MIN_VALUE,9)
+    = 9
+
+Return to parent:
+
+return 9 + max(0,0)
+     = 9
+Step 2 — Node 15
+        15
+       /  \
+    null  null
+
+Same process:
+
+left = 0
+right = 0
+
+Path:
+
+pathsum = 15
+
+Update:
+
+ans = 15
+
+Return:
+
+15
+Step 3 — Node 7
+        7
+       / \
+    null null
+
+Therefore:
+
+left = 0
+right = 0
+
+pathsum = 7
+
+Update:
+
+ans = max(15,7)
+    = 15
+
+Return:
+
+7
+Step 4 — Node 20
+
+Now we have:
+
+        20
+       /  \
+      15   7
+
+The recursive calls returned:
+
+left = 15
+right = 7
+
+Both are positive, so:
+
+left = max(15,0) = 15
+right = max(7,0) = 7
+
+Path through 20:
+
+pathsum = 15 + 20 + 7
+        = 42
+
+Update:
+
+ans = max(15,42)
+    = 42
+
+Now what do we return to -10?
+
+We cannot return both 15 and 7.
+
+We can return only one branch:
+
+return 20 + max(15,7)
+     = 35
+
+So:
+
+helper(20) = 35
+Step 5 — Node -10
+
+Now:
+
+        -10
+        /  \
+       9   20
+          /  \
+         15   7
+
+Left recursion returned:
+
+9
+
+Right recursion returned:
+
+35
+
+Apply:
+
+int left = Math.max(helper(root.left), 0);
+int right = Math.max(helper(root.right), 0);
+
+So:
+
+left = max(9,0)
+     = 9
+
+right = max(35,0)
+      = 35
+
+Path through -10:
+
+pathsum = -10 + 9 + 35
+        = 34
+
+Update:
+
+ans = max(42,34)
+    = 42
+
+Return:
+
+return -10 + max(9,35)
+     = 25
+
+But the returned value is irrelevant now because -10 is the root.
+
+Final:
+
+ans = 42
+5. Why Math.max(helper(root.left), 0)?
+
+This is one of the most important lines:
+
+int left = Math.max(helper(root.left), 0);
+
+Suppose:
+
+       5
+      /
+    -10
+
+The left subtree gives:
+
+-10
+
+Should we include it?
+
+No.
+
+Without Math.max:
+
+5 + (-10) = -5
+
+But we can simply take:
+
+5
+
+So:
+
+left = max(-10,0)
+     = 0
+
+Then:
+
+pathsum = 5 + 0
+        = 5
+
+Therefore:
+
+Math.max(gain, 0)
+
+means:
+
+"If this subtree hurts my path, don't take it."
+
+6. Why ans = Integer.MIN_VALUE?
+
+Notice:
+
+int ans = Integer.MIN_VALUE;
+
+This is important.
+
+Consider:
+
+        -3
+       /  \
+     -5   -7
+
+The answer should be:
+
+-3
+
+We cannot initialize:
+
+int ans = 0;
+
+because then we'd incorrectly return 0.
+
+Let's dry run:
+
+Node -5
+left = 0
+right = 0
+
+pathsum = -5
+
+ans = -5
+Node -7
+pathsum = -7
+
+ans = max(-5,-7)
+    = -5
+Node -3
+left = max(-5,0) = 0
+right = max(-7,0) = 0
+
+pathsum = -3
+
+Therefore:
+
+ans = max(-5,-3)
+    = -3
+
+Correct.
+
+So:
+
+int ans = Integer.MIN_VALUE;
+
+handles the all-negative tree correctly.
+
+7. Why Do We Return Only root.val + max(left,right)?
+
+This is perhaps the most important concept in the problem.
+
+Suppose:
+
+        10
+       /  \
+      5    8
+
+At node 10, the best complete path can be:
+
+5 → 10 → 8
+
+So:
+
+pathsum = 5 + 10 + 8
+        = 23
+
+But if 10 has a parent:
+
+          20
+         /
+        10
+       /  \
+      5    8
+
+The path returned to 20 cannot be:
+
+20 → 10 → 5
+       ↘ 8
+
+because that branches.
+
+It must choose one side:
+
+20 → 10 → 5
+
+or:
+
+20 → 10 → 8
+
+Therefore:
+
+return root.val + max(left,right)
+
+while the global answer can use:
+
+left + root.val + right
+8. Two Different Values at Every Node
+
+This is the key to understanding the entire problem.
+
+At each node we calculate:
+
+A. Complete path through current node
+left + root.val + right
+
+This can use both children.
+
+We use it to update:
+
+ans
+B. Gain returned to parent
+root.val + max(left,right)
+
+This can use only one child.
+
+We return it from helper().
+
+So:
+
+             Current Node
+                  |
+       ┌──────────┴──────────┐
+       ↓                     ↓
+ Complete Path          One-side Gain
+       ↓                     ↓
+left + root + right   root + max(left,right)
+       ↓                     ↓
+   update ans          return to parent
+
+This is the fundamental Tree DP idea.
+
+9. Another Dry Run — Negative Values
+
+Consider:
+
+          2
+         / \
+       -1   3
+Node -1
+left = 0
+right = 0
+
+pathsum = -1
+ans = -1
+
+return -1
+Node 3
+pathsum = 3
+ans = 3
+
+return 3
+Node 2
+
+Raw gains:
+
+left = -1
+right = 3
+
+Apply zero:
+
+left = max(-1,0) = 0
+right = max(3,0) = 3
+
+Complete path:
+
+-1 + 2 + 3
+
+would be bad, so we ignore -1:
+
+pathsum = 2 + 0 + 3
+        = 5
+
+Return:
+
+2 + max(0,3)
+= 5
+
+Final:
+
+answer = 5
+
+Path:
+
+2 → 3
+10. All-Negative Example
+        -10
+        /  \
+       -5  -20
+-5
+pathsum = -5
+ans = -5
+return -5
+-20
+pathsum = -20
+ans = -5
+return -20
+-10
+left = max(-5,0) = 0
+right = max(-20,0) = 0
+
+Therefore:
+
+pathsum = -10
+
+Final:
+
+ans = max(-5,-10)
+    = -5
+
+Correct.
+
+The best path contains just:
+
+-5
+11. Complexity
+Approach	Time	Space	Main Idea
+1. Brute Force	O(n²)	O(h)	Recalculate gains repeatedly
+2. Memoization	O(n)	O(n)	Store subtree gains
+3. Optimal DFS	O(n)	O(h)	Calculate gain + answer in one traversal
+
+For the optimal solution, every node is visited once.
+
+n nodes
+↓
+one DFS
+↓
+O(n)
+
+Recursion stack:
+
+O(h)
+
+where h is tree height.
+
+Balanced tree:
+
+O(log n)
+
+Skewed tree:
+
+O(n)
+12. Your Final Optimal Code
+
+This is your code with slightly clearer variable names:
+
+class Solution {
+
+    int ans = Integer.MIN_VALUE;
+
+    public int maxPathSum(TreeNode root) {
+        helper(root);
+        return ans;
+    }
+
+    int helper(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        // Maximum useful contribution from left subtree
+        int leftGain = Math.max(helper(root.left), 0);
+
+        // Maximum useful contribution from right subtree
+        int rightGain = Math.max(helper(root.right), 0);
+
+        // Complete path passing through current node
+        int pathSum = root.val + leftGain + rightGain;
+
+        // Update global answer
+        ans = Math.max(ans, pathSum);
+
+        // Return only one branch to parent
+        return root.val + Math.max(leftGain, rightGain);
+    }
+}
+🧠 13. Interview Pattern
+
+This problem and 543 Diameter of Binary Tree have almost the same structure.
+
+543 — Diameter
+left height
+right height
+
+answer = left + right
+
+return 1 + max(left,right)
+124 — Maximum Path Sum
+left gain
+right gain
+
+answer = left + root.val + right
+
+return root.val + max(left,right)
+
+So the reusable pattern is:
+
+              Postorder DFS
+                   |
+          ┌────────┴────────┐
+          ↓                 ↓
+      left result       right result
+          |                 |
+          └────────┬────────┘
+                   ↓
+            calculate answer
+                   ↓
+            return to parent
+⭐ The 3 lines to memorize
+int left = Math.max(helper(root.left), 0);
+int right = Math.max(helper(root.right), 0);
+
+ans = Math.max(ans, root.val + left + right);
+
+return root.val + Math.max(left, right);
+
+And remember the distinction:
+
+Global answer can take both branches. Parent contribution can take only one branch.
+
+That is the core idea behind 124. Binary Tree Maximum Path Sum.
