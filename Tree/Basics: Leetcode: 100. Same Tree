@@ -1,0 +1,739 @@
+LeetCode 100 — Same Tree
+
+Problem: Given the roots of two binary trees p and q, determine whether they are structurally identical and have the same node values.
+
+Two trees are the same if:
+
+Corresponding nodes have the same value.
+Corresponding left subtrees are the same.
+Corresponding right subtrees are the same.
+Example
+Tree p:        1
+              / \
+             2   3
+
+Tree q:        1
+              / \
+             2   3
+
+Output:
+
+true
+
+But:
+
+Tree p:        1
+              /
+             2
+
+Tree q:        1
+                \
+                 2
+
+Output:
+
+false
+
+Even though the values are the same, the structure is different.
+
+Approach 1: Brute Force — Traversal + Comparison
+Idea
+
+We can traverse both trees and store their complete structure and values in arrays/lists.
+
+A simple way is to perform preorder traversal including null markers.
+
+Why do we need null markers?
+
+Consider:
+
+Tree 1:    1          Tree 2:    1
+           /                     \
+          2                       2
+
+Normal preorder gives:
+
+[1, 2]
+[1, 2]
+
+They look identical, even though the structures differ.
+
+With null markers:
+
+Tree 1 → [1, 2, null, null, null]
+Tree 2 → [1, null, 2, null, null]
+
+Now they are different.
+
+Code
+class Solution {
+
+    public boolean isSameTree(TreeNode p, TreeNode q) {
+        List<Integer> list1 = new ArrayList<>();
+        List<Integer> list2 = new ArrayList<>();
+
+        preorder(p, list1);
+        preorder(q, list2);
+
+        return list1.equals(list2);
+    }
+
+    public void preorder(TreeNode root, List<Integer> list) {
+        if (root == null) {
+            list.add(null);
+            return;
+        }
+
+        list.add(root.val);
+
+        preorder(root.left, list);
+        preorder(root.right, list);
+    }
+}
+
+Dry Run
+
+Take:
+
+p:          1
+           / \
+          2   3
+
+q:          1
+           / \
+          2   3
+
+For p:
+
+preorder(p)
+
+1
+↓
+[1]
+
+2
+↓
+[1, 2]
+
+null
+↓
+[1, 2, null]
+
+null
+↓
+[1, 2, null, null]
+
+3
+↓
+[1, 2, null, null, 3]
+
+null
+↓
+[1, 2, null, null, 3, null]
+
+null
+↓
+[1, 2, null, null, 3, null, null]
+
+For q we get exactly the same:
+
+[1, 2, null, null, 3, null, null]
+
+Therefore:
+
+list1.equals(list2)
+→ true
+Complexity
+
+If there are n nodes:
+
+Time: O(n)
+Space: O(n) for storing traversal results
+Recursion stack: O(h)
+
+This works, but we are storing the entire trees even though we only need to know whether they match.
+
+Approach 2: Iterative BFS Using Queue
+Idea
+
+We can compare the trees level by level.
+
+Put both roots into queues.
+
+At every step:
+
+Remove one node from each tree.
+If both are null, continue.
+If only one is null, trees are different.
+If values differ, trees are different.
+Add their left children.
+Add their right children.
+
+Code
+class Solution {
+    public boolean isSameTree(TreeNode p, TreeNode q) {
+
+        Queue<TreeNode> queue = new LinkedList<>();
+
+        queue.offer(p);
+        queue.offer(q);
+
+        while (!queue.isEmpty()) {
+
+            TreeNode first = queue.poll();
+            TreeNode second = queue.poll();
+
+            // Both are null
+            if (first == null && second == null) {
+                continue;
+            }
+
+            // One is null
+            if (first == null || second == null) {
+                return false;
+            }
+
+            // Different values
+            if (first.val != second.val) {
+                return false;
+            }
+
+            queue.offer(first.left);
+            queue.offer(second.left);
+
+            queue.offer(first.right);
+            queue.offer(second.right);
+        }
+
+        return true;
+    }
+}
+
+Dry Run
+
+Consider:
+
+p:          1
+           / \
+          2   3
+
+q:          1
+           / \
+          2   3
+
+Initially:
+
+Queue:
+[p=1, q=1]
+Step 1
+
+Remove:
+
+1, 1
+
+Both exist.
+
+Compare:
+
+1 == 1
+
+Add children:
+
+2, 2
+3, 3
+
+Queue:
+
+[2, 2, 3, 3]
+Step 2
+
+Remove:
+
+2, 2
+
+Values match.
+
+Their children:
+
+null, null
+null, null
+
+Queue:
+
+[3, 3, null, null, null, null]
+Step 3
+
+Remove:
+
+3, 3
+
+Values match.
+
+Add children:
+
+null, null
+null, null
+
+Eventually all pairs are:
+
+(null, null)
+
+No mismatch occurs.
+
+Therefore:
+
+return true
+Complexity
+Time: O(n)
+Space: O(w)
+
+where w is the maximum width of the tree.
+
+Worst case:
+
+O(n)
+
+Approach 3: Recursive DFS — Optimal and Most Natural
+
+This is the cleanest solution for this problem.
+
+Core Idea
+
+At every pair of nodes (p, q), there are only a few possibilities.
+
+Case 1: Both are null
+p = null
+q = null
+
+There is nothing to compare.
+
+Therefore:
+
+return true;
+Case 2: One is null
+
+For example:
+
+p = 2
+q = null
+
+One tree has a node while the other doesn't.
+
+Therefore:
+
+return false;
+Case 3: Values are different
+p.val = 2
+q.val = 5
+
+Therefore:
+
+return false;
+Case 4: Values match
+
+If:
+
+p.val == q.val
+
+we still need to compare:
+
+p.left  with q.left
+p.right with q.right
+
+So:
+
+return p.val == q.val
+       && isSameTree(p.left, q.left)
+       && isSameTree(p.right, q.right);
+
+Your Code — Optimal Solution
+
+class Solution {
+    public boolean isSameTree(TreeNode p, TreeNode q) {
+        if(p==null&&q==null) return true;
+        if(p==null||q==null) return false;
+        return p.val==q.val && isSameTree(p.left, q.left) && isSameTree(p.right, q.right);
+    }
+}
+
+Your solution is already optimal in time complexity.
+
+Detailed Dry Run
+
+Consider:
+
+p:              1
+               / \
+              2   3
+             / \
+            4   5
+
+q:              1
+               / \
+              2   3
+             / \
+            4   5
+
+We call:
+
+isSameTree(1, 1)
+Call 1
+p = 1
+q = 1
+
+Neither is null.
+
+Check:
+
+1 == 1
+
+True.
+
+Now:
+
+isSameTree(p.left, q.left)
+
+and:
+
+isSameTree(p.right, q.right)
+Call 2 — Left subtree
+p = 2
+q = 2
+
+Check:
+
+2 == 2
+
+True.
+
+Compare left:
+
+isSameTree(4, 4)
+
+Compare right:
+
+isSameTree(5, 5)
+Call 3
+p = 4
+q = 4
+
+Values match.
+
+Left:
+
+null, null
+
+Returns:
+
+true
+
+Right:
+
+null, null
+
+Returns:
+
+true
+
+Therefore:
+
+isSameTree(4,4)
+→ true
+Call 4
+p = 5
+q = 5
+
+Same process:
+
+5 == 5
+
+Both children are null.
+
+Therefore:
+
+true
+
+So:
+
+isSameTree(2,2)
+→ true
+Call 5 — Right subtree
+p = 3
+q = 3
+
+Values match:
+
+3 == 3
+
+Left:
+
+null, null → true
+
+Right:
+
+null, null → true
+
+Therefore:
+
+isSameTree(3,3)
+→ true
+Final Result
+
+At root:
+
+p.val == q.val
+        ↓
+       true
+
+left subtree same
+        ↓
+       true
+
+right subtree same
+        ↓
+       true
+
+Therefore:
+
+true && true && true
+= true
+Dry Run — When Trees Are Different
+
+Consider:
+
+p:          1
+           / \
+          2   3
+
+q:          1
+           / \
+          2   4
+
+Start:
+
+isSameTree(1,1)
+1 == 1
+
+True.
+
+Compare left:
+
+isSameTree(2,2)
+→ true
+
+Compare right:
+
+isSameTree(3,4)
+
+Now:
+
+p.val = 3
+q.val = 4
+
+Therefore:
+
+p.val == q.val
+
+is:
+
+false
+
+So:
+
+isSameTree(3,4)
+→ false
+
+Final:
+
+true && true && false
+→ false
+Dry Run — Different Structure
+
+Consider:
+
+p:          1
+           /
+          2
+
+q:          1
+             \
+              2
+
+Start:
+
+isSameTree(1,1)
+
+Values match.
+
+Compare left:
+
+isSameTree(2, null)
+
+Here:
+
+if(p == null && q == null)
+
+False.
+
+Then:
+
+if(p == null || q == null)
+
+True.
+
+Therefore:
+
+false
+
+The trees are not the same.
+
+Notice that this is why the null check is extremely important.
+
+Why && Makes the Code Efficient
+
+Your return statement:
+
+return p.val==q.val 
+       && isSameTree(p.left, q.left) 
+       && isSameTree(p.right, q.right);
+
+uses short-circuit evaluation.
+
+Suppose:
+
+p =       1
+         /
+        2
+
+q =       1
+         /
+        5
+
+At node 1:
+
+1 == 1 → true
+
+Then compare left:
+
+2 == 5 → false
+
+Because the second condition is already false, Java doesn't need to evaluate the remaining condition.
+
+So it can stop immediately.
+
+This is useful because if the trees differ near the root, we don't need to traverse the entire tree.
+
+Approach Comparison
+Approach	Idea	Time	Extra Space
+Brute Force	Store preorder + null markers	O(n)	O(n)
+BFS	Compare level by level	O(n)	O(n) worst case
+Recursive DFS	Compare corresponding nodes directly	O(n)	O(h)
+
+Where:
+
+n = number of nodes
+h = height of the tree
+
+For a balanced tree:
+
+h = O(log n)
+
+For a completely skewed tree:
+
+h = O(n)
+Why Recursive DFS Is the Best Approach Here
+
+The problem itself is recursive:
+
+Are two trees the same?
+
+To answer that, we ask:
+
+Are their roots the same?
+        +
+Are their left subtrees the same?
+        +
+Are their right subtrees the same?
+
+That directly translates to:
+
+p.val == q.val
+&& isSameTree(p.left, q.left)
+&& isSameTree(p.right, q.right)
+
+So recursion matches the structure of the problem perfectly.
+
+Important Edge Cases
+1. Both trees empty
+p = null
+q = null
+
+Result:
+
+true
+2. One tree empty
+p = 1
+q = null
+
+Result:
+
+false
+3. Single nodes with same value
+p = 1
+q = 1
+
+Result:
+
+true
+4. Single nodes with different values
+p = 1
+q = 2
+
+Result:
+
+false
+5. Same values but different structure
+    1              1
+   /                \
+  2                  2
+
+Result:
+
+false
+The Pattern to Remember
+
+For many binary-tree comparison problems, use this template:
+
+if (p == null && q == null)
+    return true;
+
+if (p == null || q == null)
+    return false;
+
+if (p.val != q.val)
+    return false;
+
+return isSameTree(p.left, q.left)
+    && isSameTree(p.right, q.right);
+
+Or your compact version:
+
+if(p==null&&q==null) return true;
+if(p==null||q==null) return false;
+
+return p.val==q.val
+    && isSameTree(p.left,q.left)
+    && isSameTree(p.right,q.right);
+🧠 Interview Pattern
+
+Tree comparison = compare corresponding nodes.
+
+Always think:
+
+1. Both null?       → true
+2. One null?        → false
+3. Values differ?   → false
+4. Check left
+5. Check right
+
+This same recursive pattern appears in problems involving tree equality, subtree checking, tree symmetry, tree cloning/comparison, and structural validation.
