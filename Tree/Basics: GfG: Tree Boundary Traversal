@@ -1,0 +1,1314 @@
+GFG — Tree Boundary Traversal
+Problem Understanding
+
+In Boundary Traversal of a Binary Tree, we traverse the boundary of the tree in anti-clockwise order:
+
+1. Root
+2. Left boundary (excluding leaves)
+3. All leaf nodes from left → right
+4. Right boundary (excluding leaves), from bottom → top
+
+For example:
+
+                 1
+               /   \
+              2     7
+             / \     \
+            3   4     8
+               / \   /
+              5   6 9
+
+Boundary is:
+
+1 → 2 → 3 → 5 → 6 → 9 → 8 → 7
+
+Notice that 3, 5, 6, 9 are leaves, and the leaf nodes must be collected separately.
+
+The Core Pattern
+
+Think of the problem as three independent pieces:
+
+             ROOT
+               ↓
+        ┌──────┴──────┐
+        ↓             ↓
+ LEFT BOUNDARY    RIGHT BOUNDARY
+        ↓             ↓
+        └─── LEAVES ──┘
+
+More precisely:
+
+Answer =
+Root
++ Left Boundary
++ Leaves
++ Reverse(Right Boundary)
+Important rules
+
+For the left boundary:
+
+if left child exists → go left
+otherwise → go right
+
+For the right boundary:
+
+if right child exists → go right
+otherwise → go left
+
+And never add leaf nodes in the left/right boundary because they are already added by the leaf traversal.
+
+Approach 1 — Brute Force: Store Parent + Leaf Information
+
+A more brute-force way is to explicitly build:
+
+parent relationship for every node
+list of all leaves
+path from root to the leftmost boundary leaf
+path from root to the rightmost boundary leaf
+
+This uses additional memory, but it helps understand what the boundary actually consists of.
+
+The idea is:
+
+Find all leaves
+       ↓
+leftmost leaf  → left boundary path
+rightmost leaf → right boundary path
+       ↓
+all leaves
+       ↓
+combine
+
+The leftmost leaf reached by always preferring left and otherwise right determines the left boundary path. Similarly, the rightmost leaf determines the right boundary path.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    public ArrayList<Integer> boundaryTraversal(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        if (isLeaf(root)) {
+            ans.add(root.data);
+            return ans;
+        }
+
+        Map<Node, Node> parent = new HashMap<>();
+        ArrayList<Node> leaves = new ArrayList<>();
+
+        buildParentAndLeaves(root, null, parent, leaves);
+
+        // Left boundary = path root -> leftmost leaf, excluding leaf
+        ArrayList<Node> leftPath = getPath(root, leaves.get(0), parent);
+
+        for (int i = 0; i < leftPath.size() - 1; i++) {
+            ans.add(leftPath.get(i).data);
+        }
+
+        // All leaves from left to right
+        for (Node leaf : leaves) {
+            ans.add(leaf.data);
+        }
+
+        // Right boundary
+        Node rightmostLeaf = leaves.get(leaves.size() - 1);
+
+        ArrayList<Node> rightPath =
+                getPath(root, rightmostLeaf, parent);
+
+        // If leftmost and rightmost leaf are same,
+        // there is no separate right boundary.
+        if (leaves.get(0) != rightmostLeaf) {
+            for (int i = rightPath.size() - 2; i >= 1; i--) {
+                ans.add(rightPath.get(i).data);
+            }
+        }
+
+        return ans;
+    }
+
+    boolean isLeaf(Node root) {
+        return root.left == null && root.right == null;
+    }
+
+    void buildParentAndLeaves(
+            Node root,
+            Node par,
+            Map<Node, Node> parent,
+            ArrayList<Node> leaves) {
+
+        if (root == null) {
+            return;
+        }
+
+        parent.put(root, par);
+
+        if (isLeaf(root)) {
+            leaves.add(root);
+            return;
+        }
+
+        buildParentAndLeaves(root.left, root, parent, leaves);
+        buildParentAndLeaves(root.right, root, parent, leaves);
+    }
+
+    ArrayList<Node> getPath(
+            Node root,
+            Node target,
+            Map<Node, Node> parent) {
+
+        ArrayList<Node> path = new ArrayList<>();
+
+        Node curr = target;
+
+        while (curr != null) {
+            path.add(curr);
+            curr = parent.get(curr);
+        }
+
+        Collections.reverse(path);
+
+        return path;
+    }
+}
+
+Dry Run
+
+Consider:
+
+                 1
+               /   \
+              2     7
+             / \     \
+            3   4     8
+               / \   /
+              5   6  9
+
+Leaves found in left-to-right order:
+
+[3, 5, 6, 9]
+Leftmost leaf
+3
+
+Path:
+
+1 → 2 → 3
+
+Exclude leaf 3:
+
+1, 2
+All leaves
+3, 5, 6, 9
+Rightmost leaf
+9
+
+Path:
+
+1 → 7 → 8 → 9
+
+Exclude:
+
+1
+9
+
+Remaining:
+
+7, 8
+
+Reverse:
+
+8, 7
+
+Final:
+
+[1, 2, 3, 5, 6, 9, 8, 7]
+Complexity
+Time  = O(n)
+Space = O(n)
+
+We store parents, leaves and paths.
+
+This works, but it stores considerably more information than necessary.
+
+Approach 2 — Recursive Three-Part Traversal
+
+This is the standard approach.
+
+We break the problem into exactly three operations:
+
+1. Add left boundary
+2. Add all leaves
+3. Add right boundary in reverse
+
+The root is handled separately.
+
+Why recursion is useful
+
+For leaves, we need to visit the entire tree:
+
+             1
+           /   \
+          2     7
+         / \     \
+        3   4     8
+           / \   /
+          5   6 9
+
+A DFS naturally visits leaves from:
+
+left → right
+Step 1 — Add Left Boundary
+
+Start from:
+
+Node curr = root.left;
+
+At every step:
+
+if left exists:
+    go left
+else:
+    go right
+
+Example:
+
+1 → 2 → 4
+       ↓
+       left exists
+       ↓
+       5
+
+But only add non-leaf nodes.
+
+Step 2 — Add Leaves
+
+Do a DFS.
+
+Whenever:
+
+root.left == null && root.right == null
+
+add the node.
+
+Step 3 — Add Right Boundary
+
+Start:
+
+Node curr = root.right;
+
+Go:
+
+right if possible
+otherwise left
+
+Store the nodes temporarily.
+
+At the end reverse them because the required traversal is:
+
+bottom → top
+Your Code — Standard Optimal Solution
+
+class Solution {
+    boolean isLeaf(Node root){
+
+            return (root.left==null && root.right==null);
+
+        }
+    void addLeftBoundry(Node root, ArrayList<Integer> al){
+        Node curr=root.left;
+        while(curr!=null){
+            if(isLeaf(curr)==false){
+                al.add(curr.data);
+            }
+            if(curr.left!=null){
+                curr=curr.left;
+            } else {
+                curr=curr.right;
+            }
+        }
+    }
+    
+    void addRightBoundry(Node root, ArrayList<Integer> al){
+        Node curr=root.right;
+        ArrayList<Integer> ans=new ArrayList<Integer>();
+        while(curr!=null){
+            if(isLeaf(curr)==false){
+                ans.add(curr.data);
+            }
+            if(curr.right!=null){
+                curr=curr.right;
+            } else {
+                curr=curr.left;
+            }
+            
+        }
+            
+            for(int i=ans.size()-1;i>=0;i--){
+                al.add(ans.get(i));
+            }
+    }
+    
+    void addLeaves(Node root, ArrayList<Integer> al){
+        if(isLeaf(root)){
+            al.add(root.data);
+            return;
+        }
+        if(root.left!=null){
+            addLeaves(root.left, al);
+        }
+        if(root.right!=null){
+            addLeaves(root.right, al);
+        }
+    }
+    
+    public ArrayList<Integer> boundaryTraversal(Node root) {
+        // code here
+        ArrayList<Integer> al=new ArrayList<>();
+        if(isLeaf(root)==false){
+            al.add(root.data);
+        }
+        addLeftBoundry(root,al);
+        addLeaves(root,al);
+        addRightBoundry(root,al);
+        return al;
+    }
+}
+
+Your solution follows the standard decomposition exactly.
+
+One Small Robustness Fix
+
+Your current code assumes root != null.
+
+This:
+
+if(isLeaf(root)==false)
+
+would throw a NullPointerException if root == null.
+
+A safer version is:
+
+public ArrayList<Integer> boundaryTraversal(Node root) {
+
+    ArrayList<Integer> al = new ArrayList<>();
+
+    if (root == null) {
+        return al;
+    }
+
+    if (!isLeaf(root)) {
+        al.add(root.data);
+    }
+
+    addLeftBoundry(root, al);
+    addLeaves(root, al);
+    addRightBoundry(root, al);
+
+    return al;
+}
+
+Everything else can remain the same.
+
+Detailed Dry Run of Your Code
+
+Use:
+
+                 1
+               /   \
+              2     7
+             / \     \
+            3   4     8
+               / \   /
+              5   6 9
+
+Expected:
+
+[1,2,3,5,6,9,8,7]
+Step 1 — Root
+
+Initially:
+
+al = []
+
+Root:
+
+1
+
+Check:
+
+isLeaf(1)
+
+False.
+
+So:
+
+al = [1]
+Step 2 — addLeftBoundry
+
+Start:
+
+curr = root.left
+     = 2
+curr = 2
+
+Is 2 a leaf?
+
+2 has left = 3
+2 has right = 4
+
+No.
+
+Add:
+
+al = [1,2]
+
+Since left exists:
+
+curr = curr.left
+     = 3
+curr = 3
+
+3 is a leaf.
+
+Therefore:
+
+if(isLeaf(curr)==false)
+
+is false.
+
+So do not add 3 here.
+
+This is important because 3 will be added in addLeaves.
+
+Now:
+
+curr.left == null
+
+so:
+
+curr = curr.right
+
+which is also null.
+
+Left-boundary traversal ends.
+
+Current:
+
+[1,2]
+Step 3 — addLeaves
+
+Now recursively visit the entire tree.
+
+Start:
+
+1
+
+Not leaf.
+
+Go left:
+
+2
+
+Not leaf.
+
+Go left:
+
+3
+
+Leaf!
+
+Add:
+
+[1,2,3]
+
+Return to 2.
+
+Go right:
+
+4
+
+Not leaf.
+
+Go left:
+
+5
+
+Leaf.
+
+Add:
+
+[1,2,3,5]
+
+Back to 4.
+
+Go right:
+
+6
+
+Leaf.
+
+Add:
+
+[1,2,3,5,6]
+
+Back to root.
+
+Go right:
+
+7
+
+Not leaf.
+
+Go right:
+
+8
+
+Not leaf.
+
+Go left:
+
+9
+
+Leaf.
+
+Add:
+
+[1,2,3,5,6,9]
+
+So after leaf traversal:
+
+al = [1,2,3,5,6,9]
+Step 4 — addRightBoundry
+
+Start:
+
+curr = root.right
+     = 7
+
+We use a temporary list:
+
+ans = []
+curr = 7
+
+Not leaf.
+
+Add:
+
+ans = [7]
+
+Right child exists:
+
+curr = 8
+curr = 8
+
+Not leaf.
+
+Add:
+
+ans = [7,8]
+
+Right child?
+
+null
+
+So move left:
+
+curr = 9
+curr = 9
+
+Leaf.
+
+Don't add.
+
+Move:
+
+curr = null
+
+Boundary collection ends.
+
+Temporary list:
+
+ans = [7,8]
+
+But required boundary direction is:
+
+bottom → top
+
+So reverse:
+
+[8,7]
+
+Add to final answer:
+
+al = [1,2,3,5,6,9,8,7]
+
+Final answer:
+
+[1,2,3,5,6,9,8,7]
+Why Leaves Must Be Excluded From Left/Right Boundary
+
+This is one of the most common mistakes.
+
+Suppose:
+
+       1
+      /
+     2
+    /
+   3
+
+3 is both:
+
+left boundary
+
+and:
+
+leaf
+
+If we add it in both traversals:
+
+1,2,3,3
+
+which is wrong.
+
+Therefore:
+
+Left Boundary → exclude leaves
+Leaves         → include all leaves
+Right Boundary → exclude leaves
+Why Right Boundary Is Reversed
+
+Suppose:
+
+        1
+         \
+          2
+           \
+            3
+             \
+              4
+
+When traversing downward, we get:
+
+2 → 3
+
+But anti-clockwise boundary traversal must come back upward:
+
+3 → 2
+
+Therefore we store:
+
+[2,3]
+
+and reverse:
+
+[3,2]
+
+Final:
+
+1,4,3,2
+Approach 3 — Iterative Version
+
+We can remove recursion from the leaf traversal by using an explicit stack.
+
+The idea remains exactly the same:
+
+Root
+ ↓
+Left boundary
+ ↓
+Leaves
+ ↓
+Right boundary reversed
+
+The difference is that addLeaves() uses a stack.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    boolean isLeaf(Node root) {
+        return root.left == null && root.right == null;
+    }
+
+    void addLeftBoundary(Node root, ArrayList<Integer> ans) {
+
+        Node curr = root.left;
+
+        while (curr != null) {
+
+            if (!isLeaf(curr)) {
+                ans.add(curr.data);
+            }
+
+            if (curr.left != null) {
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+    }
+
+    void addLeaves(Node root, ArrayList<Integer> ans) {
+
+        Deque<Node> stack = new ArrayDeque<>();
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+
+            Node curr = stack.pop();
+
+            if (isLeaf(curr)) {
+                ans.add(curr.data);
+                continue;
+            }
+
+            // Push right first so left is processed first
+            if (curr.right != null) {
+                stack.push(curr.right);
+            }
+
+            if (curr.left != null) {
+                stack.push(curr.left);
+            }
+        }
+    }
+
+    void addRightBoundary(Node root, ArrayList<Integer> ans) {
+
+        Node curr = root.right;
+        ArrayList<Integer> temp = new ArrayList<>();
+
+        while (curr != null) {
+
+            if (!isLeaf(curr)) {
+                temp.add(curr.data);
+            }
+
+            if (curr.right != null) {
+                curr = curr.right;
+            } else {
+                curr = curr.left;
+            }
+        }
+
+        for (int i = temp.size() - 1; i >= 0; i--) {
+            ans.add(temp.get(i));
+        }
+    }
+
+    public ArrayList<Integer> boundaryTraversal(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        if (isLeaf(root)) {
+            ans.add(root.data);
+            return ans;
+        }
+
+        ans.add(root.data);
+
+        addLeftBoundary(root, ans);
+        addLeaves(root, ans);
+        addRightBoundary(root, ans);
+
+        return ans;
+    }
+}
+
+Dry Run of Iterative Leaf Traversal
+
+Tree:
+
+                 1
+               /   \
+              2     7
+             / \     \
+            3   4     8
+               / \   /
+              5   6 9
+
+Start:
+
+Stack = [1]
+
+Pop:
+
+1
+
+Not a leaf.
+
+Push right first:
+
+Stack = [7]
+
+Push left:
+
+Stack = [7,2]
+
+Pop:
+
+2
+
+Push 4 then 3:
+
+Stack = [7,4,3]
+
+Pop:
+
+3
+
+Leaf:
+
+Leaves = [3]
+
+Then 4:
+
+Stack = [7]
+
+Push:
+
+6,5
+
+Because 5 is pushed last, it is processed first.
+
+Leaves:
+
+[3,5,6]
+
+Then process 7 → 8 → 9.
+
+Final:
+
+[3,5,6,9]
+
+Exactly the required left-to-right leaf order.
+
+Approach 4 — Morris Traversal / O(1) Auxiliary Space
+
+This is an advanced version.
+
+The standard recursive solution is already optimal in time:
+
+O(n)
+
+but it uses:
+
+O(h)
+
+call-stack space.
+
+A Morris-based solution can perform the leaf traversal without an auxiliary DFS stack, giving:
+
+O(n) time
+O(1) auxiliary space
+
+apart from the output list.
+
+This is useful to know for interviews that explicitly ask for constant auxiliary space, but it is considerably harder to remember and explain.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    boolean isLeaf(Node root) {
+        return root.left == null && root.right == null;
+    }
+
+    public ArrayList<Integer> boundaryTraversal(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        // Special case: root itself is the only boundary/leaf
+        if (isLeaf(root)) {
+            ans.add(root.data);
+            return ans;
+        }
+
+        // Root
+        ans.add(root.data);
+
+        // -----------------------------
+        // 1. Left boundary
+        // -----------------------------
+        Node curr = root.left;
+
+        while (curr != null) {
+
+            if (!isLeaf(curr)) {
+                ans.add(curr.data);
+            }
+
+            if (curr.left != null) {
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+
+        // -----------------------------
+        // 2. Leaves using Morris
+        // -----------------------------
+        curr = root;
+
+        while (curr != null) {
+
+            if (curr.left == null) {
+
+                // If no left and no right, curr is a leaf
+                if (curr.right == null) {
+                    ans.add(curr.data);
+                }
+
+                curr = curr.right;
+
+            } else {
+
+                Node predecessor = curr.left;
+
+                while (predecessor.right != null
+                        && predecessor.right != curr) {
+                    predecessor = predecessor.right;
+                }
+
+                if (predecessor.right == null) {
+
+                    // Create temporary thread
+                    predecessor.right = curr;
+                    curr = curr.left;
+
+                } else {
+
+                    // Remove temporary thread
+                    predecessor.right = null;
+
+                    // If predecessor has no left child,
+                    // it was a leaf.
+                    if (predecessor.left == null) {
+                        ans.add(predecessor.data);
+                    }
+
+                    curr = curr.right;
+                }
+            }
+        }
+
+        // -----------------------------
+        // 3. Right boundary
+        // -----------------------------
+        int rightStart = ans.size();
+
+        curr = root.right;
+
+        while (curr != null) {
+
+            if (!isLeaf(curr)) {
+                ans.add(curr.data);
+            }
+
+            if (curr.right != null) {
+                curr = curr.right;
+            } else {
+                curr = curr.left;
+            }
+        }
+
+        // Reverse right boundary in-place
+        int left = rightStart;
+        int right = ans.size() - 1;
+
+        while (left < right) {
+
+            int temp = ans.get(left);
+            ans.set(left, ans.get(right));
+            ans.set(right, temp);
+
+            left++;
+            right--;
+        }
+
+        return ans;
+    }
+}
+
+Complexity
+Time  = O(n)
+Space = O(1) auxiliary
+
+The output list itself requires O(n) space, of course.
+
+Which Approach Should You Actually Use?
+Approach	Technique	Time	Auxiliary Space	Practical
+1	Parent map + paths	O(n)	O(n)	❌ Mostly educational
+2	Recursive 3-part traversal	O(n)	O(h)	⭐ Best
+3	Iterative 3-part traversal	O(n)	O(h)	⭐ Very good
+4	Morris traversal	O(n)	O(1)	Advanced
+
+For GFG/interviews, Approach 2 is the one you should remember.
+
+Your code is essentially the standard solution.
+
+Why Your Solution Is O(n)
+
+At first glance, you might wonder whether doing:
+
+left boundary
++
+leaves
++
+right boundary
+
+means three times n.
+
+It is still:
+
+O(n) + O(n) + O(n)
+= O(3n)
+= O(n)
+
+Each operation is linear or less.
+
+Specifically:
+
+Left boundary  = O(h)
+Leaves         = O(n)
+Right boundary = O(h)
+
+So:
+
+Total = O(n + h)
+      = O(n)
+
+because:
+
+h ≤ n
+Important Edge Cases
+1. Empty tree
+root = null
+
+Output:
+
+[]
+2. Only root
+    1
+
+Output:
+
+[1]
+
+Your code correctly handles this because root is added only through addLeaves().
+
+3. Only left children
+    1
+   /
+  2
+ /
+3
+
+Boundary:
+
+[1,2,3]
+
+There is no separate right boundary.
+
+4. Only right children
+1
+ \
+  2
+   \
+    3
+
+Boundary:
+
+[1,2,3]
+
+Again, there is no separate right-boundary duplication.
+
+5. Root has only one child and that child is a leaf
+    1
+   /
+  2
+
+Expected:
+
+[1,2]
+
+Process:
+
+Root       → 1
+Left       → nothing because 2 is leaf
+Leaves     → 2
+Right      → nothing
+
+Result:
+
+[1,2]
+The Most Important Part of addLeftBoundry()
+
+Your code:
+
+if(curr.left!=null){
+    curr=curr.left;
+} else {
+    curr=curr.right;
+}
+
+This handles irregular trees.
+
+Example:
+
+        1
+       /
+      2
+       \
+        4
+         \
+          5
+
+There is no left child under 2.
+
+So we don't stop.
+
+Instead:
+
+2 → right → 4 → right → 5
+
+Thus the boundary can continue downward.
+
+This is a very common binary-tree boundary pattern:
+
+Prefer one direction.
+If unavailable, fall back to the other.
+
+For left boundary:
+
+LEFT → RIGHT
+
+For right boundary:
+
+RIGHT → LEFT
+The Most Important Part of the Entire Problem
+
+Don't think of Boundary Traversal as one complicated traversal.
+
+Think:
+
+              Boundary
+                  |
+       ┌──────────┼──────────┐
+       ↓          ↓          ↓
+     Root     Left/Leaves   Right
+                Boundary
+
+Or even better:
+
+Answer =
+Root
++ Left Boundary
++ All Leaves
++ Reverse(Right Boundary)
+Pattern Recognition
+
+When you encounter this problem in an interview:
+
+Step 1
+
+Ask:
+
+Is the root a leaf?
+
+If yes:
+
+return [root]
+Step 2
+
+Add root.
+
+Step 3
+
+Walk down the left side:
+
+left → right fallback
+
+excluding leaves.
+
+Step 4
+
+DFS through the entire tree and add:
+
+all leaves left → right
+Step 5
+
+Walk down the right side:
+
+right → left fallback
+
+excluding leaves.
+
+Step 6
+
+Reverse the right boundary.
+
+🧠 Remember This Template
+public ArrayList<Integer> boundaryTraversal(Node root) {
+
+    ArrayList<Integer> ans = new ArrayList<>();
+
+    if (root == null) {
+        return ans;
+    }
+
+    if (!isLeaf(root)) {
+        ans.add(root.data);
+    }
+
+    addLeftBoundary(root, ans);
+    addLeaves(root, ans);
+    addRightBoundary(root, ans);
+
+    return ans;
+}
+
+And the three helpers:
+
+addLeftBoundary()
+    ↓
+top → bottom
+left → right fallback
+exclude leaves
+
+addLeaves()
+    ↓
+DFS
+left → right
+include only leaves
+
+addRightBoundary()
+    ↓
+top → bottom collection
+right → left fallback
+exclude leaves
+then reverse
+Interview memory trick
+LEFT  = go LEFT, otherwise RIGHT
+RIGHT = go RIGHT, otherwise LEFT
+LEAVES = normal DFS
+RIGHT = reverse
+
+That is the entire Boundary Traversal pattern.
