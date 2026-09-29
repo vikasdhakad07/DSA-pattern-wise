@@ -1,0 +1,1328 @@
+GFG — Bottom View of Binary Tree
+Problem Understanding
+
+The bottom view of a binary tree contains the nodes that are visible when the tree is viewed from the bottom.
+
+The key concept is Horizontal Distance (HD).
+
+For every node:
+
+root          → HD = 0
+left child    → HD - 1
+right child   → HD + 1
+
+If multiple nodes have the same horizontal distance, the bottom-most/deepest node is visible.
+
+Finally, answer must be returned from:
+
+smallest HD → largest HD
+Example
+
+Consider:
+
+                 20
+               /    \
+              8      22
+             / \      \
+            5   3      25
+               / \
+              10 14
+
+Horizontal distances:
+
+                20(0)
+              /      \
+          8(-1)       22(1)
+          /   \         \
+      5(-2)  3(0)      25(2)
+             /   \
+         10(-1)  14(1)
+
+For each HD:
+
+HD = -2 → 5
+HD = -1 → 10   ← replaces 8
+HD =  0 → 3    ← replaces 20
+HD =  1 → 14   ← replaces 22
+HD =  2 → 25
+
+Therefore:
+
+Bottom View = [5, 10, 3, 14, 25]
+The Core Pattern
+
+This problem is essentially:
+
+Tree
+ ↓
+Assign Horizontal Distance
+ ↓
+For each HD:
+    keep the deepest node
+ ↓
+Sort HD from left → right
+
+Compare with related problems:
+
+Top View
+→ first node at each HD
+
+Bottom View
+→ last/deepest node at each HD
+
+Approach 1 — Brute Force
+Idea
+
+For every possible horizontal distance:
+
+Traverse the entire tree.
+Find the deepest node having that HD.
+Put its value into the answer.
+
+This means we repeatedly scan the tree.
+
+Step 1: Find Minimum and Maximum HD
+
+For example:
+
+                 20
+               /    \
+              8      22
+             / \      \
+            5   3      25
+               / \
+              10 14
+
+HD range is:
+
+-2 → 2
+
+Then for every HD:
+
+-2
+-1
+ 0
+ 1
+ 2
+
+we traverse the entire tree to find the deepest node.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    int minHD;
+    int maxHD;
+
+    static class Result {
+        int value;
+        int depth;
+
+        Result(int value, int depth) {
+            this.value = value;
+            this.depth = depth;
+        }
+    }
+
+    boolean isLeaf(Node root) {
+        return root.left == null && root.right == null;
+    }
+
+    void findRange(Node root, int hd) {
+
+        if (root == null) {
+            return;
+        }
+
+        minHD = Math.min(minHD, hd);
+        maxHD = Math.max(maxHD, hd);
+
+        findRange(root.left, hd - 1);
+        findRange(root.right, hd + 1);
+    }
+
+    void findDeepest(
+            Node root,
+            int hd,
+            int depth,
+            int targetHD,
+            Result result) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (hd == targetHD) {
+
+            if (depth >= result.depth) {
+                result.depth = depth;
+                result.value = root.data;
+            }
+        }
+
+        findDeepest(root.left, hd - 1, depth + 1, targetHD, result);
+        findDeepest(root.right, hd + 1, depth + 1, targetHD, result);
+    }
+
+    public ArrayList<Integer> bottomView(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        minHD = 0;
+        maxHD = 0;
+
+        // Find HD range
+        findRange(root, 0);
+
+        // For every HD, search the whole tree
+        for (int hd = minHD; hd <= maxHD; hd++) {
+
+            Result result = new Result(-1, -1);
+
+            findDeepest(root, 0, 0, hd, result);
+
+            ans.add(result.value);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+
+For:
+
+                 20
+               /    \
+              8      22
+             / \      \
+            5   3      25
+               / \
+              10 14
+
+First find:
+
+minHD = -2
+maxHD = 2
+
+Now process each HD.
+
+HD = -2
+
+Search entire tree.
+
+Only:
+
+5
+
+has HD -2.
+
+ans = [5]
+HD = -1
+
+Nodes:
+
+8 at depth 1
+10 at depth 3
+
+Choose deeper:
+
+10
+ans = [5,10]
+HD = 0
+
+Nodes:
+
+20 at depth 0
+3  at depth 2
+
+Choose:
+
+3
+ans = [5,10,3]
+HD = 1
+
+Nodes:
+
+22 at depth 1
+14 at depth 3
+
+Choose:
+
+14
+HD = 2
+
+Only:
+
+25
+
+Final:
+
+[5,10,3,14,25]
+Complexity
+
+Let:
+
+n = number of nodes
+W = number of distinct horizontal distances
+
+For each HD we scan the whole tree:
+
+Time = O(n × W)
+
+Since:
+
+W ≤ n
+
+worst case:
+
+Time = O(n²)
+
+Space:
+
+O(h)
+
+for recursion, excluding output.
+
+This is useful conceptually but not practical.
+
+Approach 2 — DFS + Map
+
+Now instead of repeatedly traversing the tree, traverse it only once.
+
+For each node, store:
+
+HD → (deepest depth, node value)
+
+For example:
+
+HD = -1
+→ depth = 3
+→ value = 10
+
+Whenever we find a node at the same HD:
+
+if currentDepth >= storedDepth
+
+replace it.
+
+The >= is useful because if two nodes have the same depth and HD, the later left-to-right DFS node becomes the stored value.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    static class Info {
+        int depth;
+        int value;
+
+        Info(int depth, int value) {
+            this.depth = depth;
+            this.value = value;
+        }
+    }
+
+    void dfs(
+            Node root,
+            int hd,
+            int depth,
+            TreeMap<Integer, Info> map) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (!map.containsKey(hd)
+                || depth >= map.get(hd).depth) {
+
+            map.put(hd, new Info(depth, root.data));
+        }
+
+        dfs(root.left, hd - 1, depth + 1, map);
+        dfs(root.right, hd + 1, depth + 1, map);
+    }
+
+    public ArrayList<Integer> bottomView(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        TreeMap<Integer, Info> map = new TreeMap<>();
+
+        dfs(root, 0, 0, map);
+
+        for (Info info : map.values()) {
+            ans.add(info.value);
+        }
+
+        return ans;
+    }
+}
+
+Dry Run
+
+Tree:
+
+                 20
+               /    \
+              8      22
+             / \      \
+            5   3      25
+               / \
+              10 14
+
+Start:
+
+map = {}
+Visit 20
+HD = 0
+depth = 0
+
+Store:
+
+0 → (0,20)
+Visit 8
+HD = -1
+depth = 1
+
+Store:
+
+-1 → (1,8)
+Visit 5
+HD = -2
+depth = 2
+
+Store:
+
+-2 → (2,5)
+Visit 3
+HD = 0
+depth = 2
+
+Existing:
+
+0 → depth 0, value 20
+
+Current depth 2 is greater.
+
+Replace:
+
+0 → (2,3)
+Visit 10
+
+10 is:
+
+HD = -1
+depth = 3
+
+Existing:
+
+-1 → (1,8)
+
+Replace:
+
+-1 → (3,10)
+Visit 14
+HD = 1
+depth = 3
+
+Store:
+
+1 → (3,14)
+Visit 22
+HD = 1
+depth = 1
+
+But:
+
+3 > 1
+
+So keep 14.
+
+Visit 25
+HD = 2
+depth = 2
+
+Store:
+
+2 → (2,25)
+
+Final TreeMap:
+
+-2 → 5
+-1 → 10
+ 0 → 3
+ 1 → 14
+ 2 → 25
+
+Output:
+
+[5,10,3,14,25]
+Complexity
+
+Each node is processed once:
+
+O(n)
+
+Each TreeMap.put/get costs:
+
+O(log W)
+
+Therefore:
+
+Time = O(n log W)
+
+Worst case:
+
+O(n log n)
+
+Space:
+
+O(n)
+
+Approach 3 — BFS + TreeMap
+
+This is the standard and easiest approach for Bottom View.
+
+And this is the code you provided.
+
+The important advantage of BFS is that nodes are visited level by level.
+
+Therefore, when we simply do:
+
+map.put(hd, node.data);
+
+a deeper node is naturally processed later and overwrites the previous node.
+
+Your Code
+/*
+Definition for Node
+class Node {
+    int data;
+    Node left;
+    Node right;
+
+    Node(int val) {
+        data = val;
+        left = right = null;
+
+    }
+}
+*/
+class Pair{
+    Node node;
+    int hd;
+    Pair(Node node, int hd){
+        this.node=node;
+        this.hd=hd;
+    }
+}
+class Solution {
+    public ArrayList<Integer> bottomView(Node root) {
+        // code here
+        ArrayList<Integer> al=new ArrayList<>();
+        if(root==null){
+            return al;
+        }
+        
+        TreeMap<Integer, Integer> map=new TreeMap<>();
+        Queue<Pair> q=new LinkedList<>();
+        q.add(new Pair(root,0));
+        while(!q.isEmpty()){
+            Pair curr=q.poll();
+            Node node=curr.node;
+            int hd=curr.hd;
+            map.put(hd, node.data);
+            
+            if(node.left!=null){
+                q.add(new Pair(node.left, hd-1));
+            }
+            if(node.right!=null){
+                q.add(new Pair(node.right, hd+1));
+            }
+        }
+        for(int ele:map.values()){
+            al.add(ele);
+        }
+        return al;
+    }
+}
+
+This is a very good solution for GFG.
+
+How Your Code Works
+
+You maintain:
+
+TreeMap<Integer, Integer> map
+
+where:
+
+key   = horizontal distance
+value = bottom-most node at that HD
+
+And:
+
+Queue<Pair> q
+
+where every pair contains:
+
+(node, horizontal distance)
+Why BFS Works So Well
+
+Suppose:
+
+20 at depth 0
+3  at depth 2
+
+Both have:
+
+HD = 0
+
+BFS visits:
+
+20 first
+3 later
+
+So:
+
+map.put(0, 20);
+
+then:
+
+map.put(0, 3);
+
+The later/deeper node replaces the earlier one.
+
+Detailed Dry Run
+
+Use:
+
+                 20
+               /    \
+              8      22
+             / \      \
+            5   3      25
+               / \
+              10 14
+Initial State
+Queue = [(20,0)]
+
+Map = {}
+Step 1
+
+Poll:
+
+(20,0)
+
+Therefore:
+
+node = 20
+hd = 0
+
+Store:
+
+Map:
+0 → 20
+
+Add children:
+
+(8,-1)
+(22,1)
+
+Queue:
+
+[(8,-1), (22,1)]
+Step 2
+
+Poll:
+
+(8,-1)
+
+Store:
+
+-1 → 8
+
+Map:
+
+-1 → 8
+ 0 → 20
+
+Add children:
+
+5 → -2
+3 → 0
+
+Queue:
+
+[(22,1), (5,-2), (3,0)]
+Step 3
+
+Poll:
+
+(22,1)
+
+Store:
+
+1 → 22
+
+Map:
+
+-1 → 8
+ 0 → 20
+ 1 → 22
+
+Add:
+
+25 → 2
+
+Queue:
+
+[(5,-2), (3,0), (25,2)]
+Step 4
+
+Poll:
+
+(5,-2)
+
+Store:
+
+-2 → 5
+
+Map:
+
+-2 → 5
+-1 → 8
+ 0 → 20
+ 1 → 22
+ 2 → 25
+Step 5
+
+Poll:
+
+(3,0)
+
+Notice:
+
+HD = 0
+
+Already exists:
+
+0 → 20
+
+Overwrite:
+
+0 → 3
+
+Map becomes:
+
+-2 → 5
+-1 → 8
+ 0 → 3
+ 1 → 22
+ 2 → 25
+
+Add children:
+
+10 → -1
+14 → 1
+
+Queue:
+
+[(25,2), (10,-1), (14,1)]
+Step 6
+
+Poll:
+
+(25,2)
+
+No change:
+
+2 → 25
+Step 7
+
+Poll:
+
+(10,-1)
+
+Existing:
+
+-1 → 8
+
+Overwrite:
+
+-1 → 10
+
+Map:
+
+-2 → 5
+-1 → 10
+ 0 → 3
+ 1 → 22
+ 2 → 25
+Step 8
+
+Poll:
+
+(14,1)
+
+Existing:
+
+1 → 22
+
+Overwrite:
+
+1 → 14
+
+Final map:
+
+-2 → 5
+-1 → 10
+ 0 → 3
+ 1 → 14
+ 2 → 25
+
+Because TreeMap keeps keys sorted:
+
+for(int ele : map.values())
+
+gives:
+
+[5,10,3,14,25]
+Why TreeMap Is Necessary in Your Code
+
+Suppose we used:
+
+HashMap<Integer,Integer>
+
+The map might contain:
+
+0 → 3
+-1 → 10
+2 → 25
+-2 → 5
+1 → 14
+
+But the answer must be:
+
+HD increasing:
+-2 -1 0 1 2
+
+So we need to sort the horizontal distances.
+
+TreeMap does that automatically:
+
+-2 → 5
+-1 → 10
+ 0 → 3
+ 1 → 14
+ 2 → 25
+
+Approach 4 — BFS + HashMap + HD Range
+
+Now we can optimize the TreeMap.
+
+We don't actually need a balanced tree to sort the keys.
+
+Observe:
+
+If there are n nodes,
+HD is always between -n and +n.
+
+We can therefore use:
+
+HashMap
++
+minimum HD
++
+maximum HD
+
+Then at the end iterate:
+
+minHD → maxHD
+
+Since the number of possible HD positions is at most O(n), this gives O(n) average time.
+
+This is asymptotically better than TreeMap.
+
+Code
+import java.util.*;
+
+class Pair {
+    Node node;
+    int hd;
+    int depth;
+
+    Pair(Node node, int hd, int depth) {
+        this.node = node;
+        this.hd = hd;
+        this.depth = depth;
+    }
+}
+
+class Info {
+    int depth;
+    int value;
+
+    Info(int depth, int value) {
+        this.depth = depth;
+        this.value = value;
+    }
+}
+
+class Solution {
+
+    public ArrayList<Integer> bottomView(Node root) {
+
+        ArrayList<Integer> ans = new ArrayList<>();
+
+        if (root == null) {
+            return ans;
+        }
+
+        HashMap<Integer, Info> map = new HashMap<>();
+
+        Queue<Pair> q = new LinkedList<>();
+
+        q.offer(new Pair(root, 0, 0));
+
+        int minHD = 0;
+        int maxHD = 0;
+
+        while (!q.isEmpty()) {
+
+            Pair curr = q.poll();
+
+            Node node = curr.node;
+            int hd = curr.hd;
+            int depth = curr.depth;
+
+            minHD = Math.min(minHD, hd);
+            maxHD = Math.max(maxHD, hd);
+
+            if (!map.containsKey(hd)
+                    || depth >= map.get(hd).depth) {
+
+                map.put(hd, new Info(depth, node.data));
+            }
+
+            if (node.left != null) {
+                q.offer(
+                    new Pair(node.left, hd - 1, depth + 1)
+                );
+            }
+
+            if (node.right != null) {
+                q.offer(
+                    new Pair(node.right, hd + 1, depth + 1)
+                );
+            }
+        }
+
+        for (int hd = minHD; hd <= maxHD; hd++) {
+
+            if (map.containsKey(hd)) {
+                ans.add(map.get(hd).value);
+            }
+        }
+
+        return ans;
+    }
+}
+
+Why Do We Keep depth in Approach 4?
+
+Your original code does not need depth because BFS processes nodes by levels.
+
+But after replacing TreeMap with HashMap, it's cleaner and safer to explicitly store:
+
+HD
+depth
+value
+
+Then our rule becomes:
+
+if (depth >= oldDepth)
+
+replace the current value.
+
+Thus the logic is explicit rather than relying completely on traversal order.
+
+Dry Run of Approach 4
+
+At:
+
+20
+
+store:
+
+HD 0 → (depth 0, value 20)
+
+At:
+
+8
+
+store:
+
+HD -1 → (depth 1, value 8)
+
+At:
+
+3
+
+we have:
+
+HD 0
+depth 2
+
+Existing:
+
+HD 0 → depth 0, value 20
+
+Since:
+
+2 >= 0
+
+replace:
+
+0 → (2,3)
+
+Later:
+
+10
+HD = -1
+depth = 3
+
+Existing:
+
+-1 → (1,8)
+
+Replace:
+
+-1 → (3,10)
+
+Likewise:
+
+14
+HD = 1
+depth = 3
+
+replaces 22.
+
+Finally:
+
+minHD = -2
+maxHD = 2
+
+Scan:
+
+-2 → 5
+-1 → 10
+ 0 → 3
+ 1 → 14
+ 2 → 25
+
+Answer:
+
+[5,10,3,14,25]
+Complexity Comparison
+Approach	Technique	Time	Space
+1	Repeated DFS for every HD	O(n²)	O(h)
+2	DFS + TreeMap	O(n log n)	O(n)
+3	BFS + TreeMap — Your code	O(n log n)	O(n)
+4	BFS + HashMap + min/max HD	O(n) average	O(n)
+Why Your Code Is Usually Preferred
+
+Your code:
+
+TreeMap<Integer, Integer> map = new TreeMap<>();
+Queue<Pair> q = new LinkedList<>();
+
+is a very common interview/GFG solution because it is:
+
+easy to understand
+naturally level-order
+easy to prove correct
+automatically sorted left → right
+
+Complexity:
+
+O(n log n) time
+O(n) space
+
+For interviews, I would generally choose this unless the interviewer specifically asks:
+
+Can you do better than O(n log n)?
+
+Then show the HashMap + minHD/maxHD optimization.
+
+The Most Important Difference: Top View vs Bottom View
+
+This is extremely important for tree-view problems.
+
+Top View
+
+At each horizontal distance:
+
+take FIRST node
+
+Typical approach:
+
+if (!map.containsKey(hd)) {
+    map.put(hd, node.data);
+}
+Bottom View
+
+At each horizontal distance:
+
+take DEEPEST / LAST node
+
+Typical BFS approach:
+
+map.put(hd, node.data);
+
+Because later BFS levels overwrite earlier ones.
+
+Same HD — Why the Value Changes
+
+Consider:
+
+              20
+             /
+            8
+             \
+              3
+
+HD:
+
+20 → 0
+8  → -1
+3  → 0
+
+At HD 0:
+
+20
+ ↓
+3
+
+From the bottom, 3 is visible.
+
+Therefore:
+
+HD 0 → 3
+
+This is exactly what:
+
+map.put(hd, node.data);
+
+does.
+
+Important Tie Case
+
+Consider:
+
+        1
+       / \
+      2   3
+       \ /
+        4 5
+
+Positions:
+
+1 → HD 0
+2 → HD -1
+3 → HD +1
+4 → HD 0
+5 → HD 0
+
+Both 4 and 5:
+
+HD = 0
+depth = 2
+
+BFS processes:
+
+4
+then
+5
+
+So:
+
+map.put(0, 4)
+map.put(0, 5)
+
+Final:
+
+HD 0 → 5
+
+This illustrates why BFS + overwrite is such a clean solution when following the usual GFG traversal convention.
+
+Important Edge Cases
+1. Empty tree
+root = null
+
+Output:
+
+[]
+
+Your code correctly handles this:
+
+if(root==null){
+    return al;
+}
+2. Single node
+    1
+
+HD:
+
+0 → 1
+
+Output:
+
+[1]
+3. Left-skewed tree
+    1
+   /
+  2
+ /
+3
+/
+4
+
+HDs:
+
+0
+-1
+-2
+-3
+
+Bottom view:
+
+[4,3,2,1]
+4. Right-skewed tree
+1
+ \
+  2
+   \
+    3
+     \
+      4
+
+Bottom view:
+
+[1,2,3,4]
+🧠 How to Recognize Bottom View in an Interview
+
+When you see:
+
+Bottom View of Binary Tree
+
+immediately think:
+
+Horizontal Distance
+        ↓
+Queue / BFS
+        ↓
+HD → latest/deepest node
+        ↓
+TreeMap for sorted HD
+
+The template in your head should be:
+
+TreeMap<Integer, Integer> map = new TreeMap<>();
+Queue<Pair> q = new LinkedList<>();
+
+q.offer(new Pair(root, 0));
+
+while (!q.isEmpty()) {
+
+    Pair curr = q.poll();
+
+    int hd = curr.hd;
+    Node node = curr.node;
+
+    map.put(hd, node.data);
+
+    if (node.left != null) {
+        q.offer(new Pair(node.left, hd - 1));
+    }
+
+    if (node.right != null) {
+        q.offer(new Pair(node.right, hd + 1));
+    }
+}
+
+Then:
+
+for (int value : map.values()) {
+    ans.add(value);
+}
+🔥 Pattern Connection With Other Tree Problems
+
+This problem belongs to a very useful family:
+
+                    Binary Tree
+                        |
+                 Horizontal Distance
+                        |
+          ┌─────────────┼─────────────┐
+          ↓             ↓             ↓
+       Top View     Bottom View    Vertical View
+          |             |             |
+       first           last        group by HD
+Top View
+first node at HD
+Bottom View
+deepest/last node at HD
+Vertical Traversal
+all nodes grouped by HD
+then ordered by level/position
+
+Once you understand the (node, horizontal distance) pair, these problems become much easier.
+
+Final Recommendation
+
+For your DSA preparation, remember these four levels:
+
+1. Brute Force
+   Repeatedly search each HD
+        ↓
+   O(n²)
+
+2. DFS + Map
+   One traversal + depth
+        ↓
+   O(n log n)
+
+3. BFS + TreeMap
+   One level-order traversal
+   + overwrite
+        ↓
+   O(n log n)
+        ⭐ Your solution
+
+4. BFS + HashMap + min/max HD
+   One traversal
+   + range scan
+        ↓
+   O(n) average
+        ⭐ Advanced optimization
+The one-line memory trick
+Bottom View = BFS + Horizontal Distance + Last/Deepest Node per HD
+
+And for your exact code, the three things to remember are:
+
+left child  → hd - 1
+right child → hd + 1
+same hd     → overwrite
+
+That is the core pattern behind Bottom View of Binary Tree.
