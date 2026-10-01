@@ -1,0 +1,1328 @@
+LeetCode 257 — Binary Tree Paths
+Problem Understanding
+
+Given the root of a binary tree, return all root-to-leaf paths as strings.
+
+For every path:
+
+root → node → node → leaf
+
+format it as:
+
+value->value->value
+Example
+                1
+              /   \
+             2     3
+              \
+               5
+
+The root-to-leaf paths are:
+
+1 → 2 → 5
+1 → 3
+
+So the answer is:
+
+["1->2->5", "1->3"]
+First Important Observation
+
+A path should end only at a leaf.
+
+A leaf is:
+
+root.left == null && root.right == null
+
+So the traversal is:
+
+Start at root
+    ↓
+keep building current path
+    ↓
+when leaf is reached
+    ↓
+add path to answer
+
+This is naturally a DFS + backtracking problem.
+
+Approaches
+
+We'll go from:
+
+Brute Force
+   ↓
+BFS with path stored in queue
+   ↓
+Recursive DFS with String
+   ↓
+DFS + StringBuilder + Backtracking
+
+The last one is the most memory-efficient standard implementation.
+
+Approach 1 — Brute Force: Store Complete Path at Every Node
+Idea
+
+At every node, maintain the complete path from root to that node.
+
+For each child, create a new path list by copying the current one.
+
+When we reach a leaf, save that path.
+
+For example:
+
+        1
+       / \
+      2   3
+       \
+        5
+
+We maintain:
+
+At 1 → [1]
+
+At 2 → [1,2]
+
+At 5 → [1,2,5]
+
+At 3 → [1,3]
+
+Then convert these lists to strings.
+
+This is easy to understand, but copying the path at every node costs extra time and memory.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    public List<String> binaryTreePaths(TreeNode root) {
+
+        List<String> result = new ArrayList<>();
+
+        if (root == null) {
+            return result;
+        }
+
+        List<Integer> path = new ArrayList<>();
+        dfs(root, path, result);
+
+        return result;
+    }
+
+    private void dfs(
+            TreeNode root,
+            List<Integer> path,
+            List<String> result) {
+
+        if (root == null) {
+            return;
+        }
+
+        // Create a new copy of the path
+        List<Integer> currentPath = new ArrayList<>(path);
+        currentPath.add(root.val);
+
+        if (root.left == null && root.right == null) {
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < currentPath.size(); i++) {
+
+                if (i > 0) {
+                    sb.append("->");
+                }
+
+                sb.append(currentPath.get(i));
+            }
+
+            result.add(sb.toString());
+            return;
+        }
+
+        dfs(root.left, currentPath, result);
+        dfs(root.right, currentPath, result);
+    }
+}
+
+Dry Run — Approach 1
+
+Tree:
+
+                1
+              /   \
+             2     3
+              \
+               5
+
+Initial:
+
+path = []
+result = []
+Visit 1
+
+Create:
+
+currentPath = [1]
+
+1 isn't a leaf.
+
+Go left.
+
+Visit 2
+
+Copy:
+
+[1]
+ ↓
+[1,2]
+
+2 isn't a leaf.
+
+Go left:
+
+null
+
+Go right.
+
+Visit 5
+
+Copy:
+
+[1,2]
+ ↓
+[1,2,5]
+
+5 is leaf.
+
+Convert to string:
+
+"1->2->5"
+
+Result:
+
+["1->2->5"]
+Back to 1
+
+Go right to 3.
+
+Copy:
+
+[1]
+ ↓
+[1,3]
+
+3 is leaf.
+
+Add:
+
+"1->3"
+
+Final:
+
+["1->2->5", "1->3"]
+Complexity
+
+Let:
+
+n = number of nodes
+h = height
+S = total length of all output path strings
+
+Because we copy the path at each node:
+
+Time = O(nh + S)
+
+Worst case:
+
+O(n²)
+
+Space:
+
+O(nh + h)
+
+because of copied paths.
+
+This is mainly educational.
+
+Approach 2 — BFS + Store Path in Queue
+
+We can also solve the problem using BFS.
+
+Instead of storing only the node in the queue, store:
+
+(node, path-to-that-node)
+
+For every node:
+
+newPath = currentPath + currentNode
+
+When we reach a leaf, add the path to the answer.
+
+Code
+import java.util.*;
+
+class Pair {
+    TreeNode node;
+    String path;
+
+    Pair(TreeNode node, String path) {
+        this.node = node;
+        this.path = path;
+    }
+}
+
+class Solution {
+
+    public List<String> binaryTreePaths(TreeNode root) {
+
+        List<String> result = new ArrayList<>();
+
+        if (root == null) {
+            return result;
+        }
+
+        Queue<Pair> q = new LinkedList<>();
+
+        q.offer(new Pair(root, String.valueOf(root.val)));
+
+        while (!q.isEmpty()) {
+
+            Pair curr = q.poll();
+
+            TreeNode node = curr.node;
+            String path = curr.path;
+
+            // Leaf
+            if (node.left == null && node.right == null) {
+                result.add(path);
+                continue;
+            }
+
+            if (node.left != null) {
+                q.offer(
+                    new Pair(
+                        node.left,
+                        path + "->" + node.left.val
+                    )
+                );
+            }
+
+            if (node.right != null) {
+                q.offer(
+                    new Pair(
+                        node.right,
+                        path + "->" + node.right.val
+                    )
+                );
+            }
+        }
+
+        return result;
+    }
+}
+
+Dry Run — Approach 2
+
+Use:
+
+                1
+              /   \
+             2     3
+              \
+               5
+
+Initial queue:
+
+[(1,"1")]
+Poll (1,"1")
+
+1 is not leaf.
+
+Add:
+
+(2,"1->2")
+(3,"1->3")
+
+Queue:
+
+[
+ (2,"1->2"),
+ (3,"1->3")
+]
+Poll (2,"1->2")
+
+2 isn't leaf.
+
+Left is null.
+
+Right is 5.
+
+Add:
+
+(5,"1->2->5")
+
+Queue:
+
+[
+ (3,"1->3"),
+ (5,"1->2->5")
+]
+Poll (3,"1->3")
+
+3 is leaf.
+
+Add:
+
+["1->3"]
+Poll (5,"1->2->5")
+
+5 is leaf.
+
+Add:
+
+["1->3", "1->2->5"]
+
+Notice that BFS gives paths in level-order discovery order, which may differ from the expected left-to-right DFS order for some trees.
+
+For most interpretations of this problem, this is still a valid set of paths, but DFS naturally gives the conventional left-to-right order.
+
+Complexity
+
+Because every child path is constructed using string concatenation:
+
+Time = O(nh + S)
+
+Worst case:
+
+O(n²)
+
+Queue/path storage can also become:
+
+O(nh)
+
+in terms of copied string content.
+
+So BFS isn't a great improvement here.
+
+Approach 3 — Recursive DFS with String Concatenation
+
+This is the code you provided.
+
+The key idea is:
+
+Keep the path string while going downward.
+When leaf is reached → add path.
+Your Code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    public List<String> binaryTreePaths(TreeNode root) {
+        List<String> li=new ArrayList<>();
+        bfs(root, "", li);
+        return li;
+    }
+
+    public void bfs(TreeNode root, String ans, List<String> li){
+        if(root==null){
+            return;
+        }
+
+        if(root.left==null&&root.right==null){
+            li.add(ans+root.val);
+            return;
+        }
+        bfs(root.left, ans+root.val+"->",li);
+        bfs(root.right, ans+root.val+"->",li);
+    }
+}
+Important naming point
+
+Your helper is called:
+
+bfs()
+
+but it is actually DFS, because you're using recursion and following one root-to-leaf path before moving to the next.
+
+It would be clearer to name it:
+
+dfs()
+Clean Version of Your Code
+class Solution {
+
+    public List<String> binaryTreePaths(TreeNode root) {
+
+        List<String> result = new ArrayList<>();
+
+        dfs(root, "", result);
+
+        return result;
+    }
+
+    private void dfs(
+            TreeNode root,
+            String path,
+            List<String> result) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (root.left == null && root.right == null) {
+            result.add(path + root.val);
+            return;
+        }
+
+        dfs(
+            root.left,
+            path + root.val + "->",
+            result
+        );
+
+        dfs(
+            root.right,
+            path + root.val + "->",
+            result
+        );
+    }
+}
+
+Dry Run — Approach 3
+
+Tree:
+
+                1
+              /   \
+             2     3
+              \
+               5
+
+Initially:
+
+dfs(1, "", result)
+At node 1
+
+Not leaf.
+
+Left call:
+
+dfs(2, "1->", result)
+
+Right call:
+
+dfs(3, "1->", result)
+At node 2
+
+Current path:
+
+"1->"
+
+Not leaf.
+
+Left:
+
+dfs(null, "1->2->")
+
+returns.
+
+Right:
+
+dfs(5, "1->2->")
+At node 5
+
+5 is leaf.
+
+So:
+
+result.add("1->2->" + 5);
+
+Result:
+
+["1->2->5"]
+Back to node 3
+
+Call:
+
+dfs(3, "1->", result)
+
+3 is leaf.
+
+Add:
+
+"1->" + 3
+
+Result:
+
+["1->2->5", "1->3"]
+Detailed Call Stack
+
+It's useful to visualize the recursion:
+
+dfs(1, "")
+       |
+       +---- dfs(2, "1->")
+       |          |
+       |          +---- dfs(null, "1->2->")
+       |          |
+       |          +---- dfs(5, "1->2->")
+       |                     |
+       |                     +---- leaf
+       |                           add "1->2->5"
+       |
+       +---- dfs(3, "1->")
+                  |
+                  +---- leaf
+                        add "1->3"
+
+This is a classic root-to-leaf DFS.
+
+Is Your Approach Optimal?
+
+It has the optimal traversal strategy, but string concatenation creates extra work.
+
+Every expression like:
+
+path + root.val + "->"
+
+creates a new String.
+
+Java String is immutable.
+
+For a long path:
+
+"1->2->3->4->5"
+
+many intermediate strings are created.
+
+So the practical complexity can be roughly:
+
+O(nh + S)
+
+rather than pure O(n).
+
+With LeetCode's small constraints, your solution is perfectly fine.
+
+But we can improve it.
+
+Approach 4 — Optimal: DFS + StringBuilder + Backtracking
+
+This is the cleanest optimized implementation.
+
+Instead of creating a new string on every recursive call, use one mutable:
+
+StringBuilder
+
+We:
+
+Append current value.
+If leaf → save current string.
+Otherwise append "->".
+Recurse.
+Remove what we appended.
+
+This is backtracking.
+
+Code
+class Solution {
+
+    public List<String> binaryTreePaths(TreeNode root) {
+
+        List<String> result = new ArrayList<>();
+
+        if (root == null) {
+            return result;
+        }
+
+        StringBuilder path = new StringBuilder();
+
+        dfs(root, path, result);
+
+        return result;
+    }
+
+    private void dfs(
+            TreeNode root,
+            StringBuilder path,
+            List<String> result) {
+
+        if (root == null) {
+            return;
+        }
+
+        int lengthBefore = path.length();
+
+        // Add current node
+        path.append(root.val);
+
+        // Leaf
+        if (root.left == null && root.right == null) {
+
+            result.add(path.toString());
+
+        } else {
+
+            // Add separator
+            path.append("->");
+
+            dfs(root.left, path, result);
+            dfs(root.right, path, result);
+        }
+
+        // Backtrack
+        path.setLength(lengthBefore);
+    }
+}
+
+Dry Run — Approach 4
+
+Tree:
+
+                1
+              /   \
+             2     3
+              \
+               5
+
+Initially:
+
+StringBuilder = ""
+Node 1
+
+Save:
+
+lengthBefore = 0
+
+Append:
+
+"1"
+
+Then:
+
+"1->"
+
+Go left.
+
+Node 2
+
+Before:
+
+"1->"
+
+Save:
+
+lengthBefore = 3
+
+Append:
+
+"1->2"
+
+Then:
+
+"1->2->"
+
+Go left:
+
+null
+
+Go right to 5.
+
+Node 5
+
+Current:
+
+"1->2->"
+
+Save:
+
+lengthBefore = 6
+
+Append:
+
+"1->2->5"
+
+Leaf.
+
+Add:
+
+result = ["1->2->5"]
+
+Now backtrack:
+
+path.setLength(6);
+
+String becomes:
+
+"1->2->"
+
+Return to node 2.
+
+Backtrack Node 2
+
+At the end of node 2:
+
+path.setLength(3);
+
+String becomes:
+
+"1->"
+
+Return to node 1.
+
+Node 3
+
+Append:
+
+"1->3"
+
+Leaf.
+
+Add:
+
+result =
+[
+    "1->2->5",
+    "1->3"
+]
+
+Backtrack to:
+
+""
+
+Done.
+
+Why Backtracking Works
+
+Suppose current path is:
+
+1->2->
+
+We go to:
+
+5
+
+and temporarily get:
+
+1->2->5
+
+After finishing 5, we don't want 5 to remain when we explore another branch.
+
+So we restore:
+
+1->2->
+
+This is:
+
+Choose
+ ↓
+Explore
+ ↓
+Undo
+
+The classic backtracking pattern.
+
+Another Optimal Approach — DFS + ArrayList + Backtracking
+
+We can also store node values rather than maintaining a StringBuilder.
+
+At each node:
+
+path.add(root.val)
+
+At the end:
+
+path.remove(path.size() - 1)
+
+Then build the string only when reaching a leaf.
+
+This avoids repeated string creation during traversal.
+
+Code
+class Solution {
+
+    public List<String> binaryTreePaths(TreeNode root) {
+
+        List<String> result = new ArrayList<>();
+
+        if (root == null) {
+            return result;
+        }
+
+        List<Integer> path = new ArrayList<>();
+
+        dfs(root, path, result);
+
+        return result;
+    }
+
+    private void dfs(
+            TreeNode root,
+            List<Integer> path,
+            List<String> result) {
+
+        if (root == null) {
+            return;
+        }
+
+        path.add(root.val);
+
+        if (root.left == null && root.right == null) {
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < path.size(); i++) {
+
+                if (i > 0) {
+                    sb.append("->");
+                }
+
+                sb.append(path.get(i));
+            }
+
+            result.add(sb.toString());
+
+        } else {
+
+            dfs(root.left, path, result);
+            dfs(root.right, path, result);
+        }
+
+        // Backtrack
+        path.remove(path.size() - 1);
+    }
+}
+
+This is also excellent and easy to understand.
+
+Dry Run — ArrayList Backtracking
+
+Tree:
+
+                1
+              /   \
+             2     3
+              \
+               5
+
+Start:
+
+path = []
+Node 1
+path = [1]
+
+Go left.
+
+Node 2
+path = [1,2]
+
+Go right.
+
+Node 5
+path = [1,2,5]
+
+Leaf.
+
+Construct:
+
+"1->2->5"
+
+Add to result.
+
+Backtrack:
+
+path.remove(5)
+
+Now:
+
+path = [1,2]
+
+Backtrack from 2:
+
+path = [1]
+
+Go right.
+
+Node 3
+path = [1,3]
+
+Leaf.
+
+Construct:
+
+"1->3"
+
+Final:
+
+["1->2->5","1->3"]
+Complexity Analysis
+
+Let:
+
+n = number of nodes
+h = height
+S = total characters in all output paths
+
+We should distinguish traversal complexity from output cost.
+
+Because the problem itself requires returning every path, writing the output costs at least:
+
+Ω(S)
+Approach 1 — Copy path at every node
+Time  = O(nh + S)
+Space = O(nh)
+
+Worst case:
+
+O(n²)
+Approach 2 — BFS + String path
+Time  = O(nh + S)
+Space = O(nh)
+
+because many copied path strings can coexist in the queue.
+
+Approach 3 — Your Recursive String Concatenation
+Time  = O(nh + S)
+Space = O(h + S)
+
+The O(S) output storage is required.
+
+The recursive traversal stack is:
+
+O(h)
+Approach 4 — StringBuilder + Backtracking
+
+Traversal work:
+
+O(n)
+
+Plus the unavoidable output construction:
+
+O(S)
+
+So:
+
+Time = O(n + S)
+
+Auxiliary recursion/path space:
+
+O(h)
+
+excluding the returned result.
+
+This is the cleanest output-sensitive optimal approach.
+
+Comparison Table
+Approach	Main Idea	Time	Auxiliary Space
+1. Brute	Copy path list at every node	O(nh + S)	O(nh)
+2. BFS	Queue stores node + full path	O(nh + S)	O(nh)
+3. Your DFS	Recursive String concatenation	O(nh + S)	O(h)
+4. DFS + StringBuilder	Mutable path + backtracking	O(n + S)	O(h)
+5. DFS + ArrayList backtracking	Store values, stringify at leaves	O(n + S)	O(h)
+Why Approach 4 Is Better Than Your Code
+
+Your code does:
+
+bfs(root.left, ans + root.val + "->", li);
+
+Every recursive call creates a new String.
+
+For example:
+
+"1->"
+"1->2->"
+"1->2->5"
+
+These are different immutable string objects.
+
+With StringBuilder, we maintain one path:
+
+""
+ ↓
+"1"
+ ↓
+"1->"
+ ↓
+"1->2"
+ ↓
+"1->2->"
+ ↓
+"1->2->5"
+
+Then restore it:
+
+"1->2->"
+
+and continue.
+
+So we don't repeatedly rebuild the entire prefix.
+
+Important: Your Method Is Called bfs, But It Is DFS
+
+Your code:
+
+public void bfs(...)
+
+uses:
+
+bfs(root.left, ...)
+bfs(root.right, ...)
+
+This is recursion following depth before moving to the sibling branch.
+
+That is:
+
+DFS = Depth First Search
+
+BFS would use a:
+
+Queue<TreeNode>
+
+So rename:
+
+bfs
+
+to:
+
+dfs
+
+for clarity in interviews.
+
+Why We Stop at Leaf
+
+Your code:
+
+if(root.left==null&&root.right==null){
+    li.add(ans+root.val);
+    return;
+}
+
+is exactly correct.
+
+Suppose:
+
+        1
+       / \
+      2   3
+         /
+        4
+
+The path:
+
+1->3
+
+is not complete because 3 isn't a leaf.
+
+We must continue:
+
+1->3->4
+
+So a path is added only when both children are null.
+
+Edge Cases
+1. Empty tree
+root = null
+
+Output:
+
+[]
+
+Your code correctly returns an empty list because the helper immediately returns.
+
+2. Single node
+    1
+
+The root is also a leaf.
+
+Your code:
+
+li.add("" + 1);
+
+returns:
+
+["1"]
+
+Correct.
+
+3. Completely skewed tree
+1
+ \
+  2
+   \
+    3
+     \
+      4
+
+Only one root-to-leaf path exists:
+
+["1->2->3->4"]
+4. Full binary tree
+             1
+           /   \
+          2     3
+         / \   / \
+        4   5 6   7
+
+DFS gives:
+
+1->2->4
+1->2->5
+1->3->6
+1->3->7
+
+Answer:
+
+[
+    "1->2->4",
+    "1->2->5",
+    "1->3->6",
+    "1->3->7"
+]
+🧠 Pattern Recognition
+
+When you see:
+
+Return all root-to-leaf paths
+
+Immediately think:
+
+Root
+ ↓
+DFS
+ ↓
+Maintain current path
+ ↓
+Leaf?
+ ↓
+Yes → save path
+No  → explore children
+
+This is a classic:
+
+DFS + Path Tracking
+
+problem.
+
+The Generic Root-to-Leaf Template
+
+This is worth memorizing:
+
+void dfs(TreeNode root, StringBuilder path,
+         List<String> result) {
+
+    if (root == null) {
+        return;
+    }
+
+    // choose
+    int oldLength = path.length();
+    path.append(root.val);
+
+    // leaf → record answer
+    if (root.left == null && root.right == null) {
+        result.add(path.toString());
+    } else {
+
+        // explore
+        path.append("->");
+
+        dfs(root.left, path, result);
+        dfs(root.right, path, result);
+    }
+
+    // undo
+    path.setLength(oldLength);
+}
+
+The pattern is:
+
+Choose
+  ↓
+Explore
+  ↓
+Record at leaf
+  ↓
+Undo
+Connection With Other Tree Problems
+
+This pattern is extremely useful beyond 257.
+
+257 Binary Tree Paths
+        ↓
+DFS + path
+
+112 Path Sum
+        ↓
+DFS + current sum
+
+113 Path Sum II
+        ↓
+DFS + current path + backtracking
+
+437 Path Sum III
+        ↓
+DFS + prefix sum
+
+124 Maximum Path Sum
+        ↓
+DFS + return useful path information
+
+The key distinction:
+
+257
+
+We need to store every complete root-to-leaf path.
+
+112
+
+We only need to know whether one valid path exists.
+
+113
+
+We need to return all valid paths satisfying a condition.
+
+Final Recommendation
+
+For learning purposes, understand all four levels:
+
+1. Copy path
+      ↓
+2. BFS with path
+      ↓
+3. Your recursive DFS
+      ↓
+4. StringBuilder + backtracking
+
+For interviews, remember this:
+
+Root-to-leaf paths
+        ↓
+      DFS
+        ↓
+ Maintain path
+        ↓
+   Reach leaf?
+      /    \
+    No      Yes
+    ↓        ↓
+Explore    Save
+children   path
+    ↓
+ Backtrack
+Your solution
+
+Your provided solution is correct and accepted in principle, and its algorithmic idea is good:
+
+DFS + current path + leaf check
+
+The main improvement is replacing immutable String concatenation with StringBuilder + backtracking, giving the standard output-sensitive optimal approach of approximately O(n + S) time with O(h) auxiliary traversal space.
