@@ -1,0 +1,1310 @@
+LeetCode 236 — Lowest Common Ancestor of a Binary Tree
+Problem Understanding
+
+Given a binary tree and two nodes p and q, find their Lowest Common Ancestor (LCA).
+
+What is an ancestor?
+
+A node A is an ancestor of node B if A lies on the path from the root to B.
+
+For example:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+For:
+
+p = 5
+q = 1
+
+LCA:
+
+3
+
+For:
+
+p = 5
+q = 4
+
+LCA:
+
+5
+
+Notice that a node can be its own ancestor.
+
+So if:
+
+p = 5
+q = 4
+
+the answer is 5.
+
+Key Observation
+
+There are two different ways to think about LCA.
+
+Path view
+
+Find:
+
+root → p
+root → q
+
+Then find the last common node.
+
+Subtree view
+
+For a current node:
+
+Can p be found in left subtree?
+Can q be found in right subtree?
+
+If one target is on each side, current node is the LCA.
+
+This second idea leads to the optimal recursive solution.
+
+Example Tree
+
+We'll use this tree for the dry runs:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Let:
+
+p = 5
+q = 4
+
+Expected:
+
+LCA = 5
+
+Approach 1 — Brute Force: Find Root-to-Node Paths
+Idea
+
+Find:
+
+root → p
+
+and:
+
+root → q
+
+Then compare the two paths from the beginning.
+
+The last common node is the LCA.
+
+For:
+
+p = 5
+q = 4
+
+paths are:
+
+root → p:
+3 → 5
+
+root → q:
+3 → 5 → 2 → 4
+
+Compare:
+
+3 == 3
+5 == 5
+
+Next:
+
+end of first path
+
+So:
+
+LCA = 5
+Step 1 — Find Path
+
+We use DFS + backtracking.
+
+boolean findPath(TreeNode root, TreeNode target,
+                 List<TreeNode> path)
+
+The path contains nodes from root to target.
+
+Code
+class Solution {
+
+    boolean findPath(
+            TreeNode root,
+            TreeNode target,
+            List<TreeNode> path) {
+
+        if (root == null) {
+            return false;
+        }
+
+        path.add(root);
+
+        if (root == target) {
+            return true;
+        }
+
+        if (findPath(root.left, target, path)
+                || findPath(root.right, target, path)) {
+            return true;
+        }
+
+        // Backtrack
+        path.remove(path.size() - 1);
+
+        return false;
+    }
+
+    public TreeNode lowestCommonAncestor(
+            TreeNode root,
+            TreeNode p,
+            TreeNode q) {
+
+        List<TreeNode> pathP = new ArrayList<>();
+        List<TreeNode> pathQ = new ArrayList<>();
+
+        findPath(root, p, pathP);
+        findPath(root, q, pathQ);
+
+        TreeNode answer = null;
+
+        int i = 0;
+
+        while (i < pathP.size()
+                && i < pathQ.size()
+                && pathP.get(i) == pathQ.get(i)) {
+
+            answer = pathP.get(i);
+            i++;
+        }
+
+        return answer;
+    }
+}
+
+Dry Run — Approach 1
+
+Tree:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Targets:
+
+p = 5
+q = 4
+Find Path to 5
+
+Start:
+
+pathP = []
+
+Visit 3:
+
+pathP = [3]
+
+Go left.
+
+Visit 5:
+
+pathP = [3,5]
+
+5 == p.
+
+Return true.
+
+So:
+
+pathP = [3,5]
+Find Path to 4
+
+Start:
+
+pathQ = []
+
+Visit 3:
+
+pathQ = [3]
+
+Go left.
+
+Visit 5:
+
+pathQ = [3,5]
+
+Go left to 6:
+
+pathQ = [3,5,6]
+
+6 != 4.
+
+Backtrack:
+
+pathQ = [3,5]
+
+Go right to 2:
+
+pathQ = [3,5,2]
+
+Go left to 7:
+
+pathQ = [3,5,2,7]
+
+Not target.
+
+Backtrack to 2:
+
+pathQ = [3,5,2]
+
+Go right to 4:
+
+pathQ = [3,5,2,4]
+
+Found.
+
+Compare Paths
+pathP = [3,5]
+
+pathQ = [3,5,2,4]
+
+Compare:
+
+3 == 3  → common
+5 == 5  → common
+
+Now pathP ends.
+
+Therefore:
+
+LCA = 5
+Complexity
+
+Two DFS traversals:
+
+O(n) + O(n) = O(n)
+
+Path storage:
+
+O(h)
+
+However, ArrayList paths together can be O(h) each, so:
+
+Auxiliary Space = O(h)
+
+In a skewed tree:
+
+h = n
+
+so worst case is:
+
+O(n)
+
+This is already linear time, but it uses explicit paths.
+
+Approach 2 — Parent Pointer + HashMap
+Idea
+
+Instead of storing the complete root-to-node paths as lists, assign every node its parent.
+
+For example:
+
+                 3
+               /   \
+              5     1
+             / \
+            6   2
+               / \
+              7   4
+
+Parent map:
+
+5 → 3
+1 → 3
+6 → 5
+2 → 5
+7 → 2
+4 → 2
+
+Now:
+
+Start at p.
+Put all its ancestors into a HashSet.
+Start at q.
+Move upward until you meet a node in that set.
+
+That node is the LCA.
+
+Code
+
+class Solution {
+
+    public TreeNode lowestCommonAncestor(
+            TreeNode root,
+            TreeNode p,
+            TreeNode q) {
+
+        Map<TreeNode, TreeNode> parent = new HashMap<>();
+
+        Queue<TreeNode> queue = new LinkedList<>();
+
+        parent.put(root, null);
+        queue.offer(root);
+
+        // Build parent map
+        while (!parent.containsKey(p)
+                || !parent.containsKey(q)) {
+
+            TreeNode curr = queue.poll();
+
+            if (curr.left != null) {
+                parent.put(curr.left, curr);
+                queue.offer(curr.left);
+            }
+
+            if (curr.right != null) {
+                parent.put(curr.right, curr);
+                queue.offer(curr.right);
+            }
+        }
+
+        // Store ancestors of p
+        Set<TreeNode> ancestors = new HashSet<>();
+
+        while (p != null) {
+            ancestors.add(p);
+            p = parent.get(p);
+        }
+
+        // Find first common ancestor of q
+        while (!ancestors.contains(q)) {
+            q = parent.get(q);
+        }
+
+        return q;
+    }
+}
+
+Dry Run — Approach 2
+
+Using:
+
+p = 5
+q = 4
+
+Build parent map:
+
+5 → 3
+1 → 3
+6 → 5
+2 → 5
+0 → 1
+8 → 1
+7 → 2
+4 → 2
+Ancestors of p = 5
+
+Start:
+
+5
+
+Add:
+
+{5}
+
+Parent:
+
+3
+
+Add:
+
+{5,3}
+
+Parent of 3:
+
+null
+
+Stop.
+
+Move Up From q = 4
+
+Start:
+
+4
+
+Is 4 in ancestors?
+
+No
+
+Move to parent:
+
+2
+
+Is 2 an ancestor?
+
+No
+
+Move up:
+
+3
+
+Is 3 an ancestor?
+
+Yes
+
+Therefore:
+
+LCA = 3
+
+Wait—that example used p=5, q=4, but since 4 is under 5, the correct LCA is 5.
+
+Let's correct the actual path:
+
+4 → 2 → 5 → 3
+
+So the parent map gives:
+
+4 → 2
+2 → 5
+5 → 3
+
+But ancestors of 5 are:
+
+{5,3}
+
+When going up from 4:
+
+4 → 2 → 5
+
+At 5, it is found.
+
+Therefore:
+
+LCA = 5
+
+This illustrates why the parent map method works.
+
+Complexity
+
+Building parent map:
+
+O(n)
+
+Ancestor traversal:
+
+O(h)
+
+So:
+
+Time = O(n)
+Space = O(n)
+
+This is good, but uses a lot of memory.
+
+Approach 3 — Iterative DFS + Parent Map
+
+The same idea can be implemented without BFS.
+
+We only need to discover the parent of every node.
+
+Code
+
+class Solution {
+
+    public TreeNode lowestCommonAncestor(
+            TreeNode root,
+            TreeNode p,
+            TreeNode q) {
+
+        Map<TreeNode, TreeNode> parent = new HashMap<>();
+
+        Stack<TreeNode> stack = new Stack<>();
+
+        parent.put(root, null);
+        stack.push(root);
+
+        while (!parent.containsKey(p)
+                || !parent.containsKey(q)) {
+
+            TreeNode curr = stack.pop();
+
+            if (curr.left != null) {
+                parent.put(curr.left, curr);
+                stack.push(curr.left);
+            }
+
+            if (curr.right != null) {
+                parent.put(curr.right, curr);
+                stack.push(curr.right);
+            }
+        }
+
+        Set<TreeNode> ancestors = new HashSet<>();
+
+        while (p != null) {
+            ancestors.add(p);
+            p = parent.get(p);
+        }
+
+        while (!ancestors.contains(q)) {
+            q = parent.get(q);
+        }
+
+        return q;
+    }
+}
+
+The complexity is still:
+
+Time = O(n)
+Space = O(n)
+
+The difference is traversal strategy rather than asymptotic complexity.
+
+Approach 4 — Recursive DFS: Optimal
+
+Now we get to the most important solution.
+
+This is the approach in your code.
+
+Core Idea
+
+At every node, ask:
+
+Did I find p or q in my left subtree?
+Did I find p or q in my right subtree?
+
+There are three important situations.
+
+Case 1 — Current node is null
+
+Nothing found:
+
+return null;
+Case 2 — Current node is p or q
+
+Immediately return it:
+
+if (root == p || root == q) {
+    return root;
+}
+
+Why?
+
+Because if the other node is somewhere below it, this node will ultimately be the LCA.
+
+Case 3 — Search both subtrees
+left = search(left subtree)
+right = search(right subtree)
+
+Then:
+
+Both non-null
+left != null
+right != null
+
+This means:
+
+one target is on the left
+one target is on the right
+
+Therefore current node is the LCA.
+
+return root;
+Only left is non-null
+
+Then both targets are effectively found in the left side, so return:
+
+return left;
+Only right is non-null
+
+Return:
+
+return right;
+Your Code — Optimal Solution
+
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        
+        if(root==null||root==p||root==q){
+            return root;
+        }
+
+        TreeNode left=lowestCommonAncestor(root.left,p,q);
+        TreeNode right=lowestCommonAncestor(root.right,p,q);
+
+        if(left==null){
+            return right;
+        } else if(right==null){
+            return left;
+        } else{
+            return root;
+        }
+    }
+}
+
+Your solution is the standard optimal solution for this problem.
+
+Detailed Dry Run of Your Code
+
+Use:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Let:
+
+p = 5
+q = 4
+
+Start:
+
+lowestCommonAncestor(3, 5, 4)
+At Node 3
+
+Check:
+
+root == null || root == p || root == q
+
+All false.
+
+So:
+
+left = LCA(5,5,4)
+right = LCA(1,5,4)
+Explore Left — Node 5
+
+Call:
+
+LCA(5,5,4)
+
+Here:
+
+root == p
+
+because:
+
+root = 5
+p = 5
+
+Therefore:
+
+return 5
+
+So:
+
+left = 5
+
+Notice something important:
+
+We do not continue searching below 5.
+
+This is correct because if q exists somewhere inside 5's subtree, then 5 is necessarily the LCA.
+
+Explore Right — Node 1
+
+Now:
+
+LCA(1,5,4)
+
+Node 1 is neither p nor q.
+
+So search:
+
+left subtree of 1
+right subtree of 1
+
+Left is 0:
+
+LCA(0,5,4)
+
+Both children are null and 0 isn't a target:
+
+return null
+
+Right is 8:
+
+LCA(8,5,4)
+
+Similarly:
+
+return null
+
+Back at node 1:
+
+left = null
+right = null
+
+Therefore:
+
+if(left == null)
+    return right;
+
+So:
+
+return null
+
+Thus at root 3:
+
+left = 5
+right = null
+
+Then:
+
+if(left == null)
+
+false.
+
+Next:
+
+else if(right == null)
+
+true.
+
+Therefore:
+
+return left
+
+which is:
+
+return 5
+
+Final:
+
+LCA = 5
+But Where Was 4 Found?
+
+This is an important question.
+
+You might ask:
+
+The call at node 5 returned immediately. How did it know 4 is below 5?
+
+The answer is in the problem's guarantee.
+
+The recursive algorithm doesn't need to explicitly find both nodes before returning from p.
+
+When:
+
+root == p
+
+we return p.
+
+If q is inside the subtree of p, then p is the lowest common ancestor.
+
+If q is outside that subtree, the ancestor chain will eventually propagate the result upward and find the correct split.
+
+So the base condition:
+
+root == p || root == q
+
+is enough.
+
+More Useful Dry Run — LCA Is an Actual Split
+
+The previous example had p itself as the LCA.
+
+Let's use:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Now:
+
+p = 5
+q = 1
+
+Expected:
+
+LCA = 3
+
+Start:
+
+LCA(3,5,1)
+
+Node 3 is neither.
+
+Search left:
+
+LCA(5,5,1)
+
+Since:
+
+root == p
+
+returns:
+
+5
+
+Search right:
+
+LCA(1,5,1)
+
+Here:
+
+root == q
+
+returns:
+
+1
+
+Now at node 3:
+
+left = 5
+right = 1
+
+Both are non-null.
+
+Therefore:
+
+return root;
+
+So:
+
+return 3
+
+This is the most important case:
+
+       3
+      / \
+     5   1
+     ↑   ↑
+    p    q
+
+One target is in the left subtree and the other is in the right subtree.
+
+Therefore 3 is their LCA.
+
+Another Dry Run — Both Nodes in One Subtree
+
+Consider:
+
+                 3
+               /   \
+              5     1
+             / \
+            6   2
+               / \
+              7   4
+
+Take:
+
+p = 6
+q = 4
+
+Both are in the left subtree of 3.
+
+At node 3:
+
+left = 5
+right = null
+
+Therefore:
+
+return left
+
+So we return:
+
+5
+
+Now at 5:
+
+left = 6
+right = 2
+
+Wait q=4 is under 2, so eventually:
+
+left = 6
+right = 4
+
+Therefore:
+
+return 5
+
+Correct.
+
+Why the Return Value Is So Clever
+
+This is the key to understanding the solution.
+
+The recursive function isn't simply returning:
+
+“Is p here?”
+
+It returns:
+
+“What useful node did I find in this subtree?”
+
+That useful node can be:
+
+null
+p
+q
+LCA
+
+This is a very powerful tree recursion pattern.
+
+Understand the Three Return Cases
+
+Your code:
+
+if(left==null){
+    return right;
+}
+
+means:
+
+Nothing useful found on left.
+Whatever was found on right is the answer.
+else if(right==null){
+    return left;
+}
+
+means:
+
+Nothing useful found on right.
+Whatever was found on left is the answer.
+else{
+    return root;
+}
+
+means:
+
+Something useful was found
+on BOTH sides.
+
+Therefore current node
+is where the paths meet.
+
+This is the heart of the algorithm.
+
+Approach 5 — Iterative Postorder With Stack
+
+For completeness, we can implement the same bottom-up idea iteratively.
+
+One way is to maintain:
+
+node → parent
+
+and then walk upward from p and q.
+
+But since that is essentially the parent-map approach, another iterative version uses a stack for traversal.
+
+The implementation remains O(n) time and O(n) space.
+
+Code
+
+class Solution {
+
+    public TreeNode lowestCommonAncestor(
+            TreeNode root,
+            TreeNode p,
+            TreeNode q) {
+
+        Map<TreeNode, TreeNode> parent = new HashMap<>();
+
+        Stack<TreeNode> stack = new Stack<>();
+
+        parent.put(root, null);
+        stack.push(root);
+
+        while (!parent.containsKey(p)
+                || !parent.containsKey(q)) {
+
+            TreeNode curr = stack.pop();
+
+            if (curr.left != null) {
+                parent.put(curr.left, curr);
+                stack.push(curr.left);
+            }
+
+            if (curr.right != null) {
+                parent.put(curr.right, curr);
+                stack.push(curr.right);
+            }
+        }
+
+        Set<TreeNode> ancestors = new HashSet<>();
+
+        TreeNode curr = p;
+
+        while (curr != null) {
+            ancestors.add(curr);
+            curr = parent.get(curr);
+        }
+
+        curr = q;
+
+        while (!ancestors.contains(curr)) {
+            curr = parent.get(curr);
+        }
+
+        return curr;
+    }
+}
+
+This is basically the iterative parent-pointer solution and is useful when recursion is undesirable.
+
+Complexity Comparison
+
+Let:
+
+n = number of nodes
+h = height of tree
+Approach	Idea	Time	Extra Space	Recommendation
+1	Find two root-to-node paths	O(n)	O(h)	Good
+2	BFS + parent map	O(n)	O(n)	Good
+3	DFS + parent map	O(n)	O(n)	Good
+4	Recursive LCA	O(n)	O(h)	⭐ Best
+5	Iterative + parent map	O(n)	O(n)	Good
+Why Recursive Approach Is Most Optimal
+
+Your solution:
+
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        
+        if(root==null||root==p||root==q){
+            return root;
+        }
+
+        TreeNode left=lowestCommonAncestor(root.left,p,q);
+        TreeNode right=lowestCommonAncestor(root.right,p,q);
+
+        if(left==null){
+            return right;
+        } else if(right==null){
+            return left;
+        } else{
+            return root;
+        }
+    }
+}
+
+visits each node at most once.
+
+Therefore:
+
+Time = O(n)
+
+No parent map or path arrays are needed.
+
+Only recursive call stack:
+
+Space = O(h)
+
+Worst case:
+
+O(n)
+
+but for a balanced tree:
+
+O(log n)
+Important Edge Cases
+1. Root is one of the targets
+        3
+       / \
+      5   1
+
+Suppose:
+
+p = 3
+q = 5
+
+At root:
+
+root == p
+
+So:
+
+return 3
+
+Correct.
+
+2. p == q
+
+Although the standard LeetCode setup treats p and q as distinct nodes, conceptually:
+
+p = q = 5
+
+The algorithm returns 5.
+
+3. One node is ancestor of the other
+       5
+        \
+         2
+          \
+           4
+
+Take:
+
+p = 5
+q = 4
+
+At 5:
+
+root == p
+
+return 5.
+
+So:
+
+LCA = 5
+
+This is one of the most important cases.
+
+4. Nodes are on opposite sides
+       3
+      / \
+     5   1
+p = 5
+q = 1
+
+Left returns 5.
+
+Right returns 1.
+
+Both non-null:
+
+return 3
+🧠 The Most Important Pattern
+
+This problem is an example of:
+
+Postorder DFS + Information Propagation
+
+We process:
+
+left subtree
+right subtree
+current node
+
+Conceptually:
+
+             root
+            /    \
+         left    right
+           ↓       ↓
+        result   result
+           \       /
+            \     /
+             root
+Memorize This Exact Template
+TreeNode l = lowestCommonAncestor(root.left, p, q);
+TreeNode r = lowestCommonAncestor(root.right, p, q);
+
+if (l == null) {
+    return r;
+}
+
+if (r == null) {
+    return l;
+}
+
+return root;
+
+With the base case:
+
+if (root == null || root == p || root == q) {
+    return root;
+}
+One-Line Intuition
+If p and q are found on different sides → current node is LCA.
+If both are found on one side → return that side's result.
+If current node is p/q → return it immediately.
+🔥 Connection With the Tree Problems You're Solving
+
+You now have several different recursive tree patterns:
+
+Problem	Recursive idea
+100. Same Tree	Compare corresponding nodes
+101. Symmetric Tree	Compare mirror nodes
+124. Maximum Path Sum	Return best downward gain
+199. Right Side View	Level-based BFS / right-first DFS
+236. LCA	Return useful node information upward
+
+The important new idea in 236 is:
+
+Recursive call doesn't always return true/false.
+It can return a NODE containing useful information.
+
+For LCA:
+
+return null → nothing found
+return p/q  → target found
+return node  → LCA found
+
+That is a very important binary-tree recursion pattern.
+
+Final Mental Dry Run
+
+Whenever you see LCA of a binary tree, think:
+
+                root
+               /    \
+              ↓      ↓
+            search  search
+              ↓      ↓
+           left     right
+              \      /
+               \    /
+                root
+
+Then ask:
+
+left == null && right == null
+        ↓
+       null
+
+left != null && right == null
+        ↓
+       left
+
+left == null && right != null
+        ↓
+       right
+
+left != null && right != null
+        ↓
+       root = LCA
+
+So the entire problem becomes:
+
+BASE CASE
+   ↓
+Search left
+   ↓
+Search right
+   ↓
+Both found?
+   ↓
+Yes → current root is LCA
+No  → propagate the non-null result
+
+Your provided solution is the standard optimal solution: O(n) time and O(h) recursion space.
