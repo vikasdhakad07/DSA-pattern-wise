@@ -1,0 +1,1432 @@
+LeetCode 662 — Maximum Width of Binary Tree
+1. Problem Understanding
+
+We need to find the maximum width among all levels of a binary tree.
+
+The tricky part is:
+
+Width is not simply the number of non-null nodes.
+
+The width includes the null positions between the leftmost and rightmost non-null nodes.
+
+For example:
+
+              1
+             / \
+            2   3
+             \   \
+              4   5
+
+At the last level, positions are:
+
+          4       5
+          ↑       ↑
+        index 1  index 3
+
+So width is:
+
+3 - 1 + 1 = 3
+
+not 2.
+
+2. Key Idea — Assign Virtual Array Indices
+
+Imagine the tree is stored like a binary heap.
+
+For a node at index i:
+
+left child  = 2 * i
+right child = 2 * i + 1
+
+Using root index 0:
+
+                 1(0)
+               /     \
+           2(0)      3(1)
+           /  \        \
+        4(0) 5(1)      6(3)
+
+Then width of a level is:
+
+lastIndex - firstIndex + 1
+
+This automatically counts missing/null positions.
+
+Approaches
+
+We'll go from:
+
+Approach 1 → Brute Force
+Approach 2 → DFS with index
+Approach 3 → BFS with index
+Approach 4 → BFS with normalized indices ⭐
+
+Your code belongs to Approach 3.
+
+Approach 1 — Brute Force: Find Width of Every Level Separately
+Idea
+
+For every level:
+
+Traverse the entire tree.
+Find the minimum index of a node at that level.
+Find the maximum index of a node at that level.
+Calculate:
+width = maxIndex - minIndex + 1
+
+This repeatedly traverses the tree.
+
+Code
+class Solution {
+
+    int height(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        return 1 + Math.max(
+                height(root.left),
+                height(root.right)
+        );
+    }
+
+    void findWidth(
+            TreeNode root,
+            int currentLevel,
+            int targetLevel,
+            long index,
+            long[] minIndex,
+            long[] maxIndex) {
+
+        if (root == null) {
+            return;
+        }
+
+        if (currentLevel == targetLevel) {
+
+            minIndex[0] = Math.min(
+                    minIndex[0],
+                    index
+            );
+
+            maxIndex[0] = Math.max(
+                    maxIndex[0],
+                    index
+            );
+
+            return;
+        }
+
+        findWidth(
+                root.left,
+                currentLevel + 1,
+                targetLevel,
+                2 * index,
+                minIndex,
+                maxIndex
+        );
+
+        findWidth(
+                root.right,
+                currentLevel + 1,
+                targetLevel,
+                2 * index + 1,
+                minIndex,
+                maxIndex
+        );
+    }
+
+    public int widthOfBinaryTree(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int h = height(root);
+
+        int answer = 0;
+
+        for (int level = 0; level < h; level++) {
+
+            long[] minIndex = {Long.MAX_VALUE};
+            long[] maxIndex = {Long.MIN_VALUE};
+
+            findWidth(
+                    root,
+                    0,
+                    level,
+                    0,
+                    minIndex,
+                    maxIndex
+            );
+
+            int width = (int)(
+                    maxIndex[0] - minIndex[0] + 1
+            );
+
+            answer = Math.max(answer, width);
+        }
+
+        return answer;
+    }
+}
+
+Dry Run — Approach 1
+
+Use:
+
+                 1
+               /   \
+              3     2
+             / \     \
+            5   3     9
+
+Assign indices:
+
+                 1(0)
+               /     \
+            3(0)     2(1)
+            /  \       \
+         5(0) 3(1)     9(3)
+Level 0
+
+Nodes:
+
+1
+
+Minimum index:
+
+0
+
+Maximum index:
+
+0
+
+Width:
+
+0 - 0 + 1 = 1
+Level 1
+
+Nodes:
+
+3(0), 2(1)
+
+Width:
+
+1 - 0 + 1 = 2
+Level 2
+
+Nodes:
+
+5(0), 3(1), 9(3)
+
+Width:
+
+3 - 0 + 1 = 4
+
+Even though only 3 real nodes exist:
+
+5, 3, null, 9
+
+width is:
+
+4
+
+Final:
+
+answer = 4
+Complexity
+
+For every level we traverse the tree again.
+
+If:
+
+h = height
+n = number of nodes
+
+then:
+
+Time = O(n × h)
+
+Worst case:
+
+h = n
+
+so:
+
+Time = O(n²)
+
+Space:
+
+O(h)
+
+for recursion.
+
+This is useful to understand the idea, but we should not use it in an interview unless explaining the progression.
+
+Approach 2 — DFS + Index in One Traversal
+
+We don't need to traverse the entire tree separately for every level.
+
+We can traverse the tree once.
+
+At each depth, maintain:
+
+first index seen at this depth
+
+For the current node:
+
+width = currentIndex - firstIndexAtDepth + 1
+
+Then recursively process children.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    List<Long> firstIndex = new ArrayList<>();
+
+    int answer = 0;
+
+    void dfs(
+            TreeNode root,
+            int depth,
+            long index) {
+
+        if (root == null) {
+            return;
+        }
+
+        // First node encountered at this level
+        if (depth == firstIndex.size()) {
+            firstIndex.add(index);
+        }
+
+        long width =
+                index - firstIndex.get(depth) + 1;
+
+        answer = Math.max(
+                answer,
+                (int) width
+        );
+
+        dfs(
+                root.left,
+                depth + 1,
+                2 * index
+        );
+
+        dfs(
+                root.right,
+                depth + 1,
+                2 * index + 1
+        );
+    }
+
+    public int widthOfBinaryTree(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        firstIndex.clear();
+        answer = 0;
+
+        dfs(root, 0, 0);
+
+        return answer;
+    }
+}
+
+Dry Run — Approach 2
+
+Tree:
+
+                 1
+               /   \
+              3     2
+             / \     \
+            5   3     9
+
+Indices:
+
+1 → 0
+
+3 → 0
+2 → 1
+
+5 → 0
+3 → 1
+9 → 3
+Visit 1
+
+Depth:
+
+0
+
+First index for level 0:
+
+firstIndex[0] = 0
+
+Width:
+
+0 - 0 + 1 = 1
+answer = 1
+Visit 3
+
+Depth:
+
+1
+
+First node at level 1:
+
+firstIndex[1] = 0
+
+Width:
+
+0 - 0 + 1 = 1
+Visit 5
+
+Depth:
+
+2
+
+First node:
+
+firstIndex[2] = 0
+
+Width:
+
+0 - 0 + 1 = 1
+Visit right child of 3
+
+Node:
+
+3(index 1)
+
+Depth:
+
+2
+
+Width:
+
+1 - 0 + 1 = 2
+
+Answer:
+
+answer = 2
+Visit 2
+
+Depth:
+
+1
+index = 1
+
+Width:
+
+1 - 0 + 1 = 2
+Visit 9
+
+Depth:
+
+2
+index = 3
+
+First index at level 2:
+
+0
+
+Therefore:
+
+width = 3 - 0 + 1
+      = 4
+
+Answer:
+
+answer = 4
+Complexity
+
+Every node is visited once:
+
+Time = O(n)
+
+Recursion:
+
+Space = O(h)
+
+The firstIndex array/list also has:
+
+O(h)
+
+space.
+
+So:
+
+Time = O(n)
+Space = O(h)
+
+This is already optimal asymptotically.
+
+Important caveat
+
+The raw 2 * index representation can overflow even long for an extremely deep tree.
+
+That's why a normalized BFS solution is the safest implementation.
+
+Approach 3 — BFS + Index
+
+Now we can use the same index idea with BFS.
+
+At each level:
+
+Queue stores (node, index).
+First index = leftmost node.
+Last index = rightmost node.
+Width:
+last - first + 1
+
+This is exactly what your solution does.
+
+Your Code
+class Node{
+    TreeNode node;
+    int idx;
+    Node(TreeNode node, int idx){
+        this.node=node;
+        this.idx=idx;
+    }
+ }
+class Solution {
+    public int widthOfBinaryTree(TreeNode root) {
+        Queue<Node> q=new LinkedList<>();
+        q.add(new Node(root,0));
+        int max=0;
+        while(!q.isEmpty()){
+            int size=q.size();
+            int start=0, end=0;
+            for(int i=0;i<size;i++){
+                Node endPoint=q.remove();
+            int idx=endPoint.idx;
+                if(i==0){
+                    start=idx;
+                }
+
+                if(i==size-1){
+                    end=idx;
+                }
+
+                if(endPoint.node.left!=null){
+                    q.add(new Node(endPoint.node.left,2*endPoint.idx));
+                }
+
+                 if(endPoint.node.right!=null){
+                    q.add(new Node(endPoint.node.right,2*endPoint.idx+1));
+                }
+            }
+            max=Math.max(max, end-start+1);
+        }
+        return max;
+    }
+}
+
+What Your Code Is Doing
+
+You store:
+
+(node, index)
+
+For example:
+
+(1,0)
+
+Then:
+
+left  → 2 × index
+right → 2 × index + 1
+
+At every level:
+
+if(i==0)
+    start=idx;
+
+stores the first/leftmost index.
+
+And:
+
+if(i==size-1)
+    end=idx;
+
+stores the last/rightmost index.
+
+Then:
+
+max = Math.max(max, end-start+1);
+
+computes the width.
+
+This is exactly the right idea.
+
+Dry Run — Your Code
+
+Use:
+
+                 1
+               /   \
+              3     2
+             / \     \
+            5   3     9
+Initial Queue
+[(1,0)]
+Level 0
+size = 1
+
+Remove:
+
+(1,0)
+
+Since:
+
+i = 0
+
+we set:
+
+start = 0
+end = 0
+
+Add children:
+
+3 → 0
+2 → 1
+
+Queue:
+
+[(3,0),(2,1)]
+
+Width:
+
+0 - 0 + 1 = 1
+max = 1
+Level 1
+
+Queue:
+
+[(3,0),(2,1)]
+
+So:
+
+size = 2
+Process 3
+idx = 0
+
+Since i == 0:
+
+start = 0
+
+Children:
+
+5 → 0
+3 → 1
+Process 2
+idx = 1
+
+Since:
+
+i == size - 1
+
+we have:
+
+end = 1
+
+Child:
+
+9 → 3
+
+Queue becomes:
+
+[(5,0),(3,1),(9,3)]
+
+Width:
+
+1 - 0 + 1
+= 2
+max = 2
+Level 2
+
+Queue:
+
+[(5,0),(3,1),(9,3)]
+
+So:
+
+size = 3
+
+First:
+
+start = 0
+
+Last:
+
+end = 3
+
+Therefore:
+
+width = 3 - 0 + 1
+      = 4
+
+Final:
+
+max = 4
+
+Return:
+
+4
+Important Bug in Your Code
+
+Your code starts with:
+
+q.add(new Node(root,0));
+
+without checking:
+
+root == null
+
+So if:
+
+root = null
+
+then eventually:
+
+endPoint.node.left
+
+causes a NullPointerException.
+
+You should add:
+
+if(root == null){
+    return 0;
+}
+Another Important Issue — int idx
+
+You currently use:
+
+int idx;
+
+and:
+
+2 * endPoint.idx
+
+This can overflow for deep trees.
+
+For example, conceptually:
+
+1
+ \
+  2
+   \
+    3
+     \
+      4
+       \
+        5
+
+indices keep doubling:
+
+0
+1
+3
+7
+15
+31
+...
+
+Eventually an int overflows.
+
+Using:
+
+long idx
+
+is better, but even long can theoretically overflow for a sufficiently deep tree.
+
+The strongest implementation is to normalize indices at every level.
+
+Approach 4 — Optimal Robust BFS with Normalized Indices ⭐
+
+This is the version I recommend.
+
+Key Idea
+
+At the beginning of every level, let:
+
+firstIndex = index of leftmost node
+
+Then instead of using the huge absolute index, normalize every index:
+
+normalizedIndex = currentIndex - firstIndex
+
+So the first node always becomes:
+
+0
+
+and the others become relative positions.
+
+Then children are generated using these normalized indices:
+
+left  = 2 * normalizedIndex
+right = 2 * normalizedIndex + 1
+
+This keeps the numbers small.
+
+Code
+class Pair {
+    TreeNode node;
+    long idx;
+
+    Pair(TreeNode node, long idx) {
+        this.node = node;
+        this.idx = idx;
+    }
+}
+
+class Solution {
+
+    public int widthOfBinaryTree(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        Queue<Pair> q = new LinkedList<>();
+
+        q.offer(new Pair(root, 0));
+
+        long maxWidth = 0;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            // Leftmost index of current level
+            long firstIndex = q.peek().idx;
+
+            long first = 0;
+            long last = 0;
+
+            for (int i = 0; i < size; i++) {
+
+                Pair curr = q.poll();
+
+                // Normalize index
+                long idx = curr.idx - firstIndex;
+
+                if (i == 0) {
+                    first = idx;
+                }
+
+                if (i == size - 1) {
+                    last = idx;
+                }
+
+                if (curr.node.left != null) {
+                    q.offer(
+                        new Pair(
+                            curr.node.left,
+                            2 * idx
+                        )
+                    );
+                }
+
+                if (curr.node.right != null) {
+                    q.offer(
+                        new Pair(
+                            curr.node.right,
+                            2 * idx + 1
+                        )
+                    );
+                }
+            }
+
+            long width = last - first + 1;
+
+            maxWidth = Math.max(
+                    maxWidth,
+                    width
+            );
+        }
+
+        return (int) maxWidth;
+    }
+}
+
+Dry Run — Normalized BFS
+
+Same tree:
+
+                 1
+               /   \
+              3     2
+             / \     \
+            5   3     9
+Level 0
+
+Queue:
+
+[(1,0)]
+
+First index:
+
+firstIndex = 0
+
+Normalized:
+
+0 - 0 = 0
+
+Width:
+
+1
+
+Children:
+
+3 → 0
+2 → 1
+Level 1
+
+Queue:
+
+[(3,0),(2,1)]
+
+First:
+
+firstIndex = 0
+Node 3
+
+Normalized:
+
+0 - 0 = 0
+
+Children:
+
+5 → 0
+3 → 1
+Node 2
+
+Normalized:
+
+1 - 0 = 1
+
+Child:
+
+9 → 3
+
+Width:
+
+3? 
+
+No — the current level's last index is 1, so:
+
+width = 1 - 0 + 1
+      = 2
+
+Next queue:
+
+[(5,0),(3,1),(9,3)]
+Level 2
+
+First index:
+
+firstIndex = 0
+
+Normalized positions:
+
+5 → 0
+3 → 1
+9 → 3
+
+Width:
+
+3 - 0 + 1
+= 4
+
+Final:
+
+maxWidth = 4
+Why Normalization Helps
+
+Imagine indices became:
+
+8589934592
+8589934593
+8589934595
+
+We don't care about their absolute values.
+
+We only care about their distances within the current level.
+
+Subtract:
+
+firstIndex
+
+and we get:
+
+0
+1
+3
+
+Same width:
+
+3 - 0 + 1 = 4
+
+So normalization preserves the answer while keeping indices manageable.
+
+Complexity of Optimal BFS
+
+Every node enters and leaves the queue once.
+
+Therefore:
+
+Time = O(n)
+
+At most one level is in the queue at a time:
+
+Space = O(w)
+
+where:
+
+w = maximum number of nodes at a level
+
+In the worst case:
+
+O(n)
+
+So:
+
+Time  = O(n)
+Space = O(n)
+
+This is optimal.
+
+Approach Comparison
+Approach	Idea	Time	Space	Verdict
+1	Recompute every level using DFS	O(nh), worst O(n²)	O(h)	❌ Brute force
+2	One DFS + index per depth	O(n)	O(h)	⭐ Optimal
+3	BFS + absolute index — your code	O(n)	O(w)	⭐ Good
+4	BFS + normalized index	O(n)	O(w)	⭐⭐⭐ Recommended
+Why Simple BFS Counting Does NOT Work
+
+A common wrong approach is:
+
+int size = q.size();
+max = Math.max(max, size);
+
+That only counts real nodes.
+
+Consider:
+
+              1
+             / \
+            2   3
+             \   \
+              4   5
+
+Level 2:
+
+2     3
+
+Level 3:
+
+   4     5
+   ↑     ↑
+ index1 index3
+
+There is a missing position between them.
+
+So:
+
+actual nodes = 2
+width = 3
+
+That's why this problem needs positional indices.
+
+Another Example
+
+Consider:
+
+                    1
+                  /   \
+                 2     3
+                  \     \
+                   4     5
+
+Indices:
+
+1 → 0
+
+2 → 0
+3 → 1
+
+4 → 1
+5 → 3
+
+At the last level:
+
+indices = 1, 3
+
+Therefore:
+
+width = 3 - 1 + 1
+      = 3
+
+Answer:
+
+3
+
+Even though there are only:
+
+2 nodes
+
+at that level.
+
+Why size = q.size() Is Still Important
+
+Just like problems 102, 103, and 199, we need to separate levels.
+
+int size = q.size();
+
+means:
+
+These size nodes belong to the current level.
+
+While processing them, we add children to the queue.
+
+Those children belong to:
+
+next level
+
+So:
+
+for(int i=0; i<size; i++)
+
+processes exactly one level.
+
+This is the same BFS pattern you used in:
+
+102 Level Order
+103 Zigzag Level Order
+199 Right Side View
+Important Connection With 199
+
+You just solved:
+
+199. Binary Tree Right Side View
+
+There the question was:
+
+What is the rightmost node of each level?
+
+So:
+
+if(i == size - 1)
+
+take the node.
+
+For 662:
+
+What is the distance between
+the leftmost and rightmost node
+of each level?
+
+So:
+
+width = rightIndex - leftIndex + 1
+
+Thus:
+
+199:
+BFS + last node
+
+662:
+BFS + first/last INDEX
+Important Connection With Heap Representation
+
+The index rule:
+
+left  = 2*i
+right = 2*i + 1
+
+comes from the same indexing idea used for arrays/heaps.
+
+For:
+
+        1
+       / \
+      2   3
+     / \
+    4   5
+
+we get:
+
+1 → 0
+2 → 0
+3 → 1
+4 → 0
+5 → 1
+
+The unusual-looking repeated 0 values are because we're using a root-at-0 representation. That's fine because relative differences within each level are what matter.
+
+Another common convention is:
+
+root = 1
+left = 2*i
+right = 2*i+1
+
+Both conventions work.
+
+Your Code — Corrected Version
+
+If you want to keep your exact approach, I'd change it to this:
+
+class Node {
+    TreeNode node;
+    long idx;
+
+    Node(TreeNode node, long idx) {
+        this.node = node;
+        this.idx = idx;
+    }
+}
+
+class Solution {
+
+    public int widthOfBinaryTree(TreeNode root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        Queue<Node> q = new LinkedList<>();
+
+        q.add(new Node(root, 0));
+
+        long max = 0;
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            long start = q.peek().idx;
+            long end = start;
+
+            for (int i = 0; i < size; i++) {
+
+                Node curr = q.remove();
+
+                long idx = curr.idx;
+
+                if (i == size - 1) {
+                    end = idx;
+                }
+
+                if (curr.node.left != null) {
+                    q.add(
+                        new Node(
+                            curr.node.left,
+                            2 * idx
+                        )
+                    );
+                }
+
+                if (curr.node.right != null) {
+                    q.add(
+                        new Node(
+                            curr.node.right,
+                            2 * idx + 1
+                        )
+                    );
+                }
+            }
+
+            max = Math.max(
+                max,
+                end - start + 1
+            );
+        }
+
+        return (int) max;
+    }
+}
+
+This is very close to your original code.
+
+But for maximum robustness, I prefer the normalized-index version shown earlier.
+
+Edge Cases
+1. Empty tree
+root = null
+
+Answer:
+
+0
+2. Single node
+        1
+
+Width:
+
+1
+
+Answer:
+
+1
+3. Completely skewed tree
+1
+ \
+  2
+   \
+    3
+     \
+      4
+
+There is one real node at every level.
+
+Therefore:
+
+width = 1
+
+Answer:
+
+1
+
+Even though the virtual indices may spread dramatically, each individual level contains only one node, so the width is always 1.
+
+A Crucial Observation About Width
+
+Don't think:
+
+width = number of nodes
+
+Think:
+
+width = distance between
+        first and last positions
+        + 1
+
+So:
+
+[5, 3, null, 9]
+
+has:
+
+3 - 0 + 1 = 4
+
+not:
+
+3
+🧠 Interview Pattern
+
+When you see:
+
+Maximum Width of Binary Tree
+
+Think immediately:
+
+Binary Tree
+    ↓
+BFS
+    ↓
+Assign virtual positions
+    ↓
+first index
++
+last index
+    ↓
+width = last - first + 1
+
+Template:
+
+Queue<Pair> q = new LinkedList<>();
+q.offer(new Pair(root, 0));
+
+while (!q.isEmpty()) {
+
+    int size = q.size();
+
+    long firstIndex = q.peek().idx;
+
+    for (int i = 0; i < size; i++) {
+
+        Pair curr = q.poll();
+
+        long idx = curr.idx - firstIndex;
+
+        if (curr.node.left != null) {
+            q.offer(
+                new Pair(
+                    curr.node.left,
+                    2 * idx
+                )
+            );
+        }
+
+        if (curr.node.right != null) {
+            q.offer(
+                new Pair(
+                    curr.node.right,
+                    2 * idx + 1
+                )
+            );
+        }
+    }
+}
+The 3 Things to Remember
+1. Width includes null gaps
+width = last position - first position + 1
+2. Use virtual indices
+left  = 2*i
+right = 2*i + 1
+3. Normalize indices every level
+idx = idx - firstIndex
+
+This avoids huge index growth and is the safest implementation.
+
+Final Mental Model
+             Maximum Width
+                   ↓
+              Level by level
+                   ↓
+                  BFS
+                   ↓
+        ┌─────────────────────┐
+        │ Give every node     │
+        │ a virtual position  │
+        └─────────────────────┘
+                   ↓
+       leftmost            rightmost
+          ↓                    ↓
+       firstIndex           lastIndex
+                   ↓
+      lastIndex - firstIndex + 1
+Final recommendation
+
+For interviews, know these in this order:
+
+1. Brute force
+   Every level → scan whole tree
+   O(n²)
+
+2. DFS + positional index
+   One traversal
+   O(n)
+
+3. BFS + positional index
+   Your approach
+   O(n)
+
+4. BFS + normalized positional index
+   O(n)
+   ⭐ Most robust / recommended
+
+Your original solution has the correct core idea and O(n) time complexity. The two fixes worth remembering are:
+
+if (root == null) return 0;
+
+and preferably using long + per-level index normalization instead of an unbounded int index.
