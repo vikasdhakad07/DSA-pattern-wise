@@ -1,0 +1,1097 @@
+GFG — Children Sum in a Binary Tree
+Problem Understanding
+
+The Children Sum Property says:
+
+For every non-leaf node, its value must equal the sum of its existing children.
+
+So:
+
+Two children
+node.data = node.left.data + node.right.data
+Only left child
+node.data = node.left.data
+Only right child
+node.data = node.right.data
+Leaf node
+
+A leaf has no children, so there is nothing to check.
+
+Example 1 — Valid Tree
+            10
+           /  \
+          8    2
+         / \    \
+        5   3    2
+
+Check:
+
+10 = 8 + 2   ✓
+ 8 = 5 + 3   ✓
+ 2 = 2       ✓
+
+So:
+
+true
+Example 2 — Invalid Tree
+            10
+           /  \
+          8    3
+         / \
+        5   3
+
+At root:
+
+10 != 8 + 3
+
+Therefore:
+
+false
+Important Observation
+
+Unlike many tree problems, this is a local property.
+
+For each node, we only need:
+
+current node
+    +
+its immediate children
+
+We don't need:
+
+subtree sums
+ancestors
+horizontal distance
+paths
+global information
+
+So every solution fundamentally needs to visit each node once.
+
+That means there isn't a natural O(n²) brute force solution that is useful here. The "brute force" version is simply a straightforward two-pass validation, while the optimal versions validate during the traversal itself.
+
+Approach 1 — Brute Force: Collect All Nodes, Then Validate
+Idea
+
+First traverse the whole tree and store every node.
+
+Then in a second pass:
+
+for every node:
+    if leaf → skip
+    calculate child sum
+    compare with node.data
+
+It's straightforward, but we store all nodes unnecessarily.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    void collectNodes(Node root, List<Node> nodes) {
+
+        if (root == null) {
+            return;
+        }
+
+        nodes.add(root);
+
+        collectNodes(root.left, nodes);
+        collectNodes(root.right, nodes);
+    }
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null) {
+            return true;
+        }
+
+        List<Node> nodes = new ArrayList<>();
+
+        // First traversal
+        collectNodes(root, nodes);
+
+        // Second traversal through stored nodes
+        for (Node curr : nodes) {
+
+            // Leaf node
+            if (curr.left == null && curr.right == null) {
+                continue;
+            }
+
+            int sum = 0;
+
+            if (curr.left != null) {
+                sum += curr.left.data;
+            }
+
+            if (curr.right != null) {
+                sum += curr.right.data;
+            }
+
+            if (curr.data != sum) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+Dry Run — Approach 1
+
+Use:
+
+            10
+           /  \
+          8    2
+         / \    \
+        5   3    2
+First traversal
+
+Collect nodes:
+
+[10, 8, 5, 3, 2, 2]
+Second traversal
+Node 10
+left  = 8
+right = 2
+
+sum = 8 + 2 = 10
+
+Valid.
+
+Node 8
+left  = 5
+right = 3
+
+sum = 5 + 3 = 8
+
+Valid.
+
+Node 5
+
+Leaf → skip.
+
+Node 3
+
+Leaf → skip.
+
+Node 2
+
+It has one right child:
+
+sum = 2
+
+Node value:
+
+2
+
+Valid.
+
+Last node 2
+
+Leaf → skip.
+
+Result:
+
+true
+Complexity
+
+First traversal:
+
+O(n)
+
+Second traversal:
+
+O(n)
+
+Therefore:
+
+Time = O(n)
+Space = O(n)
+
+This is correct, but the second pass and storage are unnecessary.
+
+Approach 2 — Recursive DFS
+
+This is the cleanest solution.
+
+Idea
+
+At each node:
+
+If null → valid.
+If leaf → valid.
+Compute sum of existing children.
+If current value differs → false.
+Recursively validate left and right subtrees.
+
+The single-child case becomes very simple if we treat a missing child as contributing 0.
+
+So:
+
+sum = 0
+
+if left exists:
+    sum += left.data
+
+if right exists:
+    sum += right.data
+
+Then:
+
+root.data == sum
+Code
+class Solution {
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null) {
+            return true;
+        }
+
+        // Leaf node
+        if (root.left == null && root.right == null) {
+            return true;
+        }
+
+        int sum = 0;
+
+        if (root.left != null) {
+            sum += root.left.data;
+        }
+
+        if (root.right != null) {
+            sum += root.right.data;
+        }
+
+        // Current node violates the property
+        if (root.data != sum) {
+            return false;
+        }
+
+        // Check both subtrees
+        return isSumProperty(root.left)
+                && isSumProperty(root.right);
+    }
+}
+
+Dry Run — Approach 2
+
+Tree:
+
+            10
+           /  \
+          8    2
+         / \    \
+        5   3    2
+
+Call:
+
+isSumProperty(10)
+Node 10
+
+Not leaf.
+
+Calculate:
+
+sum = 8 + 2
+    = 10
+
+Check:
+
+10 == 10
+
+True.
+
+Now recursively check:
+
+isSumProperty(8)
+isSumProperty(2)
+Node 8
+sum = 5 + 3
+    = 8
+
+Valid.
+
+Check its children:
+
+5 → leaf → true
+3 → leaf → true
+
+So:
+
+isSumProperty(8)
+→ true
+Node 2
+
+It has only a right child:
+
+    2
+     \
+      2
+
+Calculate:
+
+sum = 2
+
+Check:
+
+2 == 2
+
+Valid.
+
+Its child 2 is leaf:
+
+true
+
+So:
+
+isSumProperty(2)
+→ true
+
+Final:
+
+true && true
+→ true
+
+Answer:
+
+true
+Dry Run — Invalid Tree
+
+Consider:
+
+            10
+           /  \
+          8    3
+         / \
+        5   3
+
+At root:
+
+sum = 8 + 3 = 11
+
+But:
+
+root.data = 10
+
+Therefore:
+
+10 != 11
+
+Immediately:
+
+return false
+
+We don't need to inspect the rest of the tree.
+
+This early termination is useful in practice.
+
+Complexity
+
+Every node is visited at most once:
+
+Time = O(n)
+
+Recursive call stack:
+
+Space = O(h)
+
+where h is tree height.
+
+Worst case:
+
+O(n)
+
+Balanced tree:
+
+O(log n)
+
+This is the best standard recursive solution.
+
+Approach 3 — Iterative DFS Using Stack
+
+We can remove recursion and use an explicit stack.
+
+The logic is exactly the same.
+
+For every node popped from the stack:
+
+leaf? → skip
+otherwise calculate child sum
+mismatch? → false
+push children
+Code
+import java.util.*;
+
+class Solution {
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null) {
+            return true;
+        }
+
+        Stack<Node> stack = new Stack<>();
+
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+
+            Node curr = stack.pop();
+
+            // Leaf node
+            if (curr.left == null && curr.right == null) {
+                continue;
+            }
+
+            int sum = 0;
+
+            if (curr.left != null) {
+                sum += curr.left.data;
+            }
+
+            if (curr.right != null) {
+                sum += curr.right.data;
+            }
+
+            if (curr.data != sum) {
+                return false;
+            }
+
+            if (curr.right != null) {
+                stack.push(curr.right);
+            }
+
+            if (curr.left != null) {
+                stack.push(curr.left);
+            }
+        }
+
+        return true;
+    }
+}
+
+Dry Run — Approach 3
+
+Tree:
+
+            10
+           /  \
+          8    2
+         / \    \
+        5   3    2
+
+Initial:
+
+Stack = [10]
+Pop 10
+sum = 8 + 2 = 10
+
+Valid.
+
+Push children:
+
+Stack = [2,8]
+Pop 8
+sum = 5 + 3 = 8
+
+Valid.
+
+Push:
+
+Stack = [2,3,5]
+Pop 5
+
+Leaf.
+
+Skip.
+
+Pop 3
+
+Leaf.
+
+Skip.
+
+Pop 2
+
+One right child:
+
+sum = 2
+
+Valid.
+
+Push child:
+
+Stack = [2]
+Pop final 2
+
+Leaf.
+
+Done.
+
+Return:
+
+true
+Complexity
+Time  = O(n)
+Space = O(h) worst case
+
+More precisely, explicit stack can contain up to O(n) nodes in a wide tree, so as a general bound:
+
+Space = O(n)
+
+Unlike recursive DFS, its practical space is tied to the frontier stored in the stack.
+
+Approach 4 — BFS Using Queue
+
+Now we process the tree level by level.
+
+This is the approach you provided.
+
+The logic remains exactly the same; only traversal order changes.
+
+Your Code
+class Solution {
+    public boolean isSumProperty(Node root) {
+        //  code here
+        Queue<Node> q=new LinkedList<>();
+        q.add(root);
+        while(!q.isEmpty()){
+            int size=q.size();
+            for(int i=0;i<size;i++){
+                Node curr=q.poll();
+                if(curr.left!=null&&curr.right!=null){
+                    if(curr.data!=(curr.left.data+curr.right.data)){
+                        return false;
+                    }
+                } else if(curr.left!=null){
+                    if(curr.data!=curr.left.data){
+                        return false;
+                    }
+                } else if(curr.right!=null){
+                    if(curr.data!=curr.right.data){
+                        return false;
+                    }
+                }
+                
+                if(curr.left!=null){
+                    q.add(curr.left);
+                }
+                
+                if(curr.right!=null){
+                    q.add(curr.right);
+                }
+            }
+        }
+        return true;
+    }
+}
+
+
+This is a correct BFS approach for a non-null root.
+
+One safety improvement
+
+Add:
+
+if (root == null) {
+    return true;
+}
+
+before:
+
+q.add(root);
+
+Otherwise a null root eventually causes a NullPointerException.
+
+Clean Version of Your Code
+
+We can also simplify the three cases.
+
+Instead of:
+
+if(left != null && right != null)
+else if(left != null)
+else if(right != null)
+
+just calculate the sum of whatever children exist.
+
+import java.util.*;
+
+class Solution {
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null) {
+            return true;
+        }
+
+        Queue<Node> q = new LinkedList<>();
+        q.add(root);
+
+        while (!q.isEmpty()) {
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                Node curr = q.poll();
+
+                // Leaf node
+                if (curr.left == null && curr.right == null) {
+                    continue;
+                }
+
+                int sum = 0;
+
+                if (curr.left != null) {
+                    sum += curr.left.data;
+                }
+
+                if (curr.right != null) {
+                    sum += curr.right.data;
+                }
+
+                if (curr.data != sum) {
+                    return false;
+                }
+
+                if (curr.left != null) {
+                    q.add(curr.left);
+                }
+
+                if (curr.right != null) {
+                    q.add(curr.right);
+                }
+            }
+        }
+
+        return true;
+    }
+}
+
+This is essentially your solution with the logic compressed.
+
+Dry Run — Approach 4
+
+Use:
+
+            10
+           /  \
+          8    2
+         / \    \
+        5   3    2
+
+Initial:
+
+Queue = [10]
+Level 0
+
+size = 1
+
+Poll:
+
+10
+
+Check:
+
+10 = 8 + 2
+
+Valid.
+
+Queue:
+
+[8,2]
+Level 1
+
+size = 2
+
+Poll 8
+8 = 5 + 3
+
+Valid.
+
+Add:
+
+5,3
+
+Queue:
+
+[2,5,3]
+Poll 2
+
+It has only a right child:
+
+2 = 2
+
+Valid.
+
+Add child:
+
+Queue = [5,3,2]
+Level 2
+
+Poll 5:
+
+leaf → skip
+
+Poll 3:
+
+leaf → skip
+
+Poll final 2:
+
+leaf → skip
+
+Queue empty.
+
+Return:
+
+true
+Why size = q.size() Is Not Actually Necessary Here
+
+You use:
+
+int size = q.size();
+for(int i = 0; i < size; i++)
+
+But unlike:
+
+Level Order Traversal
+Zigzag Traversal
+Right Side View
+
+we don't need to distinguish levels.
+
+The Children Sum Property is checked independently for every node.
+
+Therefore this is enough:
+
+while (!q.isEmpty()) {
+
+    Node curr = q.poll();
+
+    // check curr
+
+    if (curr.left != null) q.add(curr.left);
+    if (curr.right != null) q.add(curr.right);
+}
+
+So we can make the BFS even simpler.
+
+Approach 5 — Simplest BFS Version
+Code
+import java.util.*;
+
+class Solution {
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null) {
+            return true;
+        }
+
+        Queue<Node> q = new LinkedList<>();
+        q.offer(root);
+
+        while (!q.isEmpty()) {
+
+            Node curr = q.poll();
+
+            if (curr.left == null && curr.right == null) {
+                continue;
+            }
+
+            int sum = 0;
+
+            if (curr.left != null) {
+                sum += curr.left.data;
+            }
+
+            if (curr.right != null) {
+                sum += curr.right.data;
+            }
+
+            if (curr.data != sum) {
+                return false;
+            }
+
+            if (curr.left != null) {
+                q.offer(curr.left);
+            }
+
+            if (curr.right != null) {
+                q.offer(curr.right);
+            }
+        }
+
+        return true;
+    }
+}
+
+This has exactly the same asymptotic complexity as your version but less code.
+
+Dry Run — Invalid Single-Child Case
+
+This case is very important.
+
+Consider:
+
+        7
+       /
+      5
+
+At node 7:
+
+left = 5
+right = null
+
+Our sum:
+
+sum = 5 + 0
+    = 5
+
+Compare:
+
+7 != 5
+
+Therefore:
+
+false
+
+Now:
+
+        5
+       /
+      5
+
+We have:
+
+sum = 5
+
+and:
+
+5 == 5
+
+So:
+
+true
+
+This is exactly why treating missing children as 0 is convenient.
+
+Why Leaf Nodes Are Skipped
+
+Consider:
+
+        10
+       /  \
+      20   5
+
+20 is a leaf.
+
+Should we require:
+
+20 = 0
+
+?
+
+No.
+
+The property applies to non-leaf nodes.
+
+So:
+
+20 → ignore
+5  → ignore
+
+Only 10 is checked:
+
+10 = 20 + 5
+
+which is false.
+
+Another Invalid Example
+            10
+           /  \
+          8    2
+         / \
+        5   4
+
+At node 8:
+
+5 + 4 = 9
+
+but:
+
+8 != 9
+
+So we can immediately return:
+
+false
+
+We do not need to inspect the remaining nodes.
+
+Complexity Comparison
+Approach	Technique	Time	Extra Space	Comment
+1	Collect all nodes + second pass	O(n)	O(n)	Simple but redundant
+2	Recursive DFS	O(n)	O(h)	⭐ Best standard
+3	Iterative DFS	O(n)	O(n) worst	Good iterative option
+4	BFS — your code	O(n)	O(w)	⭐ Good
+5	Simplified BFS	O(n)	O(w)	⭐ Clean BFS
+
+Where:
+
+n = number of nodes
+h = tree height
+w = maximum width
+Which Is Most Optimal?
+
+There is an important point here:
+
+Time
+
+All sensible approaches are:
+
+O(n)
+
+because every node may need to be checked.
+
+Auxiliary space
+
+Recursive DFS uses:
+
+O(h)
+
+which is generally the smallest standard auxiliary-space bound.
+
+So I would call:
+
+Recursive DFS
+
+the best standard solution.
+
+Your BFS solution is also time-optimal, but its queue can require O(w) space.
+
+Your Code vs Recursive DFS
+
+Your code:
+
+BFS
+ ↓
+check each node
+ ↓
+children
+
+Recursive:
+
+DFS
+ ↓
+check each node
+ ↓
+left subtree
+ ↓
+right subtree
+
+There is no difference in the actual property being checked.
+
+The only difference is traversal strategy.
+
+🧠 Interview Pattern
+
+Whenever you see:
+
+Children Sum Property
+
+Think:
+
+For every NON-LEAF node:
+
+node.data
+    ==
+sum of existing children
+
+Template:
+
+if (root == null || isLeaf(root)) {
+    return true;
+}
+
+int sum = 0;
+
+if (root.left != null) {
+    sum += root.left.data;
+}
+
+if (root.right != null) {
+    sum += root.right.data;
+}
+
+return root.data == sum
+       && isSumProperty(root.left)
+       && isSumProperty(root.right);
+The Key Pattern to Remember
+                  Node
+                    |
+             ┌──────┴──────┐
+             ↓             ↓
+          left child   right child
+             \             /
+              \           /
+                 SUM
+                  ↓
+            node.data == sum
+
+And always remember:
+
+Leaf → don't check
+One child → compare with that child
+Two children → compare with their sum
+Final Mental Model
+Children Sum Property
+        ↓
+Visit every node
+        ↓
+Is it a leaf?
+   /          \
+ Yes           No
+  ↓             ↓
+skip      sum existing children
+                ↓
+       node.data == sum ?
+          /          \
+       yes            no
+        ↓              ↓
+    continue         false
+Best code to memorize
+class Solution {
+
+    public boolean isSumProperty(Node root) {
+
+        if (root == null || 
+            (root.left == null && root.right == null)) {
+            return true;
+        }
+
+        int sum = 0;
+
+        if (root.left != null) {
+            sum += root.left.data;
+        }
+
+        if (root.right != null) {
+            sum += root.right.data;
+        }
+
+        if (root.data != sum) {
+            return false;
+        }
+
+        return isSumProperty(root.left)
+                && isSumProperty(root.right);
+    }
+}
+
+This gives O(n) time and O(h) auxiliary space, and it is the cleanest version for interviews.
