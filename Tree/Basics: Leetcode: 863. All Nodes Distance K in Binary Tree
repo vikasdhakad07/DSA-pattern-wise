@@ -1,0 +1,880 @@
+LeetCode 863 — All Nodes Distance K in Binary Tree
+1. Problem Understanding
+
+Given the root of a binary tree, a target node, and an integer k, return all nodes whose distance from the target is exactly k edges.
+
+Distance is the number of edges between two nodes.
+
+Example:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Given:
+
+target = 5
+k = 2
+
+The nodes at distance 2 from node 5 are:
+
+5 → 2 → 7
+5 → 2 → 4
+5 → 3 → 1
+
+Output:
+
+[7, 4, 1]
+
+The order of the returned values does not matter.
+
+2. The key observation
+
+Most binary-tree problems allow movement only from parent to child. This problem allows movement in all three directions:
+
+                 Parent
+                   ↑
+                   |
+             Left ← Node → Right
+
+From target 5, we must be able to reach:
+
+Its children 6 and 2.
+
+Its parent 3.
+
+The other subtree through 3, including node 1.
+
+The challenge is that each node only stores references to its children. It has no direct reference to its parent.
+
+There are two main ways to solve this:
+
+Find the target's ancestor path and work upward recursively.
+
+Build parent pointers, then use BFS in all three directions.
+
+Approach 1 — Brute Force: Find Paths and Calculate Distance
+Idea
+
+For every node in the tree:
+
+Find the path from the root to the target.
+
+Find the path from the root to the current node.
+
+Find the lowest common ancestor of these two nodes by comparing the paths.
+
+Calculate the distance between the target and current node.
+
+The distance formula is:
+
+distance(p,x)=depth(p)+depth(x)−2⋅depth(LCA(p,x))
+
+This approach is straightforward but inefficient because we repeatedly search the tree for paths.
+
+Code
+import java.util.*;
+
+class Solution {
+
+    void collectNodes(TreeNode root, List<TreeNode> nodes) {
+        if (root == null) {
+            return;
+        }
+
+        nodes.add(root);
+
+        collectNodes(root.left, nodes);
+        collectNodes(root.right, nodes);
+    }
+
+    boolean findPath(
+            TreeNode root,
+            TreeNode target,
+            List<TreeNode> path) {
+
+        if (root == null) {
+            return false;
+        }
+
+        path.add(root);
+
+        if (root == target) {
+            return true;
+        }
+
+        if (findPath(root.left, target, path)
+                || findPath(root.right, target, path)) {
+            return true;
+        }
+
+        path.remove(path.size() - 1);
+        return false;
+    }
+
+    public List<Integer> distanceK(
+            TreeNode root,
+            TreeNode target,
+            int k) {
+
+        List<Integer> answer = new ArrayList<>();
+
+        if (root == null || target == null) {
+            return answer;
+        }
+
+        List<TreeNode> nodes = new ArrayList<>();
+        collectNodes(root, nodes);
+
+        List<TreeNode> targetPath = new ArrayList<>();
+
+        if (!findPath(root, target, targetPath)) {
+            return answer;
+        }
+
+        int targetDepth = targetPath.size() - 1;
+
+        for (TreeNode node : nodes) {
+
+            List<TreeNode> currentPath = new ArrayList<>();
+            findPath(root, node, currentPath);
+
+            int common = 0;
+
+            while (common < targetPath.size()
+                    && common < currentPath.size()
+                    && targetPath.get(common) == currentPath.get(common)) {
+                common++;
+            }
+
+            int lcaDepth = common - 1;
+            int nodeDepth = currentPath.size() - 1;
+
+            int distance = targetDepth + nodeDepth - 2 * lcaDepth;
+
+            if (distance == k) {
+                answer.add(node.val);
+            }
+        }
+
+        return answer;
+    }
+}
+Dry run
+
+Using the example:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Target 5, k = 2.
+
+First, find the target path:
+
+targetPath = [3, 5]
+targetDepth = 1
+
+Now examine each candidate node.
+
+Candidate: node 7
+
+currentPath = [3, 5, 2, 7]
+
+Common path:
+
+[3, 5]
+
+Therefore:
+
+LCA depth = 1
+node depth = 3
+
+distance = 1 + 3 - 2 × 1
+         = 2
+
+Include 7.
+
+Candidate: node 4
+
+currentPath = [3, 5, 2, 4]
+
+The common path is again [3, 5].
+
+distance = 1 + 3 - 2 × 1
+         = 2
+
+Include 4.
+
+Candidate: node 1
+
+currentPath = [3, 1]
+
+The common path is [3].
+
+LCA depth = 0
+node depth = 1
+
+distance = 1 + 1 - 2 × 0
+         = 2
+
+Include 1.
+
+Final output:
+
+[7, 4, 1]
+Complexity
+
+Let n be the number of nodes and h the tree height.
+
+Searching for a path separately for every node takes up to O(n
+2
+) time in the worst case.
+
+Time: O(n
+2
+)
+
+Auxiliary space: O(n+h)=O(n), including the stored node list and paths.
+
+This approach is useful for understanding the distance formula but isn't recommended for the final solution.
+
+Approach 2 — DFS + Ancestor Backtracking
+
+This approach avoids building a parent map entirely.
+
+Idea
+
+Use recursion to find the target.
+
+When the target is found:
+
+Collect nodes k edges below it.
+
+Return the distance from the target to its ancestors.
+
+At each ancestor, either include that ancestor or search its opposite subtree.
+
+For example:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+When target 5 is found, collect nodes at distance 2 below it:
+
+         5
+        / \
+       6   2
+          / \
+         7   4
+
+This produces:
+
+[7, 4]
+
+Then return up to ancestor 3.
+
+The target is one edge away from 3, so we need the remaining distance:
+
+k = 2
+distance to ancestor = 1
+remaining distance into opposite subtree = 2 - 1 - 1 = 0
+
+The opposite subtree's root is 1, so add it.
+
+Final:
+
+[7, 4, 1]
+Code
+import java.util.*;
+
+class Solution {
+
+    public List<Integer> distanceK(
+            TreeNode root,
+            TreeNode target,
+            int k) {
+
+        List<Integer> answer = new ArrayList<>();
+
+        if (root == null || target == null) {
+            return answer;
+        }
+
+        findTarget(root, target, k, answer);
+
+        return answer;
+    }
+
+    // Returns the distance from this node to target,
+    // or -1 when the target is not in this subtree.
+    private int findTarget(
+            TreeNode root,
+            TreeNode target,
+            int k,
+            List<Integer> answer) {
+
+        if (root == null) {
+            return -1;
+        }
+
+        if (root == target) {
+            collectDown(root, k, answer);
+            return 0;
+        }
+
+        int leftDistance =
+                findTarget(root.left, target, k, answer);
+
+        if (leftDistance != -1) {
+
+            int distanceToCurrent = leftDistance + 1;
+
+            if (distanceToCurrent == k) {
+                answer.add(root.val);
+            } else {
+                collectDown(
+                    root.right,
+                    k - leftDistance - 2,
+                    answer
+                );
+            }
+
+            return distanceToCurrent;
+        }
+
+        int rightDistance =
+                findTarget(root.right, target, k, answer);
+
+        if (rightDistance != -1) {
+
+            int distanceToCurrent = rightDistance + 1;
+
+            if (distanceToCurrent == k) {
+                answer.add(root.val);
+            } else {
+                collectDown(
+                    root.left,
+                    k - rightDistance - 2,
+                    answer
+                );
+            }
+
+            return distanceToCurrent;
+        }
+
+        return -1;
+    }
+
+    // Collect descendants exactly distance edges away.
+    private void collectDown(
+            TreeNode root,
+            int distance,
+            List<Integer> answer) {
+
+        if (root == null || distance < 0) {
+            return;
+        }
+
+        if (distance == 0) {
+            answer.add(root.val);
+            return;
+        }
+
+        collectDown(root.left, distance - 1, answer);
+        collectDown(root.right, distance - 1, answer);
+    }
+}
+Detailed dry run
+
+Target 5, k = 2.
+
+Step 1: Find target 5
+
+At node 5:
+
+root == target
+
+Call:
+
+collectDown(5, 2, answer);
+
+The downward paths are:
+
+5 → 6
+5 → 2
+
+These are only distance 1, so they aren't added.
+
+Continue below node 2:
+
+5 → 2 → 7
+5 → 2 → 4
+
+Both have distance 2.
+
+Answer:
+
+[7, 4]
+
+The recursive search returns distance 0 for target 5.
+
+Step 2: Return to ancestor 3
+
+At node 3:
+
+leftDistance = 0
+distanceToCurrent = 0 + 1 = 1
+
+We need distance 2, so 3 itself isn't added.
+
+Search the opposite subtree, rooted at 1:
+
+remaining = k - leftDistance - 2
+          = 2 - 0 - 2
+          = 0
+
+Therefore:
+
+collectDown(root.right, 0, answer);
+
+adds 1 immediately.
+
+Final:
+
+[7, 4, 1]
+Complexity
+
+The target search plus the descendant searches collectively visit O(n) nodes.
+
+Time: O(n)
+
+Auxiliary space: O(h) for recursion, excluding output.
+
+This is an excellent solution when you want to practice recursion and backtracking without an explicit parent map.
+
+Approach 3 — Parent Map + BFS
+
+This is the approach in your supplied code. It is also one of the easiest to understand and implement in interviews.
+
+Idea
+
+A normal binary tree only stores child references:
+
+node → left child
+node → right child
+
+To move upward from the target, we first build:
+
+child → parent
+
+Then perform BFS starting at the target.
+
+For each node, explore:
+
+left child
+right child
+parent
+
+Use a visited set to avoid returning to a node already reached.
+
+The BFS layers represent distance from the target:
+
+Distance 0 → target
+Distance 1 → direct neighbors
+Distance 2 → nodes two edges away
+...
+Your supplied code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public List<Integer> distanceK(TreeNode root, TreeNode target, int k) {
+        List<Integer> al=new ArrayList<>();
+        Map<Integer, TreeNode> parent=new HashMap<>();
+        Queue<TreeNode> q=new LinkedList<>();
+        q.offer(root);
+        while(!q.isEmpty()){
+            int size=q.size();
+            for(int i=0;i<size;i++){
+                TreeNode curr=q.poll();
+                if(curr.left!=null){
+                    parent.put(curr.left.val,curr);
+                    q.offer(curr.left);
+                }
+                if(curr.right!=null){
+                    parent.put(curr.right.val,curr);
+                    q.offer(curr.right);
+                }
+            }
+        }
+
+        Map<Integer, Integer> visited=new HashMap<>();
+        q.offer(target);
+        while(k>0&&!q.isEmpty()){
+            int size=q.size();
+            for(int i=0;i<size;i++){
+                TreeNode curr=q.poll();
+                visited.put(curr.val,1);
+                if(curr.left!=null&&!visited.containsKey(curr.left.val)){
+                    q.offer(curr.left);
+                }
+                if(curr.right!=null&&!visited.containsKey(curr.right.val)){
+                    q.offer(curr.right);
+                }
+                if(parent.containsKey(curr.val)&&!visited.containsKey(parent.get(curr.val).val)){
+                    q.offer(parent.get(curr.val));
+                }
+            }
+            k--;
+        }
+            while(!q.isEmpty()){
+                al.add(q.poll().val);
+        }
+        return al;
+    }
+}
+
+Your algorithm's overall idea is correct for LeetCode 863, where node values are unique.
+
+Two improvements make the code more robust:
+
+Use TreeNode objects as map/set keys rather than node values.
+
+Mark nodes as visited when they are enqueued, rather than when they're removed from the queue.
+
+Also add a null-root guard.
+
+Recommended BFS code
+import java.util.*;
+
+class Solution {
+
+    public List<Integer> distanceK(
+            TreeNode root,
+            TreeNode target,
+            int k) {
+
+        List<Integer> answer = new ArrayList<>();
+
+        if (root == null || target == null) {
+            return answer;
+        }
+
+        // Map each node to its parent.
+        Map<TreeNode, TreeNode> parent = new HashMap<>();
+
+        Queue<TreeNode> q = new LinkedList<>();
+        q.offer(root);
+        parent.put(root, null);
+
+        while (!q.isEmpty()) {
+
+            TreeNode curr = q.poll();
+
+            if (curr.left != null) {
+                parent.put(curr.left, curr);
+                q.offer(curr.left);
+            }
+
+            if (curr.right != null) {
+                parent.put(curr.right, curr);
+                q.offer(curr.right);
+            }
+        }
+
+        // BFS outward from the target.
+        Set<TreeNode> visited = new HashSet<>();
+        q.offer(target);
+        visited.add(target);
+
+        int distance = 0;
+
+        while (!q.isEmpty() && distance < k) {
+
+            int size = q.size();
+
+            for (int i = 0; i < size; i++) {
+
+                TreeNode curr = q.poll();
+
+                // Visit left child.
+                if (curr.left != null &&
+                        visited.add(curr.left)) {
+                    q.offer(curr.left);
+                }
+
+                // Visit right child.
+                if (curr.right != null &&
+                        visited.add(curr.right)) {
+                    q.offer(curr.right);
+                }
+
+                // Visit parent.
+                TreeNode par = parent.get(curr);
+
+                if (par != null && visited.add(par)) {
+                    q.offer(par);
+                }
+            }
+
+            distance++;
+        }
+
+        // Queue now contains nodes exactly k edges away.
+        while (!q.isEmpty()) {
+            answer.add(q.poll().val);
+        }
+
+        return answer;
+    }
+}
+Detailed dry run of your BFS approach
+
+Use the standard example:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Given:
+
+target = 5
+k = 2
+Step 1: Build the parent map
+
+The parent relationships become:
+
+5 → 3
+1 → 3
+6 → 5
+2 → 5
+0 → 1
+8 → 1
+7 → 2
+4 → 2
+
+Conceptually:
+
+                 3
+               /   \
+              5     1
+             / \   / \
+            6   2 0   8
+               / \
+              7   4
+
+Now, from any node, we can move to its parent as well as its children.
+
+Step 2: Start BFS from target 5
+
+Initially:
+
+Queue   = [5]
+Visited = {5}
+Distance = 0
+
+We must move two edges.
+
+Distance 0 → Distance 1
+
+Process 5.
+
+Its neighbors are:
+
+left child = 6
+right child = 2
+parent = 3
+
+Add them to the queue:
+
+Queue = [6, 2, 3]
+Visited = {5, 6, 2, 3}
+
+These nodes are all at distance 1.
+
+Distance 1 → Distance 2
+
+Process each node in the current queue.
+
+Process 6
+
+Its neighbors are:
+
+left  = null
+right = null
+parent = 5
+
+5 is already visited, so add nothing.
+
+Queue still contains the other current-level nodes.
+
+Process 2
+
+Its neighbors are:
+
+left child = 7
+right child = 4
+parent = 5
+
+Add 7 and 4:
+
+Visited = {5, 6, 2, 3, 7, 4}
+
+Process 3
+
+Its neighbors are:
+
+left child = 5   (visited)
+right child = 1  (unvisited)
+parent = null
+
+Add 1.
+
+After processing the entire level:
+
+Queue = [7, 4, 1]
+
+Now:
+
+distance = 2
+
+The loop stops.
+
+Drain the queue:
+
+Answer = [7, 4, 1]
+
+This matches the expected result.
+
+Why size = q.size() matters
+
+In your code:
+
+int size = q.size();
+
+for (int i = 0; i < size; i++) {
+    ...
+}
+k--;
+
+This ensures that each iteration processes exactly one distance layer.
+
+For example:
+
+Distance 0: [5]
+Distance 1: [6, 2, 3]
+Distance 2: [7, 4, 1]
+
+If you didn't capture size at the start, newly discovered nodes could be processed in the same iteration, mixing distances.
+
+Approach comparison
+
+Approach
+
+	
+
+Idea
+
+	
+
+Time
+
+	
+
+Auxiliary space
+
+
+
+
+1. Brute force
+
+	
+
+Find paths for every node and calculate distance
+
+	
+
+O(n
+2
+)
+
+	
+
+O(n)
+
+
+
+
+2. DFS + ancestor backtracking
+
+	
+
+Return target distance and search opposite subtrees
+
+	
+
+O(n)
+
+	
+
+O(h)
+
+
+
+
+3. Parent map + BFS
+
+	
+
+Move to children and parent, layer by layer
+
+	
+
+O(n)
+
+	
+
+O(n)
+
+Here, n is the number of nodes and h is the tree height. The output list itself can contain O(n) values.
+
+Which approach should you remember?
+
+For the cleanest recursive solution: use DFS + ancestor backtracking.
+
+For the most intuitive BFS solution: use a parent map and BFS from the target. This is your approach and is particularly easy to dry-run in an interview.
+
+Interview pattern to remember
+All nodes distance K
+        ↓
+Need to move up and down
+        ↓
+Parent pointers OR recursive ancestor search
+        ↓
+BFS by distance OR DFS + backtracking
+
+The key lesson is that distance-K problems on trees become much easier when you can move in all directions. A parent map turns the tree into an undirected graph, after which ordinary BFS solves the problem in O(n) time.
