@@ -1,0 +1,723 @@
+GFG — Size of a Complete Binary Tree
+
+The goal is to count the total number of nodes in a complete binary tree.
+We'll cover the straightforward traversal approaches first, then optimize using the special properties of complete binary trees, including your code.
+1. Problem understanding
+A complete binary tree is a tree in which:
+- Every level except possibly the last is completely filled.
+- The last level is filled from left to right, with no gaps.
+Example:
+                 1
+               /   \
+              2     3
+             / \   /
+            4   5 6
+
+
+Total nodes:
+1, 2, 3, 4, 5, 6
+
+
+Output:
+6
+
+
+The key question is: Do we need to visit every node to count them?
+For an arbitrary binary tree, generally yes. But a complete binary tree has a special property: if its leftmost and rightmost paths have equal heights, the entire subtree is perfect, and we can calculate its size immediately.
+
+Approach 1 — Recursive DFS: Count Every Node
+Idea
+This is the simplest baseline approach. Count the root, then count the nodes in both subtrees.
+The recurrence is:
+\[
+\text{count}(root)=1+\text{count}(root.left)+\text{count}(root.right)
+\]
+
+For a null node, return 0.
+Code
+class Solution {
+    public int countNodes(Node root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        return 1
+                + countNodes(root.left)
+                + countNodes(root.right);
+    }
+}
+
+
+Dry run
+Use this tree:
+                 1
+               /   \
+              2     3
+             / \   /
+            4   5 6
+
+
+Start:
+countNodes(1)
+
+
+The function recursively counts the left and right subtrees.
+At node 4:
+countNodes(4)
+= 1 + 0 + 0
+= 1
+
+
+At node 5:
+countNodes(5)
+= 1 + 0 + 0
+= 1
+
+
+At node 2:
+countNodes(2)
+= 1 + countNodes(4) + countNodes(5)
+= 1 + 1 + 1
+= 3
+
+
+At node 6:
+countNodes(6)
+= 1
+
+
+At node 3:
+countNodes(3)
+= 1 + countNodes(6) + countNodes(null)
+= 1 + 1 + 0
+= 2
+
+
+Finally, at node 1:
+countNodes(1)
+= 1 + countNodes(2) + countNodes(3)
+= 1 + 3 + 2
+= 6
+
+
+Output:
+6
+
+
+Complexity
+- Time: \(O(n)\), because every node is visited.
+- Auxiliary space: \(O(h)\) for recursion.
+For a complete binary tree, \(h=O(\log n)\), so the recursion stack is \(O(\log n)\).
+This is correct, but it doesn't exploit the fact that the tree is complete.
+
+Approach 2 — Iterative BFS: Count Nodes Level by Level
+Idea
+We can also visit every node using a queue.
+1. Insert the root into the queue.
+2. Remove a node and increment the count.
+3. Add its existing children.
+4. Continue until the queue becomes empty.
+Unlike the previous approach, this uses an explicit queue instead of recursion.
+Code
+import java.util.*;
+
+class Solution {
+    public int countNodes(Node root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        Queue<Node> q = new LinkedList<>();
+        q.offer(root);
+
+        int count = 0;
+
+        while (!q.isEmpty()) {
+
+            Node curr = q.poll();
+            count++;
+
+            if (curr.left != null) {
+                q.offer(curr.left);
+            }
+
+            if (curr.right != null) {
+                q.offer(curr.right);
+            }
+        }
+
+        return count;
+    }
+}
+
+
+Dry run
+Tree:
+                 1
+               /   \
+              2     3
+             / \   /
+            4   5 6
+
+
+Initially:
+Queue = [1]
+count = 0
+
+
+Iteration 1: Remove 1.
+count = 1
+Queue = [2, 3]
+
+
+Iteration 2: Remove 2.
+count = 2
+Queue = [3, 4, 5]
+
+
+Iteration 3: Remove 3.
+count = 3
+Queue = [4, 5, 6]
+
+
+Iteration 4: Remove 4.
+count = 4
+Queue = [5, 6]
+
+
+Iteration 5: Remove 5.
+count = 5
+Queue = [6]
+
+
+Iteration 6: Remove 6.
+count = 6
+Queue = []
+
+
+The queue is empty, so return:
+6
+
+
+Complexity
+- Time: \(O(n)\)
+- Auxiliary space: \(O(w)\), where \(w\) is the maximum width.
+For complete trees, the queue can hold \(O(n)\) nodes in the worst case.
+Both Approach 1 and Approach 2 are \(O(n)\). To improve further, we must take advantage of the complete-tree property.
+
+Approach 3 — Optimal Recursive Approach Using Left and Right Heights
+This is the approach in your code and the standard optimized solution.
+Key idea
+A perfect binary tree has every level completely filled:
+                 1
+               /   \
+              2     3
+             / \   / \
+            4   5 6   7
+
+
+If its height measured in edges is \(h\), its node count is:
+\[
+2^{h+1}-1
+\]
+
+For example, when \(h=2\):
+\[
+2^{2+1}-1=8-1=7
+\]
+
+So we can count a perfect subtree in constant time after measuring its height.
+How do we know whether the subtree is perfect?
+Measure two heights:
+- binaryLeft(root): number of edges on the path that repeatedly follows the left child.
+- binaryRight(root): number of edges on the path that repeatedly follows the right child.
+If these are equal, the subtree is perfect because the input is guaranteed to be a complete binary tree.
+Otherwise, count recursively:
+1 + count(left subtree) + count(right subtree)
+
+
+
+Your code
+class Solution {
+
+    public int countNodes(Node root) {
+        // code here
+        if(root==null){
+            return 0;
+        }
+
+        int left=binaryLeft(root);
+        int right=binaryRight(root);
+
+        if(left==right){
+            return (2<<left)-1;
+        }
+
+        return 1+countNodes(root.left)+countNodes(root.right);
+    }
+
+    public int binaryLeft(Node root){
+        int count=0;
+        Node curr=root;
+        while(curr.left!=null){
+            count++;
+            curr=curr.left;
+        }
+        return count;
+    }
+
+    public int binaryRight(Node root){
+        int count=0;
+        Node curr=root;
+        while(curr.right!=null){
+            count++;
+            curr=curr.right;
+        }
+        return count;
+    }
+}
+
+
+Your code implements the correct optimization.
+Understanding (2 << left) - 1
+This expression is equivalent to:
+(1 << (left + 1)) - 1
+
+
+Mathematically:
+\[
+(2\ll h)-1=2^{h+1}-1
+\]
+
+For safer arithmetic, especially with larger heights, use a long intermediate:
+return (int)((1L << (left + 1)) - 1);
+
+
+The return type is still int, as in the GFG signature.
+
+Detailed dry run of your code
+Use the six-node tree:
+                 1
+               /   \
+              2     3
+             / \   /
+            4   5 6
+
+
+Step 1: Call countNodes(1)
+Calculate the leftmost height.
+1 → 2 → 4
+
+
+binaryLeft(1) returns:
+left = 2
+
+
+Calculate the rightmost height.
+1 → 3
+
+
+binaryRight(1) returns:
+right = 1
+
+
+Compare:
+left == right
+2 == 1 → false
+
+
+The subtree isn't perfect. Therefore:
+return 1 + countNodes(root.left) + countNodes(root.right);
+
+
+Conceptually:
+countNodes(1)
+= 1 + countNodes(2) + countNodes(3)
+
+
+Step 2: Calculate countNodes(2)
+Subtree:
+       2
+      / \
+     4   5
+
+
+Leftmost path:
+2 → 4
+
+
+So:
+left = 1
+
+
+Rightmost path:
+2 → 5
+
+
+So:
+right = 1
+
+
+Now:
+left == right
+1 == 1 → true
+
+
+This subtree is perfect.
+Return:
+(2 << 1) - 1
+= 4 - 1
+= 3
+
+
+We count the entire subtree without recursively visiting nodes 4 and 5.
+Step 3: Calculate countNodes(3)
+Subtree:
+       3
+      /
+     6
+
+
+Leftmost height:
+3 → 6
+
+
+So:
+left = 1
+
+
+Rightmost height:
+3
+
+
+The right child is missing, so:
+right = 0
+
+
+Compare:
+1 == 0 → false
+
+
+Use recursion:
+countNodes(3)
+= 1 + countNodes(6) + countNodes(null)
+
+
+For node 6:
+left = 0
+right = 0
+
+
+The subtree is perfect, so:
+(2 << 0) - 1
+= 2 - 1
+= 1
+
+
+For null:
+countNodes(null) = 0
+
+
+Therefore:
+countNodes(3)
+= 1 + 1 + 0
+= 2
+
+
+Step 4: Return to root
+We have:
+countNodes(2) = 3
+countNodes(3) = 2
+
+
+Therefore:
+countNodes(1)
+= 1 + 3 + 2
+= 6
+
+
+Output:
+6
+
+
+
+Why this approach is faster
+For a perfect subtree, the code doesn't visit each node. It calculates the answer using a formula.
+For a complete but imperfect tree, one subtree can be counted immediately as perfect, while recursion continues into the part that isn't perfect.
+Each height measurement costs \(O(h)\). Along the recursive path, there are \(O(h)\) levels to inspect.
+Complexity
+- Time: \(O(h^2)=O(\log^2 n)\)
+- Auxiliary space: \(O(h)=O(\log n)\)
+This is much faster than \(O(n)\) for large complete trees.
+Important: Equal leftmost and rightmost heights imply a perfect subtree here because the input is complete. That shortcut isn't valid for an arbitrary binary tree.
+
+Approach 4 — Binary Search on the Last Level
+This is an alternative optimized approach. It uses the same complete-tree property but counts the final level using binary search.
+Idea
+Let h be the height in edges.
+All levels before the last level are full, so their number of nodes is:
+\[
+2^h-1
+\]
+
+The last level can contain at most \(2^h\) nodes.
+Because a complete tree fills the last level from left to right, the occupied positions form a prefix:
+Indices:  0  1  2  3
+Nodes:    ✓  ✓  ✓  ✗
+
+
+For our six-node example, three of the four possible positions on the last level are occupied.
+We can binary-search the last occupied position. For each candidate position, follow its binary index from the root to check whether that node exists.
+
+Code
+class Solution {
+
+    // Height measured in edges along the leftmost path.
+    private int leftHeight(Node root) {
+
+        int height = 0;
+
+        while (root.left != null) {
+            height++;
+            root = root.left;
+        }
+
+        return height;
+    }
+
+    // Checks whether a node exists at index idx
+    // on the last level, which is h edges below root.
+    private boolean exists(Node root, int h, long idx) {
+
+        Node curr = root;
+
+        for (int bit = h - 1; bit >= 0; bit--) {
+
+            if (curr == null) {
+                return false;
+            }
+
+            if ((idx & (1L << bit)) == 0) {
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+
+        return curr != null;
+    }
+
+    public int countNodes(Node root) {
+
+        if (root == null) {
+            return 0;
+        }
+
+        int h = leftHeight(root);
+
+        long nodesAboveLastLevel = (1L << h) - 1;
+        long low = 0;
+        long high = (1L << h) - 1;
+
+        // Find how many positions on the last level are occupied.
+        while (low <= high) {
+
+            long mid = low + (high - low) / 2;
+
+            if (exists(root, h, mid)) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+
+        return (int)(nodesAboveLastLevel + low);
+    }
+}
+
+
+
+Dry run
+Tree:
+                 1
+               /   \
+              2     3
+             / \   /
+            4   5 6
+
+
+Step 1: Find height
+The leftmost path is:
+1 → 2 → 4
+
+
+So:
+h = 2
+
+
+Nodes above the last level:
+(1L << 2) - 1
+= 4 - 1
+= 3
+
+
+Last-level capacity:
+2² = 4
+
+
+Possible positions:
+0, 1, 2, 3
+
+
+Step 2: Binary search
+Initially:
+low = 0
+high = 3
+
+
+Check index 1:
+Its binary representation for two levels is 01:
+left → right
+
+
+This reaches node 5, so it exists.
+Update:
+low = 2
+high = 3
+
+
+Check index 2:
+Its binary representation is 10:
+right → left
+
+
+This reaches node 6, so it exists.
+Update:
+low = 3
+high = 3
+
+
+Check index 3:
+Its binary representation is 11:
+right → right
+
+
+But node 3 has no right child.
+So index 3 doesn't exist.
+Update:
+low = 3
+high = 2
+
+
+Binary search ends.
+The number of occupied positions on the last level is:
+low = 3
+
+
+Step 3: Calculate the total
+nodes above last level = 3
+nodes on last level    = 3
+
+
+Total:
+3 + 3 = 6
+
+
+Output:
+6
+
+
+Complexity
+- Time: \(O(\log^2 n)\), since binary search performs \(O(\log n)\) checks and each check takes \(O(\log n)\).
+- Auxiliary space: \(O(1)\).
+This matches the time complexity of Approach 3 but uses constant auxiliary space.
+
+Comparison of All Approaches
+Approach	Technique	Time	Auxiliary space
+1	Recursive DFS — count every node	\(O(n)\)	\(O(\log n)\) for a complete tree
+2	BFS — count every node	\(O(n)\)	\(O(n)\)
+3	Left/right height comparison — your code	\(O(\log^2 n)\)	\(O(\log n)\)
+4	Binary search on the last level	\(O(\log^2 n)\)	\(O(1)\)
+Which should you use?
+For GFG and interviews, I recommend Approach 3: your recursive solution. It's short, intuitive once you understand the perfect-subtree formula, and achieves \(O(\log^2 n)\) time.
+Approach 4 is useful if an interviewer asks for the same time complexity with constant auxiliary space.
+
+Important edge cases
+1. Empty tree
+root = null
+
+
+Output:
+0
+
+
+All four approaches handle this.
+2. One node
+     1
+
+
+Here:
+left height = 0
+right height = 0
+
+
+It is perfect.
+(2 << 0) - 1 = 1
+
+
+Output:
+1
+
+
+3. Perfect tree
+             1
+           /   \
+          2     3
+         / \   / \
+        4   5 6   7
+
+
+Both heights equal 2.
+count = (2 << 2) - 1
+      = 8 - 1
+      = 7
+
+
+The algorithm returns immediately without visiting each node individually.
+4. Complete but not perfect
+             1
+           /   \
+          2     3
+         / \   /
+        4   5 6
+
+
+The leftmost height is 2, while the rightmost height is 1.
+The algorithm uses recursion to count the non-perfect portion and the formula to count perfect subtrees.
+Output:
+6
+
+
+
+Interview pattern to remember
+The key optimization is:
+Count nodes in a complete binary tree
+              ↓
+Find leftmost and rightmost heights
+              ↓
+         Are they equal?
+           /       \
+         Yes        No
+          ↓          ↓
+     Perfect tree   Recurse
+          ↓          ↓
+    2^(h+1) - 1   1 + left + right
+
+
+Your code uses exactly this idea.
+Remember these two facts:
+1. Equal leftmost and rightmost heights mean the subtree is perfect for a complete-tree input.
+2. A perfect subtree with height h measured in edges contains \(2^{h+1}-1\) nodes.
+Those two properties are what reduce the running time from \(O(n)\) to \(O(\log^2 n)\).
