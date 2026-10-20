@@ -1,0 +1,791 @@
+LeetCode 105 — Construct Binary Tree from Preorder and Inorder Traversal
+1. Problem Understanding
+You are given two arrays:
+- Preorder: Root → Left → Right
+- Inorder: Left → Root → Right
+Construct and return the original binary tree.
+Example
+preorder = [3, 9, 20, 15, 7]
+inorder  = [9, 3, 15, 20, 7]
+
+
+Expected tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+The most important observation
+Preorder tells us which node is the root. Inorder tells us how to divide the left and right subtrees.
+
+For example:
+Preorder = [3, 9, 20, 15, 7]
+           ↑
+          Root = 3
+
+
+Find 3 in the inorder array:
+Inorder = [9 | 3 | 20, 15, 7]
+           Left  Root   Right
+
+
+Therefore:
+Left subtree  = [9]
+Right subtree = [20, 15, 7]
+
+
+Apply the same process recursively to each subtree.
+
+Approach 1 — Brute Force: Recursion with Array Slicing
+Idea
+At each recursive call:
+1. Take the first element of preorder as the root.
+2. Search for that value in inorder.
+3. Divide inorder into left and right subtree arrays.
+4. Divide preorder into corresponding left and right subtree arrays.
+5. Recursively construct both subtrees.
+This is easy to understand, but repeatedly copying arrays makes it inefficient.
+Code
+import java.util.*;
+
+class Solution {
+
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+
+        if (preorder.length == 0) {
+            return null;
+        }
+
+        // First preorder element is the root
+        int rootValue = preorder[0];
+        TreeNode root = new TreeNode(rootValue);
+
+        // Find root in inorder
+        int rootIndex = 0;
+
+        while (inorder[rootIndex] != rootValue) {
+            rootIndex++;
+        }
+
+        // Number of nodes in left subtree
+        int leftSize = rootIndex;
+
+        // Create corresponding subtree arrays
+        int[] leftPreorder =
+                Arrays.copyOfRange(preorder, 1, leftSize + 1);
+
+        int[] rightPreorder =
+                Arrays.copyOfRange(
+                        preorder,
+                        leftSize + 1,
+                        preorder.length
+                );
+
+        int[] leftInorder =
+                Arrays.copyOfRange(inorder, 0, rootIndex);
+
+        int[] rightInorder =
+                Arrays.copyOfRange(
+                        inorder,
+                        rootIndex + 1,
+                        inorder.length
+                );
+
+        root.left = buildTree(leftPreorder, leftInorder);
+        root.right = buildTree(rightPreorder, rightInorder);
+
+        return root;
+    }
+}
+
+
+Dry run
+Input:
+preorder = [3, 9, 20, 15, 7]
+inorder  = [9, 3, 15, 20, 7]
+
+
+Call 1: Build root 3
+First preorder element:
+root = 3
+
+
+Find 3 in inorder:
+[9, 3, 15, 20, 7]
+    ↑
+
+
+So:
+leftSize = 1
+
+
+Subarrays:
+Left preorder  = [9]
+Left inorder   = [9]
+
+Right preorder = [20, 15, 7]
+Right inorder  = [15, 20, 7]
+
+
+The root is now:
+    3
+
+
+Call 2: Build left subtree
+Inputs:
+preorder = [9]
+inorder  = [9]
+
+
+Root:
+9
+
+
+There are no remaining nodes on either side.
+
+Return the node 9.
+
+Tree:
+    3
+   /
+  9
+
+
+Call 3: Build right subtree
+Inputs:
+preorder = [20, 15, 7]
+inorder  = [15, 20, 7]
+
+
+Root:
+20
+
+
+Its position in inorder splits the array:
+[15 | 20 | 7]
+ Left Root Right
+
+
+Therefore:
+Left subtree  = [15]
+Right subtree = [7]
+
+
+Create nodes 15 and 7 recursively.
+
+Final tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n^2)\) worst case due to searching and copying arrays repeatedly.
+- Auxiliary space: \(O(n^2)\) worst case due to copied arrays held across recursive calls.
+This approach is useful for understanding the reconstruction process, but we can improve it.
+
+Approach 2 — Recursive Ranges + Linear Search
+Idea
+Instead of creating new arrays, use index ranges to identify the current subtree.
+
+Each recursive call receives:
+preStart, preEnd
+inStart, inEnd
+
+
+These define the relevant sections of the original preorder and inorder arrays.
+
+The procedure is:
+1. If the range is empty, return null.
+2. preorder[preStart] is the root.
+3. Find the root's position in the current inorder range.
+4. Compute the number of nodes in the left subtree.
+5. Recursively construct left and right subtrees using index ranges.
+The key formula is:
+\[
+\text{leftSize}=\text{rootIndex}-\text{inStart}
+\]
+
+Code
+class Solution {
+
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+
+        return build(
+                preorder, 0, preorder.length - 1,
+                inorder, 0, inorder.length - 1
+        );
+    }
+
+    private TreeNode build(
+            int[] preorder,
+            int preStart,
+            int preEnd,
+            int[] inorder,
+            int inStart,
+            int inEnd) {
+
+        if (preStart > preEnd || inStart > inEnd) {
+            return null;
+        }
+
+        int rootValue = preorder[preStart];
+        TreeNode root = new TreeNode(rootValue);
+
+        // Linear search inside the current inorder range
+        int rootIndex = inStart;
+
+        while (rootIndex <= inEnd
+                && inorder[rootIndex] != rootValue) {
+            rootIndex++;
+        }
+
+        int leftSize = rootIndex - inStart;
+
+        root.left = build(
+                preorder,
+                preStart + 1,
+                preStart + leftSize,
+                inorder,
+                inStart,
+                rootIndex - 1
+        );
+
+        root.right = build(
+                preorder,
+                preStart + leftSize + 1,
+                preEnd,
+                inorder,
+                rootIndex + 1,
+                inEnd
+        );
+
+        return root;
+    }
+}
+
+
+Dry run
+Use the same arrays:
+preorder = [3, 9, 20, 15, 7]
+inorder  = [9, 3, 15, 20, 7]
+
+
+Root 3
+Initial ranges:
+Preorder: [0..4]
+Inorder:  [0..4]
+
+
+Root:
+preorder[0] = 3
+
+
+Its inorder index is 1.
+leftSize = 1 - 0 = 1
+
+
+Recursive calls:
+Left:
+preorder [1..1] = [9]
+inorder  [0..0] = [9]
+
+Right:
+preorder [2..4] = [20,15,7]
+inorder  [2..4] = [15,20,7]
+
+
+Right subtree root 20
+Its preorder start is 2:
+preorder[2] = 20
+
+
+Its inorder index is 3.
+leftSize = 3 - 2 = 1
+
+
+Recursive calls:
+Left:
+preorder [3..3] = [15]
+inorder  [2..2] = [15]
+
+Right:
+preorder [4..4] = [7]
+inorder  [4..4] = [7]
+
+
+Nodes 15 and 7 become the left and right children of 20.
+
+Final:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n^2)\) worst case, because each recursive call may linearly search its inorder range.
+- Auxiliary space: \(O(h)\) for recursion, excluding the output tree.
+This removes array copying but still repeats the root search.
+
+Approach 3 — Recursive Ranges + HashMap (Optimal)
+This is the most common recursive solution, and your supplied code implements this approach.
+Key optimization
+Instead of searching the inorder array every time, build a map once:
+Node value → Inorder index
+
+
+For our example:
+9  → 0
+3  → 1
+15 → 2
+20 → 3
+7  → 4
+
+
+Now finding a root's inorder position takes \(O(1)\) average time.
+
+Each node is constructed once, and we don't create temporary arrays.
+Your code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < preorder.length; i++) {
+            map.put(inorder[i], i);
+        }
+
+        TreeNode root = buildTree(
+                preorder,
+                0, preorder.length - 1,
+                inorder,
+                0, inorder.length - 1,
+                map
+        );
+
+        return root;
+    }
+
+    public TreeNode buildTree(
+            int preorder[],
+            int preStart,
+            int preEnd,
+            int inorder[],
+            int inStart,
+            int inEnd,
+            Map<Integer, Integer> map) {
+
+        if (preStart > preEnd || inStart > inEnd) {
+            return null;
+        }
+
+        TreeNode root = new TreeNode(preorder[preStart]);
+
+        int isRoot = map.get(root.val);
+        int leftNode = isRoot - inStart;
+
+        root.left = buildTree(
+                preorder,
+                preStart + 1,
+                preStart + leftNode,
+                inorder,
+                inStart,
+                isRoot - 1,
+                map
+        );
+
+        root.right = buildTree(
+                preorder,
+                preStart + leftNode + 1,
+                preEnd,
+                inorder,
+                isRoot + 1,
+                inEnd,
+                map
+        );
+
+        return root;
+    }
+}
+
+
+Your code is correct for this problem's conditions: the two traversals describe the same tree, and all node values are unique.
+Understanding the variables
+Variable	Meaning
+preStart	First preorder index of the current subtree
+preEnd	Last preorder index of the current subtree
+inStart	First inorder index of the current subtree
+inEnd	Last inorder index of the current subtree
+isRoot	Position of the root in inorder
+leftNode	Number of nodes in the left subtree
+The most important line is:
+int leftNode = isRoot - inStart;
+
+
+Since inorder is:
+[left subtree] root [right subtree]
+
+
+the distance from inStart to the root position gives the number of left-subtree nodes.
+
+Detailed dry run of your code
+Input:
+preorder = [3, 9, 20, 15, 7]
+inorder  = [9, 3, 15, 20, 7]
+
+
+Step 1: Build the HashMap
+After this loop:
+for (int i = 0; i < preorder.length; i++) {
+    map.put(inorder[i], i);
+}
+
+
+the map contains:
+9  → 0
+3  → 1
+15 → 2
+20 → 3
+7  → 4
+
+
+Step 2: Construct root 3
+Call:
+buildTree(preorder, 0, 4, inorder, 0, 4, map)
+
+
+The root is:
+preorder[0] = 3
+
+
+Find the inorder index:
+isRoot = map.get(3) = 1
+
+
+Calculate the left-subtree size:
+leftNode = isRoot - inStart
+         = 1 - 0
+         = 1
+
+
+Left recursive call:
+preorder range = [1..1]
+inorder range  = [0..0]
+
+
+Right recursive call:
+preorder range = [2..4]
+inorder range  = [2..4]
+
+
+So the root 3 is established:
+    3
+
+
+Step 3: Construct left subtree 9
+Current preorder range:
+[1..1]
+
+
+Root:
+preorder[1] = 9
+
+
+Its inorder index is 0.
+leftNode = 0 - 0 = 0
+
+
+Both child ranges are empty, so:
+root.left  = null
+root.right = null
+
+
+Return node 9.
+
+Current tree:
+    3
+   /
+  9
+
+
+Step 4: Construct right subtree 20
+Current preorder range:
+[2..4]
+
+
+Root:
+preorder[2] = 20
+
+
+Inorder position:
+isRoot = map.get(20) = 3
+
+
+Left-subtree size:
+leftNode = 3 - 2
+         = 1
+
+
+The left recursive call uses:
+Preorder: [3..3] → [15]
+Inorder:  [2..2] → [15]
+
+
+The right recursive call uses:
+Preorder: [4..4] → [7]
+Inorder:  [4..4] → [7]
+
+
+Therefore, node 20 gets children 15 and 7.
+
+Final tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Final result
+       3
+      / \
+     9   20
+        /  \
+       15   7
+
+
+Every node has been constructed in its correct position.
+Complexity
+Building the map takes \(O(n)\) average time. Each node is then constructed once, with an average \(O(1)\) map lookup.
+- Time: \(O(n)\) average
+- Auxiliary space: \(O(n)\) for the HashMap and up to \(O(h)\) recursion stack
+- Output tree: \(O(n)\)
+Since the tree contains \(n\) nodes, \(O(n)\) time is asymptotically optimal.
+
+Approach 4 — Iterative Stack (Optimal Time)
+A recursive solution isn't the only way to achieve \(O(n)\) time. We can also reconstruct the tree using a stack and an inorder pointer.
+Idea
+Preorder tells us the next node to create. Inorder tells us when we've completed a subtree.
+
+Maintain:
+- A stack of nodes whose right children have not yet been determined.
+- A pointer inorderIndex indicating the next inorder value to match.
+For each new preorder value:
+1. If the stack top does not match the current inorder value, it must become the top node's left child.
+2. Otherwise, pop all stack nodes matching inorder, advancing the inorder pointer. The last popped node receives the new value as its right child.
+Code
+import java.util.*;
+
+class Solution {
+
+    public TreeNode buildTree(int[] preorder, int[] inorder) {
+
+        if (preorder.length == 0) {
+            return null;
+        }
+
+        TreeNode root = new TreeNode(preorder[0]);
+
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(root);
+
+        int inorderIndex = 0;
+
+        for (int i = 1; i < preorder.length; i++) {
+
+            TreeNode curr = stack.peek();
+
+            TreeNode node = new TreeNode(preorder[i]);
+
+            // We have not finished the current node's left subtree.
+            if (curr.val != inorder[inorderIndex]) {
+
+                curr.left = node;
+
+            } else {
+
+                // Finish nodes that now match inorder.
+                while (!stack.isEmpty()
+                        && inorderIndex < inorder.length
+                        && stack.peek().val == inorder[inorderIndex]) {
+
+                    curr = stack.pop();
+                    inorderIndex++;
+                }
+
+                // The next preorder node is the right child
+                // of the last node completed by inorder.
+                curr.right = node;
+            }
+
+            stack.push(node);
+        }
+
+        return root;
+    }
+}
+
+
+
+Dry run of Approach 4
+Input:
+preorder = [3, 9, 20, 15, 7]
+inorder  = [9, 3, 15, 20, 7]
+
+
+Initially:
+Root = 3
+Stack = [3]
+inorderIndex = 0
+
+
+Process preorder value 9
+Stack top:
+3
+
+
+Current inorder value:
+9
+
+
+Since 3 != 9, attach 9 as the left child of 3.
+    3
+   /
+  9
+
+
+Stack:
+[3, 9]
+
+
+Process preorder value 20
+Stack top is 9.
+
+Current inorder value is 9, so start popping:
+Pop 9 → inorderIndex = 1
+
+
+Now stack top is 3.
+
+Current inorder value is 3, so pop again:
+Pop 3 → inorderIndex = 2
+
+
+The last popped node is 3, so attach 20 as its right child.
+    3
+   / \
+  9   20
+
+
+Stack:
+[20]
+
+
+Process preorder value 15
+Stack top is 20.
+
+Current inorder value is 15.
+
+Since 20 != 15, attach 15 as the left child of 20.
+      3
+     / \
+    9   20
+       /
+      15
+
+
+Stack:
+[20, 15]
+
+
+Process preorder value 7
+Stack top is 15, which matches the current inorder value.
+
+Pop 15:
+inorderIndex = 3
+
+
+Stack top is 20, which matches the next inorder value.
+
+Pop 20:
+inorderIndex = 4
+
+
+Now attach 7 as the right child of the last popped node, 20.
+
+Final tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n)\), since each node is pushed and popped at most once.
+- Auxiliary space: \(O(h)\) stack space, up to \(O(n)\) in the worst case.
+This is also optimal in time.
+
+Comparison of All Approaches
+Approach	Main technique	Time	Auxiliary space
+1. Brute force	Recursive slicing + linear search	\(O(n^2)\) worst	\(O(n^2)\) worst
+2. Range recursion	Index ranges + linear search	\(O(n^2)\) worst	\(O(h)\)
+3. HashMap recursion — your code	Index ranges + O(1) average lookup	\(O(n)\) average	\(O(n)\)
+4. Iterative stack	Stack + inorder pointer	\(O(n)\)	\(O(h)\)
+Which approach should you use?
+For interviews, I recommend Approach 3: recursive ranges + HashMap.
+
+It's easy to explain, efficient, and makes the split between left and right subtrees explicit.
+
+Your solution is already optimal in average time complexity. The critical line to remember is:
+int leftNode = map.get(preorder[preStart]) - inStart;
+
+
+This tells us how many preorder elements belong to the left subtree.
+
+Then the recursive ranges follow directly:
+// Left subtree
+preStart + 1
+    ...
+preStart + leftNode
+
+// Right subtree
+preStart + leftNode + 1
+    ...
+preEnd
+
+
+
+The Reusable Pattern
+Whenever you are asked to construct a binary tree from preorder and inorder:
+1. Take preorder's first element as root.
+2. Find root in inorder.
+3. Count left-subtree nodes.
+4. Split preorder and inorder ranges.
+5. Recurse on left and right.
+
+
+The most useful distinction is:
+- Preorder decides which node comes next.
+- Inorder decides where that node's left and right subtrees end.
+Once you understand that relationship, LeetCode 105 becomes a straightforward recursive construction problem.
