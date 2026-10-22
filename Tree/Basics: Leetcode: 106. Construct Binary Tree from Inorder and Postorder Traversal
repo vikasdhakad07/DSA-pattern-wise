@@ -1,0 +1,747 @@
+LeetCode 106 — Construct Binary Tree from Inorder and Postorder Traversal
+1. Problem Understanding
+Given two arrays, inorder and postorder, construct and return the original binary tree.
+- Inorder: Left → Root → Right
+- Postorder: Left → Right → Root
+Example:
+inorder   = [9, 3, 15, 20, 7]
+postorder = [9, 15, 7, 20, 3]
+
+
+Expected tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+The critical observation is:
+
+Postorder tells us the root; inorder tells us how to divide the left and right subtrees.
+
+In postorder, the last element is always the root of the current subtree:
+postorder = [9, 15, 7, 20, 3]
+                                   ↑
+                                 Root = 3
+
+
+Find 3 in inorder:
+inorder = [9 | 3 | 15, 20, 7]
+           Left Root      Right
+
+
+So:
+Left subtree  = [9]
+Right subtree = [15, 20, 7]
+
+
+We repeat this process recursively until every node has been created.
+
+Approach 1 — Brute Force: Recursion with Array Slicing
+Idea
+For every recursive call:
+1. Take the last element of postorder as the root.
+2. Find that root in inorder using linear search.
+3. Divide inorder into left and right subtree arrays.
+4. Divide postorder into matching subtree arrays.
+5. Recursively build both subtrees.
+This is the simplest approach to understand, but it repeatedly searches and copies arrays.
+Code
+import java.util.*;
+
+class Solution {
+
+    public TreeNode buildTree(int[] inorder, int[] postorder) {
+
+        if (inorder.length == 0) {
+            return null;
+        }
+
+        int n = inorder.length;
+
+        // Last element in postorder is the root.
+        int rootValue = postorder[n - 1];
+        TreeNode root = new TreeNode(rootValue);
+
+        // Find root in inorder.
+        int rootIndex = 0;
+
+        while (inorder[rootIndex] != rootValue) {
+            rootIndex++;
+        }
+
+        // Number of nodes in the left subtree.
+        int leftSize = rootIndex;
+
+        int[] leftInorder =
+                Arrays.copyOfRange(inorder, 0, rootIndex);
+
+        int[] rightInorder =
+                Arrays.copyOfRange(inorder, rootIndex + 1, n);
+
+        // Exclude the last postorder element because it is the root.
+        int[] leftPostorder =
+                Arrays.copyOfRange(postorder, 0, leftSize);
+
+        int[] rightPostorder =
+                Arrays.copyOfRange(postorder, leftSize, n - 1);
+
+        root.left = buildTree(leftInorder, leftPostorder);
+        root.right = buildTree(rightInorder, rightPostorder);
+
+        return root;
+    }
+}
+
+
+Dry run
+Input:
+inorder   = [9, 3, 15, 20, 7]
+postorder = [9, 15, 7, 20, 3]
+
+
+Step 1: Construct root 3
+Last postorder element:
+rootValue = 3
+
+
+Find 3 in inorder:
+[9, 3, 15, 20, 7]
+    ↑
+
+
+Its index is 1, so:
+leftSize = 1
+
+
+Create the subarrays:
+Left inorder   = [9]
+Left postorder = [9]
+
+Right inorder   = [15, 20, 7]
+Right postorder = [15, 7, 20]
+
+
+The tree currently contains:
+    3
+
+
+Step 2: Construct left subtree
+Inputs:
+inorder   = [9]
+postorder = [9]
+
+
+The root is 9. Both child ranges are empty, so return the leaf node 9.
+    3
+   /
+  9
+
+
+Step 3: Construct right subtree
+Inputs:
+inorder   = [15, 20, 7]
+postorder = [15, 7, 20]
+
+
+The last postorder element is:
+root = 20
+
+
+Find 20 in inorder:
+[15, 20, 7]
+     ↑
+
+
+Split the arrays:
+Left inorder   = [15]
+Left postorder = [15]
+
+Right inorder   = [7]
+Right postorder = [7]
+
+
+Construct nodes 15 and 7 as the children of 20.
+
+Final tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n^2)\) in the worst case because of repeated searches and array copying.
+- Auxiliary space: \(O(n^2)\) in the worst case because recursive calls can retain copied arrays.
+
+Approach 2 — Recursive Index Ranges + Linear Search
+Instead of creating new arrays at every call, we can pass index ranges into the original arrays.
+
+Your supplied code uses this approach.
+Idea
+Each recursive call receives four boundaries:
+inStart, inEnd
+postStart, postEnd
+
+
+The root is:
+int rootVal = postorder[postEnd];
+
+
+Find this root in the current inorder range.
+
+Then calculate:
+leftSize  = rootIndex - inStart
+rightSize = inEnd - rootIndex
+
+
+The left subtree's postorder segment contains leftSize elements. The right subtree's segment contains rightSize elements immediately before the root.
+Your code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+
+class Solution {
+
+    public TreeNode buildTree(int[] inorder, int[] postorder) {
+        return buildNode(
+                inorder, 0, inorder.length - 1,
+                postorder, 0, postorder.length - 1
+        );
+    }
+
+    public TreeNode buildNode(
+            int inorder[],
+            int inStart,
+            int inEnd,
+            int postorder[],
+            int postStart,
+            int postEnd) {
+
+        if (inStart > inEnd || postStart > postEnd) {
+            return null;
+        }
+
+        int rootVal = postorder[postEnd];
+        TreeNode root = new TreeNode(rootVal);
+
+        int rootIndex = 0;
+
+        for (int i = inStart; i <= inEnd; i++) {
+            if (inorder[i] == rootVal) {
+                rootIndex = i;
+                break;
+            }
+        }
+
+        int leftSize = rootIndex - inStart;
+        int rightSize = inEnd - rootIndex;
+
+        root.left = buildNode(
+                inorder,
+                inStart,
+                rootIndex - 1,
+                postorder,
+                postStart,
+                postStart + leftSize - 1
+        );
+
+        root.right = buildNode(
+                inorder,
+                rootIndex + 1,
+                inEnd,
+                postorder,
+                postEnd - rightSize,
+                postEnd - 1
+        );
+
+        return root;
+    }
+}
+
+
+This works for valid input with unique node values, as guaranteed by LeetCode 106.
+Detailed dry run
+Input:
+inorder   = [9, 3, 15, 20, 7]
+postorder = [9, 15, 7, 20, 3]
+
+
+Call 1: Construct 3
+Initial ranges:
+inStart  = 0
+inEnd    = 4
+postStart = 0
+postEnd   = 4
+
+
+Root:
+rootVal = postorder[4] = 3
+
+
+Inorder root position:
+rootIndex = 1
+
+
+Calculate:
+leftSize  = 1 - 0 = 1
+rightSize = 4 - 1 = 3
+
+
+Left recursive call:
+inorder range   = [0..0] → [9]
+postorder range = [0..0] → [9]
+
+
+Right recursive call:
+inorder range   = [2..4] → [15, 20, 7]
+postorder range = [1..3] → [15, 7, 20]
+
+
+Call 2: Construct 9
+Root:
+postorder[0] = 9
+
+
+There are no nodes on either side. Return the leaf node 9.
+Call 3: Construct 20
+The right subtree's ranges are:
+inorder   = [15, 20, 7]
+postorder = [15, 7, 20]
+
+
+Root:
+rootVal = 20
+rootIndex = 3
+
+
+Calculate:
+leftSize  = 3 - 2 = 1
+rightSize = 4 - 3 = 1
+
+
+The recursive ranges become:
+Left:
+inorder   = [15]
+postorder = [15]
+
+Right:
+inorder   = [7]
+postorder = [7]
+
+
+This creates 15 as the left child of 20 and 7 as its right child.
+
+Final:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+Each node is constructed once, but finding each root can take linear time.
+- Time: \(O(n^2)\) worst case.
+- Auxiliary space: \(O(h)\) for the recursion stack.
+This avoids slicing, but we can still eliminate the repeated linear searches.
+
+Approach 3 — Recursive Index Ranges + HashMap (Optimal)
+This is the most common optimal recursive solution.
+Idea
+Build a HashMap once:
+node value → inorder index
+
+
+For the example:
+9  → 0
+3  → 1
+15 → 2
+20 → 3
+7  → 4
+
+
+Now the root's inorder position can be obtained in average \(O(1)\) time.
+
+Everything else remains the same as Approach 2:
+1. Root = last element of the current postorder range.
+2. Use the map to get its inorder index.
+3. Calculate the left subtree's size.
+4. Recursively construct left and right children.
+Code
+import java.util.*;
+
+class Solution {
+
+    public TreeNode buildTree(int[] inorder, int[] postorder) {
+
+        Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < inorder.length; i++) {
+            map.put(inorder[i], i);
+        }
+
+        return buildNode(
+                inorder, 0, inorder.length - 1,
+                postorder, 0, postorder.length - 1,
+                map
+        );
+    }
+
+    private TreeNode buildNode(
+            int[] inorder,
+            int inStart,
+            int inEnd,
+            int[] postorder,
+            int postStart,
+            int postEnd,
+            Map<Integer, Integer> map) {
+
+        if (inStart > inEnd || postStart > postEnd) {
+            return null;
+        }
+
+        int rootVal = postorder[postEnd];
+        TreeNode root = new TreeNode(rootVal);
+
+        int rootIndex = map.get(rootVal);
+
+        int leftSize = rootIndex - inStart;
+        int rightSize = inEnd - rootIndex;
+
+        root.left = buildNode(
+                inorder,
+                inStart,
+                rootIndex - 1,
+                postorder,
+                postStart,
+                postStart + leftSize - 1,
+                map
+        );
+
+        root.right = buildNode(
+                inorder,
+                rootIndex + 1,
+                inEnd,
+                postorder,
+                postEnd - rightSize,
+                postEnd - 1,
+                map
+        );
+
+        return root;
+    }
+}
+
+
+Detailed dry run
+Input:
+inorder   = [9, 3, 15, 20, 7]
+postorder = [9, 15, 7, 20, 3]
+
+
+Step 1: Build the map
+9  → 0
+3  → 1
+15 → 2
+20 → 3
+7  → 4
+
+
+Step 2: Construct root 3
+Current postorder:
+[9, 15, 7, 20, 3]
+                    ↑
+                   Root
+
+
+Look up:
+rootIndex = map.get(3) = 1
+
+
+Then:
+leftSize = rootIndex - inStart
+         = 1 - 0
+         = 1
+
+
+And:
+rightSize = inEnd - rootIndex
+          = 4 - 1
+          = 3
+
+
+Recursive calls:
+Left:
+inorder   = [9]
+postorder = [9]
+
+Right:
+inorder   = [15, 20, 7]
+postorder = [15, 7, 20]
+
+
+Step 3: Construct right subtree
+Current postorder:
+[15, 7, 20]
+        ↑
+       Root = 20
+
+
+Look up:
+rootIndex = map.get(20) = 3
+
+
+Within the current inorder range, inStart = 2.
+
+So:
+leftSize = 3 - 2 = 1
+rightSize = 4 - 3 = 1
+
+
+Subtrees:
+Left:
+inorder   = [15]
+postorder = [15]
+
+Right:
+inorder   = [7]
+postorder = [7]
+
+
+These are leaf nodes.
+Final tree
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n)\) average, since every node is processed once and HashMap lookups are \(O(1)\) on average.
+- Auxiliary space: \(O(n)\) for the HashMap plus \(O(h)\) recursion stack.
+- Output tree: \(O(n)\) nodes.
+This is the recommended recursive solution.
+
+Approach 4 — Iterative Stack (Optimal Time, No HashMap)
+There is another optimal approach using an explicit stack and an inorder pointer. Instead of searching for roots, it reconstructs the tree from right to left.
+Key idea
+Reverse postorder is:
+Root → Right → Left
+
+
+Reverse inorder is:
+Root → Right → Left
+
+
+These two orders align naturally.
+
+Maintain:
+- A stack of nodes whose left/right structure is still being determined.
+- inorderIndex, starting at the last index of inorder.
+For each next value in postorder, moving backwards:
+- If the stack top doesn't match the current inorder value, attach the new node as its right child.
+- If it does match, pop nodes while they match inorder. Attach the new node as the left child of the last popped node.
+Code
+import java.util.*;
+
+class Solution {
+
+    public TreeNode buildTree(int[] inorder, int[] postorder) {
+
+        if (inorder.length == 0) {
+            return null;
+        }
+
+        TreeNode root =
+                new TreeNode(postorder[postorder.length - 1]);
+
+        Deque<TreeNode> stack = new ArrayDeque<>();
+        stack.push(root);
+
+        int inorderIndex = inorder.length - 1;
+
+        for (int i = postorder.length - 2; i >= 0; i--) {
+
+            TreeNode node = new TreeNode(postorder[i]);
+
+            if (stack.peek().val != inorder[inorderIndex]) {
+
+                // Right subtree is still being built.
+                stack.peek().right = node;
+
+            } else {
+
+                TreeNode parent = null;
+
+                while (!stack.isEmpty()
+                        && inorderIndex >= 0
+                        && stack.peek().val == inorder[inorderIndex]) {
+
+                    parent = stack.pop();
+                    inorderIndex--;
+                }
+
+                // We've completed the right subtree(s).
+                parent.left = node;
+            }
+
+            stack.push(node);
+        }
+
+        return root;
+    }
+}
+
+
+Detailed dry run
+Input:
+inorder   = [9, 3, 15, 20, 7]
+postorder = [9, 15, 7, 20, 3]
+
+
+Initialization
+The last postorder element is 3:
+root = 3
+
+
+Set:
+Stack = [3]
+inorderIndex = 4
+inorder[4] = 7
+
+
+Step 1: Process 20
+The stack top is 3.
+3 != inorder[4] (7)
+
+
+Attach 20 as the right child of 3:
+    3
+     \
+      20
+
+
+Stack:
+[3, 20]   (20 is the top)
+
+
+Step 2: Process 7
+The stack top is 20.
+20 != inorder[4] (7)
+
+
+Attach 7 as the right child of 20:
+    3
+     \
+      20
+        \
+         7
+
+
+Stack:
+[3, 20, 7]
+
+
+Step 3: Process 15
+The stack top is 7, which equals inorder[4].
+
+Pop 7:
+inorderIndex = 3
+inorder[3] = 20
+
+
+Stack top 20 also matches. Pop it:
+inorderIndex = 2
+inorder[2] = 15
+
+
+The stack top is now 3, which doesn't match 15.
+
+The last popped node is 20, so attach 15 as its left child:
+       3
+        \
+         20
+        /  \
+       15   7
+
+
+Push 15 onto the stack.
+Step 4: Process 9
+The stack top 15 matches inorder[2].
+
+Pop 15:
+inorderIndex = 1
+inorder[1] = 3
+
+
+The stack top 3 also matches. Pop it:
+inorderIndex = 0
+inorder[0] = 9
+
+
+Now the last popped node is 3.
+
+Attach 9 as its left child.
+
+Final tree:
+             3
+            / \
+           9   20
+              /  \
+             15   7
+
+
+Complexity
+- Time: \(O(n)\), because each node is pushed and popped at most once.
+- Auxiliary space: \(O(h)\) for the stack, worst case \(O(n)\).
+This is optimal in time and avoids a HashMap, although the stack logic is harder to derive and remember.
+
+Comparison of All Approaches
+Approach	Technique	Time	Auxiliary space
+1. Brute force	Array slicing + linear search	\(O(n^2)\) worst	\(O(n^2)\) worst
+2. Index ranges	Linear search in inorder	\(O(n^2)\) worst	\(O(h)\)
+3. HashMap + recursion	O(1) average root lookup	\(O(n)\) average	\(O(n)\)
+4. Iterative stack	Inorder pointer + stack	\(O(n)\)	\(O(h)\)
+
+Which approach should you remember?
+For interviews, I'd prioritize Approach 3: HashMap + recursive index ranges. It's easier to explain and debug than the iterative stack version.
+
+The most important formula is:
+int rootIndex = map.get(postorder[postEnd]);
+int leftSize = rootIndex - inStart;
+
+
+Then:
+// Left subtree
+inStart ... rootIndex - 1
+postStart ... postStart + leftSize - 1
+
+// Right subtree
+rootIndex + 1 ... inEnd
+postEnd - rightSize ... postEnd - 1
+
+
+Final mental model
+Postorder's last element → Root
+Inorder's root position  → Split
+Number of nodes left     → leftSize
+Recurse on left and right
+
+
+Remember: In LeetCode 105, the root comes from the start of preorder. In LeetCode 106, the root comes from the end of postorder. The overall divide-and-conquer logic is otherwise very similar.
