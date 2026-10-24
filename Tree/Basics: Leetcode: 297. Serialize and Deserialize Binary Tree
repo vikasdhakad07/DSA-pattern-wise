@@ -1,0 +1,775 @@
+LeetCode 297 — Serialize and Deserialize Binary Tree
+1. Problem understanding
+This problem asks us to implement two operations:
+
+Serialize: Convert a binary tree into a string.
+
+Deserialize: Convert that string back into the original binary tree.
+
+For example:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+One possible serialization is:
+"1,2,3,null,null,4,5,null,null,null,null"
+
+
+Deserializing this string must reconstruct the same tree, including its missing children.
+
+The key requirement is:
+The serialized string must preserve both the node values and the tree's structure.
+
+
+2. Why can't we store only node values?
+Consider two different trees:
+Tree A:       1          Tree B:       1
+             /                          \
+            2                            2
+
+
+If we store only the node values in level order, both produce:
+"1,2"
+
+
+But the structures are different.
+
+Therefore, we need null markers to represent missing children.
+
+For example:
+Tree A → "1,2,null,null,null"
+Tree B → "1,null,2,null,null"
+
+
+Now we can distinguish them and reconstruct the correct structure.
+
+Unlike some algorithmic problems, there isn't a meaningful progression from an \(O(n^2)\) solution to an \(O(n)\) solution here. The main approaches use different serialization formats, and all the standard correct approaches take \(O(n)\) time.
+
+We'll cover three practical approaches.
+Approach 1 — BFS Level Order with Null Markers
+This is your provided approach.
+Idea
+We serialize the tree using level-order traversal (BFS).
+
+For every node:
+- If it is null, append "null,".
+- Otherwise, append its value, then enqueue its left and right children.
+During deserialization, we read the values in the same order and reconstruct each node's children.
+Serialization pattern
+Queue
+  ↓
+Poll node
+  ↓
+Is null?
+ /       \
+Yes       No
+ ↓         ↓
+"null"   Append value
+           ↓
+       Enqueue children
+
+
+Your code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+public class Codec {
+
+    // Encodes a tree to a single string.
+    public String serialize(TreeNode root) {
+        if(root==null){
+            return "";
+        }
+
+        StringBuilder sb=new StringBuilder();
+        Queue<TreeNode> q=new LinkedList<>();
+        q.add(root);
+
+        while(!q.isEmpty()){
+            TreeNode node=q.poll();
+
+            if(node==null){
+                sb.append("null,");
+                continue;
+            }
+
+            sb.append(node.val+",");
+            q.add(node.left);
+            q.add(node.right);
+        }
+
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
+    }
+
+    // Decodes your encoded data to tree.
+    public TreeNode deserialize(String data) {
+        if(data.isEmpty()) return null;
+
+        String strs[]=data.split(",");
+        int index=0;
+
+        TreeNode root=new TreeNode(
+            Integer.parseInt(strs[index++])
+        );
+
+        Queue<TreeNode> q=new LinkedList<>();
+        q.add(root);
+
+        while(!q.isEmpty()){
+            TreeNode node=q.poll();
+
+            if(!strs[index].equals("null")){
+                node.left=new TreeNode(
+                    Integer.parseInt(strs[index])
+                );
+                q.add(node.left);
+            }
+            index++;
+
+            if(!strs[index].equals("null")){
+                node.right=new TreeNode(
+                    Integer.parseInt(strs[index])
+                );
+                q.add(node.right);
+            }
+            index++;
+        }
+
+        return root;
+    }
+}
+
+
+Your code works for valid serialized strings produced by its own serialize() method.
+
+Important: Java's LinkedList allows null elements, which this code needs. You cannot simply replace it with ArrayDeque, because ArrayDeque does not allow null elements.
+
+Dry run — Serialization
+Consider:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+Initially:
+Queue  = [1]
+String = ""
+
+
+Step 1: Process node 1
+Append:
+String = "1,"
+
+
+Add its children:
+Queue = [2,3]
+
+
+Step 2: Process node 2
+Append:
+String = "1,2,"
+
+
+Its children are both null:
+Queue = [3,null,null]
+
+
+Step 3: Process node 3
+Append:
+String = "1,2,3,"
+
+
+Enqueue its children:
+Queue = [null,null,4,5]
+
+
+Step 4: Process the two null children of 2
+Both produce "null,".
+String = "1,2,3,null,null,"
+
+
+Queue:
+[4,5]
+
+
+Step 5: Process nodes 4 and 5
+Append their values:
+String = "1,2,3,null,null,4,5,"
+
+
+Each is a leaf, so each adds two null children.
+
+Finally, the queue contains four nulls, producing:
+"1,2,3,null,null,4,5,null,null,null,null,"
+
+
+The code removes the last comma.
+
+Final serialized string:
+"1,2,3,null,null,4,5,null,null,null,null"
+
+
+
+Dry run — Deserialization
+Given:
+"1,2,3,null,null,4,5,null,null,null,null"
+
+
+Split it into tokens:
+Index:  0   1   2     3      4   5  6
+Token:  1   2   3   null   null  4  5
+
+
+There are also four trailing null tokens at indices 7–10.
+Step 1: Create root
+root = 1
+Queue = [1]
+index = 1
+
+
+Step 2: Process node 1
+Read its left child:
+strs[1] = "2"
+
+
+Create node 2.
+
+Read its right child:
+strs[2] = "3"
+
+
+Create node 3.
+
+Tree:
+    1
+   / \
+  2   3
+
+
+Queue:
+[2,3]
+
+
+Step 3: Process node 2
+Read:
+left  = null
+right = null
+
+
+No child nodes are created.
+
+Queue:
+[3]
+
+
+Step 4: Process node 3
+Read:
+left  = 4
+right = 5
+
+
+Create nodes 4 and 5.
+
+Tree:
+    1
+   / \
+  2   3
+     / \
+    4   5
+
+
+Queue:
+[4,5]
+
+
+Step 5: Process nodes 4 and 5
+Both have two null children, so no new nodes are created.
+
+Queue becomes empty.
+
+The reconstructed tree is identical to the original.
+Complexity
+For \(n\) nodes:
+- Time: \(O(n)\) for serialization and \(O(n)\) for deserialization.
+- Auxiliary queue space: \(O(w)\), where \(w\) is the maximum tree width.
+- Serialized data: \(O(n)\) tokens, including null markers.
+Your BFS approach is a good, straightforward solution. Its decoder, however, assumes the input string came from your serializer and therefore contains enough tokens for every non-null node. We can make that logic more robust.
+
+Approach 2 — DFS Preorder with Null Markers
+This is another standard solution and is often the easiest recursive codec to explain.
+Idea
+Instead of level order, use preorder traversal:
+Root → Left → Right
+
+
+For each node:
+- If it is null, append #.
+- Otherwise, append its value, then serialize its left and right subtrees.
+We use # as the null marker instead of "null".
+
+For example:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+Preorder serialization:
+"1,2,#,#,3,4,#,#,5,#,#"
+
+
+Why this is sufficient
+Preorder tells us the next node to create. The null markers tell us exactly when a subtree ends.
+
+During deserialization:
+1. Read a token.
+2. If it is #, return null.
+3. Otherwise, create a node.
+4. Recursively construct the left child.
+5. Recursively construct the right child.
+
+Code
+import java.util.*;
+
+public class Codec {
+
+    // Serialize using preorder DFS.
+    public String serialize(TreeNode root) {
+        StringBuilder sb = new StringBuilder();
+        encode(root, sb);
+
+        // Remove the final comma.
+        sb.setLength(sb.length() - 1);
+
+        return sb.toString();
+    }
+
+    private void encode(TreeNode root, StringBuilder sb) {
+        if (root == null) {
+            sb.append("#,");
+            return;
+        }
+
+        sb.append(root.val).append(",");
+
+        encode(root.left, sb);
+        encode(root.right, sb);
+    }
+
+    // Deserialize using preorder DFS.
+    public TreeNode deserialize(String data) {
+        String[] tokens = data.split(",");
+        int[] index = {0};
+
+        return decode(tokens, index);
+    }
+
+    private TreeNode decode(String[] tokens, int[] index) {
+        String token = tokens[index[0]++];
+
+        if (token.equals("#")) {
+            return null;
+        }
+
+        TreeNode root = new TreeNode(
+            Integer.parseInt(token)
+        );
+
+        root.left = decode(tokens, index);
+        root.right = decode(tokens, index);
+
+        return root;
+    }
+}
+
+
+This version uses "#" to represent null, including an empty tree, which serializes as "#" and deserializes to null.
+Dry run — Serialization
+Tree:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+Call:
+serialize(root);
+
+
+Visit node 1
+Append:
+1,
+
+
+Go left.
+Visit node 2
+Append:
+1,2,
+
+
+Its left and right children are null:
+1,2,#,#,
+
+
+Return to 1, then go right.
+Visit node 3
+Append:
+1,2,#,#,3,
+
+
+Visit its left child 4:
+1,2,#,#,3,4,
+
+
+The two children of 4 are null:
+1,2,#,#,3,4,#,#,
+
+
+Visit right child 5:
+1,2,#,#,3,4,#,#,5,
+
+
+Its two children are null:
+1,2,#,#,3,4,#,#,5,#,#,
+
+
+Remove the last comma.
+
+Final:
+"1,2,#,#,3,4,#,#,5,#,#"
+
+
+
+Dry run — Deserialization
+Given:
+"1,2,#,#,3,4,#,#,5,#,#"
+
+
+Tokens:
+[1, 2, #, #, 3, 4, #, #, 5, #, #]
+
+
+The index starts at 0.
+Step 1: Read 1
+Create root 1.
+
+Recursively build its left subtree.
+Step 2: Read 2
+Create node 2 as the left child of 1.
+
+Read the next token:
+#
+
+
+So:
+2.left = null
+
+
+Read the next token:
+#
+
+
+So:
+2.right = null
+
+
+The left subtree is complete.
+Step 3: Construct the right subtree of 1
+Read:
+3
+
+
+Create node 3.
+
+Its left subtree begins with 4:
+3.left = 4
+
+
+Read two # tokens:
+4.left = null
+4.right = null
+
+
+Then read 5:
+3.right = 5
+
+
+Read two more # tokens:
+5.left = null
+5.right = null
+
+
+Final tree:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+The structure is recovered exactly.
+Complexity
+- Time: \(O(n)\) for serialization and deserialization.
+- Auxiliary space: \(O(h)\) recursion stack, excluding the string/tokens and reconstructed tree.
+- Serialized data: \(O(n)\).
+This approach is especially attractive because the recursive decoder is short and doesn't need a queue or parent bookkeeping.
+
+Approach 3 — Compact BFS with Trailing Nulls Removed
+Your BFS serializer preserves all null child positions. However, the trailing null markers often aren't necessary.
+
+For example, a serialized string might end with:
+...,null,null,null,null
+
+
+After we've recorded all non-null nodes, the remaining trailing null markers can be omitted. Any missing trailing child tokens will be treated as null during deserialization.
+
+This keeps the same BFS logic while sometimes producing a shorter string.
+Code
+import java.util.*;
+
+public class Codec {
+
+    public String serialize(TreeNode root) {
+        if (root == null) {
+            return "";
+        }
+
+        List<String> tokens = new ArrayList<>();
+        Queue<TreeNode> q = new LinkedList<>();
+        q.offer(root);
+
+        while (!q.isEmpty()) {
+            TreeNode node = q.poll();
+
+            if (node == null) {
+                tokens.add("null");
+                continue;
+            }
+
+            tokens.add(String.valueOf(node.val));
+            q.offer(node.left);
+            q.offer(node.right);
+        }
+
+        // Trailing nulls are unnecessary.
+        while (!tokens.isEmpty()
+                && tokens.get(tokens.size() - 1).equals("null")) {
+            tokens.remove(tokens.size() - 1);
+        }
+
+        return String.join(",", tokens);
+    }
+
+    public TreeNode deserialize(String data) {
+        if (data == null || data.isEmpty()) {
+            return null;
+        }
+
+        String[] tokens = data.split(",");
+
+        TreeNode root =
+            new TreeNode(Integer.parseInt(tokens[0]));
+
+        Queue<TreeNode> q = new LinkedList<>();
+        q.offer(root);
+
+        int index = 1;
+
+        while (!q.isEmpty() && index < tokens.length) {
+            TreeNode node = q.poll();
+
+            // Left child
+            if (index < tokens.length
+                    && !tokens[index].equals("null")) {
+
+                node.left = new TreeNode(
+                    Integer.parseInt(tokens[index])
+                );
+
+                q.offer(node.left);
+            }
+            index++;
+
+            // Right child
+            if (index < tokens.length
+                    && !tokens[index].equals("null")) {
+
+                node.right = new TreeNode(
+                    Integer.parseInt(tokens[index])
+                );
+
+                q.offer(node.right);
+            }
+            index++;
+        }
+
+        return root;
+    }
+}
+
+
+Dry run — Serialization
+Use the same tree:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+The full BFS serialization is:
+1,2,3,null,null,4,5,null,null,null,null
+
+
+Remove trailing nulls:
+1,2,3,null,null,4,5
+
+
+This is the compact serialized string.
+Dry run — Deserialization
+Input:
+"1,2,3,null,null,4,5"
+
+
+Create the root:
+root = 1
+Queue = [1]
+index = 1
+
+
+Process node 1
+Read:
+left  = 2
+right = 3
+
+
+Queue:
+[2,3]
+
+
+Process node 2
+Read:
+left  = null
+right = null
+
+
+Queue:
+[3]
+
+
+Process node 3
+Read:
+left  = 4
+right = 5
+
+
+Queue:
+[4,5]
+
+
+Now all serialized tokens have been consumed. Nodes 4 and 5 have no additional tokens, so their children remain null by default.
+
+Reconstructed tree:
+                 1
+               /   \
+              2     3
+                   / \
+                  4   5
+
+
+Complexity
+- Time: \(O(n)\) for serialization and deserialization.
+- Queue space: \(O(w)\), where \(w\) is the maximum width.
+- Serialized data: \(O(n)\) worst case, but trailing nulls are removed.
+This is an improvement in encoded-string size for many trees, not an asymptotic time improvement.
+
+Approach Comparison
+Approach	Traversal	Null markers	Time	Main advantage
+1. Your code	BFS	All child nulls	\(O(n)\)	Simple level-order logic
+2. DFS codec	Preorder DFS	Explicit # markers	\(O(n)\)	Short recursive decoder
+3. Compact BFS	BFS	Omits trailing nulls	\(O(n)\)	Often shorter serialized string
+
+All three valid approaches are asymptotically optimal. A correct codec must encode every node and enough information to recover the structure.
+Which approach should you use?
+For interviews, I recommend Approach 2: preorder DFS with null markers. Its serializer and deserializer follow the same recursive structure, making it easy to reason about.
+
+Your BFS approach is equally valid and a good choice if you're more comfortable with queues and level-order traversal. Approach 3 is useful when reducing serialized-string size is desirable.
+
+Important edge cases
+1. Empty tree
+DFS version:
+serialize(null) = "#"
+deserialize("#") = null
+
+
+Your BFS version:
+serialize(null) = ""
+deserialize("") = null
+
+
+Both conventions are valid as long as the encoder and decoder agree.
+2. Single node
+    7
+
+
+DFS representation:
+"7,#,#"
+
+
+BFS representation with all nulls:
+"7,null,null"
+
+
+Both reconstruct the single-node tree.
+3. Left-skewed tree
+       1
+      /
+     2
+    /
+   3
+
+
+The null markers are essential to distinguish a left child from a right child.
+4. Negative values
+For a tree containing -1 and -20, serializing their integer values as strings works correctly; Integer.parseInt() handles negative values.
+
+Common mistakes to avoid
+1. Forgetting null markers. Values alone can't uniquely describe a tree's structure.
+
+2. Using inconsistent traversal formats. A preorder decoder must read preorder data; a BFS decoder must read level-order data.
+
+3. Not advancing the token index. Every consumed child token must advance the index, whether it represents a node or null.
+
+4. Enqueuing nulls with ArrayDeque. ArrayDeque rejects null elements. The supplied code uses LinkedList, which permits them.
+
+5. Forgetting the empty-tree case. Handle null roots explicitly in both serialization and deserialization.
+
+Final memory template
+For this problem, remember:
+Serialize:
+Tree → String
+Preserve node values + missing-child information
+
+Deserialize:
+String → Tree
+Read tokens in the same order
+Rebuild children
+
+
+The reusable principle is:
+
+Serialization must preserve structure, not just values. Null markers make the structure unambiguous; BFS and DFS are two equally valid ways to organize those markers.
