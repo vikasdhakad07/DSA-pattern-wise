@@ -1,0 +1,960 @@
+LeetCode 114 — Flatten Binary Tree to Linked List
+1. Problem Understanding
+Given the root of a binary tree, flatten it into a linked list in place.
+
+The linked list must follow the tree's preorder traversal:
+Root → Left → Right
+
+
+After flattening:
+- Every node's left pointer must be null.
+- Every node's right pointer must point to the next node in preorder.
+- The original tree is modified; we don't return a new tree.
+Example
+Input tree:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Preorder traversal:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+Expected flattened tree:
+1
+ \
+  2
+   \
+    3
+     \
+      4
+       \
+        5
+         \
+          6
+
+
+In other words:
+1.left = null       1.right = 2
+2.left = null       2.right = 3
+3.left = null       3.right = 4
+4.left = null       4.right = 5
+5.left = null       5.right = 6
+6.left = null       6.right = null
+
+
+Important: We aren't creating a conventional linked list with separate next pointers. We're reusing the existing tree's right pointers.
+
+Approach 1 — Brute Force: Recursive Flattening + Find the Tail
+Idea
+Flatten the left and right subtrees recursively first.
+
+Then, if the current node has a left subtree:
+1. Find the rightmost node of the already-flattened left subtree.
+2. Attach the original right subtree to that node.
+3. Move the left subtree to the right.
+4. Set the left pointer to null.
+The steps look like this:
+Before:
+
+       1
+      / \
+     2   5
+    / \
+   3   4
+
+After flattening left and right subtrees:
+
+       1
+      / \
+     2   5
+      \ 
+       3
+        \
+         4
+
+Find tail of left chain → 4
+Attach original right subtree → 5
+Move left chain to right
+
+
+Code
+class Solution {
+
+    public void flatten(TreeNode root) {
+
+        if (root == null) {
+            return;
+        }
+
+        // Flatten both subtrees first.
+        flatten(root.left);
+        flatten(root.right);
+
+        if (root.left != null) {
+
+            // Find the tail of the flattened left subtree.
+            TreeNode tail = root.left;
+
+            while (tail.right != null) {
+                tail = tail.right;
+            }
+
+            // Attach original right subtree to the tail.
+            tail.right = root.right;
+
+            // Move left subtree to the right.
+            root.right = root.left;
+            root.left = null;
+        }
+    }
+}
+
+
+Dry run
+Use:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Step 1: Flatten node 2
+Its left subtree is 3, and its right subtree is 4.
+
+Both are leaves, so they are already flattened.
+
+At node 2, find the rightmost node of its left subtree:
+tail = 3
+
+
+Attach 4:
+3.right = 4
+
+
+Move the left subtree to the right:
+2.right = 3
+2.left = null
+
+
+Subtree becomes:
+2
+ \
+  3
+   \
+    4
+
+
+Step 2: Flatten node 5
+Node 5 has no left child and has right child 6, so it remains:
+5
+ \
+  6
+
+
+Step 3: Flatten node 1
+Now its subtrees are:
+Left:
+2 → 3 → 4
+
+Right:
+5 → 6
+
+
+Find the tail of the left chain:
+tail = 2 → 3 → 4
+                 ↑
+
+
+Attach the right chain:
+4.right = 5
+
+
+Then:
+1.right = 2
+1.left = null
+
+
+Final chain:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+Complexity
+- Time: \(O(n^2)\) in the worst case, because we repeatedly search for the tail of flattened subtrees.
+- Auxiliary space: \(O(h)\) for recursion.
+This approach works, but repeatedly searching for a tail is unnecessary.
+
+Approach 2 — Preorder Traversal + Store Nodes in a List
+Idea
+We know that the required linked-list order is preorder.
+
+So we can first collect all nodes using preorder traversal:
+Root → Left → Right
+
+
+Then connect consecutive nodes:
+nodes[0].right = nodes[1]
+nodes[1].right = nodes[2]
+nodes[2].right = nodes[3]
+...
+
+
+Set every node's left pointer to null.
+
+This is straightforward, but it uses extra memory to store all node references.
+Code
+import java.util.*;
+
+class Solution {
+
+    public void flatten(TreeNode root) {
+
+        if (root == null) {
+            return;
+        }
+
+        List<TreeNode> nodes = new ArrayList<>();
+
+        preorder(root, nodes);
+
+        for (int i = 0; i < nodes.size(); i++) {
+
+            TreeNode curr = nodes.get(i);
+
+            curr.left = null;
+
+            if (i + 1 < nodes.size()) {
+                curr.right = nodes.get(i + 1);
+            } else {
+                curr.right = null;
+            }
+        }
+    }
+
+    private void preorder(
+            TreeNode root,
+            List<TreeNode> nodes) {
+
+        if (root == null) {
+            return;
+        }
+
+        nodes.add(root);
+
+        preorder(root.left, nodes);
+        preorder(root.right, nodes);
+    }
+}
+
+
+Dry run
+Tree:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Step 1: Collect preorder
+Visit:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+List:
+nodes = [1, 2, 3, 4, 5, 6]
+
+
+Step 2: Reconnect nodes
+For i = 0:
+1.left = null
+1.right = 2
+
+
+For i = 1:
+2.left = null
+2.right = 3
+
+
+For i = 2:
+3.left = null
+3.right = 4
+
+
+For i = 3:
+4.left = null
+4.right = 5
+
+
+For i = 4:
+5.left = null
+5.right = 6
+
+
+For i = 5:
+6.left = null
+6.right = null
+
+
+Final:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+Complexity
+- Time: \(O(n)\)
+- Auxiliary space: \(O(n)\) for the list, plus \(O(h)\) recursion space.
+This approach has optimal time complexity but doesn't satisfy a constant-extra-space goal.
+
+Approach 3 — Iterative Preorder Using a Stack
+This approach also follows preorder, but instead of recursion or a node list, it uses a stack to control the traversal.
+Idea
+For each node popped from the stack:
+1. Connect the previous node's right pointer to the current node.
+2. Set the previous node's left pointer to null.
+3. Push the current node's right child first.
+4. Push the current node's left child second.
+5. Set the current node as the previous node.
+Why push right before left?
+
+Because the stack is LIFO (last in, first out), so the left child will be processed first.
+Code
+import java.util.*;
+
+class Solution {
+
+    public void flatten(TreeNode root) {
+
+        if (root == null) {
+            return;
+        }
+
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(root);
+
+        TreeNode prev = null;
+
+        while (!stack.isEmpty()) {
+
+            TreeNode curr = stack.pop();
+
+            // Save children before rewiring pointers.
+            if (curr.right != null) {
+                stack.push(curr.right);
+            }
+
+            if (curr.left != null) {
+                stack.push(curr.left);
+            }
+
+            // Connect previous node to current node.
+            if (prev != null) {
+                prev.left = null;
+                prev.right = curr;
+            }
+
+            prev = curr;
+        }
+
+        // Ensure the final node terminates the list.
+        prev.left = null;
+        prev.right = null;
+    }
+}
+
+
+Dry run
+Initial tree:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Initially:
+Stack = [1]
+prev = null
+
+
+Iteration 1 — Pop 1
+Push right child 5, then left child 2:
+Stack = [5, 2]
+
+
+prev is null, so no connection is needed.
+
+Set:
+prev = 1
+
+
+Iteration 2 — Pop 2
+Push:
+5 and 4? 
+
+
+More precisely, node 2 has right child 4 and left child 3, so push 4, then 3.
+Stack = [5, 4, 3]
+
+
+Connect the previous node:
+1.right = 2
+1.left = null
+
+
+Set:
+prev = 2
+
+
+Iteration 3 — Pop 3
+Node 3 has no children.
+
+Connect:
+2.right = 3
+2.left = null
+
+
+Set:
+prev = 3
+
+
+Iteration 4 — Pop 4
+Connect:
+3.right = 4
+3.left = null
+
+
+Set:
+prev = 4
+
+
+Iteration 5 — Pop 5
+Connect:
+4.right = 5
+4.left = null
+
+
+Set:
+prev = 5
+
+
+Iteration 6 — Pop 6
+Connect:
+5.right = 6
+5.left = null
+
+
+Set:
+prev = 6
+
+
+Stack is empty. Ensure:
+6.left = null
+6.right = null
+
+
+Final chain:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+Complexity
+- Time: \(O(n)\)
+- Auxiliary space: \(O(n)\) worst case for the stack.
+This is more efficient than Approach 1, but uses a stack.
+
+Approach 4 — Recursive Reverse Preorder (Your Code)
+This is a very elegant solution. Rather than traversing in normal preorder, we process the tree in reverse preorder:
+Right → Left → Root
+
+
+A prev pointer remembers the node that should come immediately after the current node in the final flattened list.
+Key idea
+Suppose we process the nodes in this order:
+6 → 5 → 4 → 3 → 2 → 1
+
+
+When processing a node, we already know what its right pointer should reference:
+root.right = prev;
+root.left = null;
+prev = root;
+
+
+At node 6:
+6.right = null
+prev = 6
+
+
+At node 5:
+5.right = 6
+prev = 5
+
+
+At node 4:
+4.right = 5
+prev = 4
+
+
+Continue until node 1.
+
+This builds the final preorder chain from back to front.
+Your code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    TreeNode prev;
+
+    public void flatten(TreeNode root) {
+        if(root==null){
+            prev=null;
+            return;
+        }
+        solve(root);
+        prev=null;
+    }
+
+    public void solve(TreeNode root){
+        if(root==null){
+            return;
+        }
+        solve(root.right);
+        solve(root.left);
+        root.right=prev;
+        root.left=null;
+        prev=root;
+    }
+}
+
+
+Your code is correct. Resetting prev before beginning the traversal is also a clean defensive practice if you want to reuse the same Solution instance:
+class Solution {
+
+    TreeNode prev;
+
+    public void flatten(TreeNode root) {
+        prev = null;
+        solve(root);
+    }
+
+    private void solve(TreeNode root) {
+        if (root == null) {
+            return;
+        }
+
+        solve(root.right);
+        solve(root.left);
+
+        root.right = prev;
+        root.left = null;
+        prev = root;
+    }
+}
+
+
+The second version has the same algorithm and makes the initialization explicit.
+
+Detailed dry run of your code
+Tree:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Initial:
+prev = null
+
+
+The helper calls proceed in this order:
+solve(1)
+  solve(5)
+    solve(6)
+  solve(2)
+    solve(4)
+    solve(3)
+
+
+The actual node-processing order is:
+6 → 5 → 4 → 3 → 2 → 1
+
+
+Step 1 — Process node 6
+Both children are null, so the two recursive calls return.
+
+Execute:
+root.right = prev;
+root.left = null;
+prev = root;
+
+
+Result:
+6.right = null
+prev = 6
+
+
+Step 2 — Process node 5
+The right subtree (6) has been processed. Its left child is null.
+
+Now:
+root = 5
+prev = 6
+
+
+Execute:
+5.right = 6;
+5.left = null;
+prev = 5;
+
+
+Current chain:
+5 → 6
+
+
+Step 3 — Process node 4
+We return to node 2 and process its right subtree first.
+
+At 4:
+prev = 5
+
+
+Execute:
+4.right = 5
+4.left = null
+prev = 4
+
+
+Chain:
+4 → 5 → 6
+
+
+Step 4 — Process node 3
+Now process the left subtree of 2, which is node 3.
+
+Current:
+prev = 4
+
+
+Execute:
+3.right = 4
+3.left = null
+prev = 3
+
+
+Chain:
+3 → 4 → 5 → 6
+
+
+Step 5 — Process node 2
+Both child subtrees have been processed.
+
+Current:
+prev = 3
+
+
+Execute:
+2.right = 3
+2.left = null
+prev = 2
+
+
+Chain:
+2 → 3 → 4 → 5 → 6
+
+
+Step 6 — Process node 1
+Finally:
+prev = 2
+
+
+Execute:
+1.right = 2
+1.left = null
+prev = 1
+
+
+Final tree:
+1
+ \
+  2
+   \
+    3
+     \
+      4
+       \
+        5
+         \
+          6
+
+
+The original preorder order is preserved.
+Complexity
+Every node is visited once:
+- Time: \(O(n)\)
+- Auxiliary space: \(O(h)\) for the recursion stack.
+For a balanced tree, \(h=O(\log n)\). For a skewed tree, \(h=O(n)\).
+
+This is one of the best approaches to remember because it is concise and performs the flattening in place.
+
+Approach 5 — Optimal Iterative In-Place (Morris-Style)
+This approach achieves \(O(n)\) time and \(O(1)\) auxiliary space without a recursion stack, explicit stack, or node list.
+Key idea
+Walk through the tree using a pointer curr.
+
+When curr.left exists:
+1. Find the rightmost node in the left subtree.
+2. Connect that rightmost node to curr.right.
+3. Move the left subtree to the right.
+4. Clear curr.left.
+Then continue along curr.right.
+Before:
+
+       curr
+       /  \
+    left  right
+
+After:
+
+       curr
+          \
+          left
+              \
+            ...tail
+                  \
+                  right
+
+
+This preserves preorder: root, then left subtree, then right subtree.
+Code
+class Solution {
+
+    public void flatten(TreeNode root) {
+
+        TreeNode curr = root;
+
+        while (curr != null) {
+
+            if (curr.left != null) {
+
+                // Find the rightmost node in the left subtree.
+                TreeNode predecessor = curr.left;
+
+                while (predecessor.right != null) {
+                    predecessor = predecessor.right;
+                }
+
+                // Attach the original right subtree.
+                predecessor.right = curr.right;
+
+                // Move the left subtree to the right.
+                curr.right = curr.left;
+                curr.left = null;
+            }
+
+            // Continue along the flattened chain.
+            curr = curr.right;
+        }
+    }
+}
+
+
+Detailed dry run
+Start with:
+                 1
+               /   \
+              2     5
+             / \     \
+            3   4     6
+
+
+Initially:
+curr = 1
+
+
+Step 1 — Process node 1
+Its left child is 2.
+
+Find the rightmost node in its left subtree:
+2 → 4
+
+
+So:
+predecessor = 4
+
+
+Attach the original right subtree:
+4.right = 5
+
+
+Move the left subtree to the right:
+1.right = 2
+1.left = null
+
+
+The tree now looks like:
+1
+ \
+  2
+ / \
+3   4
+     \
+      5
+       \
+        6
+
+
+Set:
+curr = 2
+
+
+Step 2 — Process node 2
+Node 2 has a left child 3.
+
+Find the rightmost node in this left subtree:
+predecessor = 3
+
+
+Attach the original right subtree of 2:
+3.right = 4
+
+
+Move the left subtree to the right:
+2.right = 3
+2.left = null
+
+
+The tree becomes:
+1
+ \
+  2
+   \
+    3
+     \
+      4
+       \
+        5
+         \
+          6
+
+
+Set:
+curr = 3
+
+
+Step 3 — Process node 3
+No left child exists, so no rewiring is needed.
+curr = 3.right = 4
+
+
+Step 4 — Process node 4
+No left child exists:
+curr = 4.right = 5
+
+
+Step 5 — Process node 5
+No left child exists:
+curr = 5.right = 6
+
+
+Step 6 — Process node 6
+No left child exists:
+curr = 6.right = null
+
+
+Loop ends.
+
+Final flattened tree:
+1 → 2 → 3 → 4 → 5 → 6
+
+
+All left pointers are null.
+Complexity
+- Time: \(O(n)\) amortized.
+- Auxiliary space: \(O(1)\).
+Although the inner loop searches for a predecessor, the right-edge traversals across these searches are amortized linear overall; the algorithm doesn't repeatedly traverse every subtree.
+
+This is the best approach if the interviewer specifically asks for an in-place solution with constant extra space.
+
+Comparison of All Approaches
+Approach	Main technique	Time	Auxiliary space
+1. Recursive tail search	Flatten subtrees, find tail, splice	\(O(n^2)\) worst	\(O(h)\)
+2. Preorder + list	Store nodes and reconnect	\(O(n)\)	\(O(n)\)
+3. Iterative stack	Generate preorder and link previous node	\(O(n)\)	\(O(n)\)
+4. Reverse preorder — your code	Right → Left → Root, using prev	\(O(n)\)	\(O(h)\)
+5. Morris-style in-place	Predecessor rewiring	\(O(n)\)	\(O(1)\)
+
+Here:
+- \(n\) = number of nodes.
+- \(h\) = height of the tree.
+Which approach should you remember?
+For normal interview preparation, I recommend these two:
+
+Recursive reverse preorder: easiest elegant recursive solution.
+solve(root.right);
+solve(root.left);
+
+root.right = prev;
+root.left = null;
+prev = root;
+
+
+Morris-style in-place: use when constant auxiliary space is important.
+if (curr.left != null) {
+    TreeNode predecessor = curr.left;
+
+    while (predecessor.right != null) {
+        predecessor = predecessor.right;
+    }
+
+    predecessor.right = curr.right;
+    curr.right = curr.left;
+    curr.left = null;
+}
+
+curr = curr.right;
+
+
+
+Important pattern connections
+You have now studied several related tree problems:
+Problem	Core pattern
+105 — Construct from Preorder + Inorder	Root reconstruction and subtree ranges
+106 — Construct from Inorder + Postorder	Reverse-root reconstruction
+257 — Binary Tree Paths	DFS + path tracking
+236 — Lowest Common Ancestor	Postorder DFS + information propagation
+114 — Flatten Binary Tree	Preorder preservation + pointer rewiring
+
+The most important observation in 114 is:
+Flattening is not just traversing preorder. It is also rewiring the existing pointers so the preorder sequence becomes a right-only chain.
+
+Final memory trick
+The required order is:
+Root → Left → Right
+
+
+Two ways to obtain it:
+Option 1:
+Visit preorder and link nodes as you go.
+
+Option 2:
+Process reverse preorder:
+Right → Left → Root
+and link each node to prev.
+
+
+Your provided code is already an excellent optimal solution in time complexity: \(O(n)\) time and \(O(h)\) recursion space. Use the Morris-style implementation when you need \(O(1)\) auxiliary space.
