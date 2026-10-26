@@ -1,0 +1,308 @@
+GFG — Ceil in a Binary Search Tree (BST)
+The goal is to understand the problem from brute force to the most optimal approach, with Java code, dry runs, and complexity analysis for each approach.
+1. Understand the problem
+Given the root of a Binary Search Tree and an integer x, find the ceil of x in the BST.
+
+The ceil is the smallest value that is greater than or equal to x.
+- If x exists in the BST, the answer is x.
+- If x does not exist, return the smallest value greater than x.
+- If no such value exists, return -1.
+- If the tree is empty, return -1.
+Example BST:
+Example: x = 5 → ceil = 6
+
+The values in sorted order are 2, 4, 6, 8, 10, 12, 14. The first value greater than or equal to 5 is 6.
+
+Key BST property:
+- If root.data < x, the root cannot be the answer, and neither can anything in its left subtree. Move right.
+- If root.data > x, the root is a possible answer. Save it and move left to search for a smaller valid answer.
+- If root.data == x, return it immediately.
+
+Approach 1: Brute force — Traverse every node
+Idea
+Ignore the BST property and visit every node. Whenever a node value is greater than or equal to x, compare it with the best answer found so far. Keep the smallest qualifying value.
+Java code
+class Solution {
+    int findCeil(Node root, int x) {
+        Integer[] best = {null};
+        dfs(root, x, best);
+
+        return best[0] == null ? -1 : best[0];
+    }
+
+    void dfs(Node root, int x, Integer[] best) {
+        if (root == null) {
+            return;
+        }
+
+        if (root.data >= x &&
+            (best[0] == null || root.data < best[0])) {
+            best[0] = root.data;
+        }
+
+        dfs(root.left, x, best);
+        dfs(root.right, x, best);
+    }
+}
+
+
+Dry run: x = 5
+Start with best = null.
+
+Using the example tree:
+Node visited	Is value ≥ 5?	Best answer
+8	Yes	8
+4	No	8
+2	No	8
+6	Yes, and smaller than 8	6
+12	Yes, but larger than 6	6
+10	Yes, but larger than 6	6
+14	Yes, but larger than 6	6
+
+The traversal eventually visits every node. The final answer is 6.
+Complexity
+- Time: \(O(n)\), because every node is visited.
+- Auxiliary space: \(O(h)\) for the recursive call stack, where \(h\) is the tree height.
+This works, but it wastes time by exploring subtrees that the BST property could eliminate.
+
+Approach 2: Inorder traversal — Find the first value ≥ x
+Idea
+Inorder traversal visits a BST in ascending order:
+
+left → root → right
+
+Therefore, the first encountered node whose value is at least x is automatically the ceil. We can stop as soon as we find it.
+Java code
+import java.util.*;
+
+class Solution {
+    int findCeil(Node root, int x) {
+        Stack<Node> stack = new Stack<>();
+        Node curr = root;
+
+        while (curr != null || !stack.isEmpty()) {
+
+            // Reach the leftmost node
+            while (curr != null) {
+                stack.push(curr);
+                curr = curr.left;
+            }
+
+            curr = stack.pop();
+
+            // Inorder values are sorted
+            if (curr.data >= x) {
+                return curr.data;
+            }
+
+            curr = curr.right;
+        }
+
+        return -1;
+    }
+}
+
+
+Dry run: x = 5
+Inorder traversal generates values in ascending order:
+Visited value	Check	Action
+2	2 < 5	Continue
+4	4 < 5	Continue
+6	6 >= 5	Return 6
+
+The traversal stops at 6; it does not need to visit the remaining nodes.
+Complexity
+- Time: \(O(n)\) in the worst case. For example, if x is larger than all node values, every node may be visited.
+- Auxiliary space: \(O(h)\) for the stack.
+This approach uses the BST's sorted inorder sequence, but it does not exploit the BST property as directly as the next two approaches.
+
+Approach 3: Recursive BST search — Prune unnecessary subtrees
+Idea
+Use the BST property to visit only one path from the root toward a leaf.
+
+Maintain a candidate node:
+- If the current node equals x, return it.
+- If the current node is greater than x, it can be the answer. Save it and recurse left.
+- If the current node is smaller than x, it cannot be the answer. Recurse right while preserving the previous candidate.
+- If we reach null, return the best candidate found.
+Java code
+class Solution {
+    int findCeil(Node root, int x) {
+        Node ans = search(root, x, null);
+        return ans == null ? -1 : ans.data;
+    }
+
+    Node search(Node curr, int x, Node candidate) {
+        if (curr == null) {
+            return candidate;
+        }
+
+        if (curr.data == x) {
+            return curr;
+        }
+
+        if (curr.data > x) {
+            // Current node may be the ceil.
+            return search(curr.left, x, curr);
+        }
+
+        // Current node is too small; move right.
+        return search(curr.right, x, candidate);
+    }
+}
+
+
+Dry run: x = 5
+Using the same BST:
+Current node	Comparison	Candidate	Next step
+8	8 > 5	8	Go left
+4	4 < 5	8	Go right
+6	6 > 5	6	Go left
+null	No node remains	6	Return candidate
+
+Answer: 6
+
+Notice that the algorithm does not visit nodes 2, 10, 12, or 14. The BST property lets us discard those branches.
+Complexity
+- Time: \(O(h)\), because at most one root-to-leaf path is explored.
+- Auxiliary space: \(O(h)\) for the recursive call stack.
+Here, \(h\) is the height of the tree. In a balanced BST, this is typically \(O(\log n)\); in a skewed BST, it can be \(O(n)\).
+
+Approach 4: Iterative BST search — Most optimal
+This is your approach. It uses the same candidate logic as the recursive solution but avoids the recursive call stack.
+Your code
+class Solution {
+    int findCeil(Node root, int x) {
+        // code here
+        if(root==null){
+            return -1;
+        }
+
+        int max=-1;
+        Node curr=root;
+        while(curr!=null){
+            if(curr.data==x){
+                max=curr.data;
+                return max;
+            }
+
+            if(curr.data>x){
+                max=curr.data;
+                curr=curr.left;
+            } else {
+                curr=curr.right;
+            }
+        }
+        return max;
+    }
+}
+
+
+Explanation of your code
+curr points to the node currently being examined. Your variable max stores the best ceil candidate so far—it is not necessarily the maximum value in the tree.
+
+Step 1: Handle an empty tree
+if(root==null){
+    return -1;
+}
+
+
+No node means there is no ceil.
+
+Step 2: Initialize the candidate
+int max=-1;
+Node curr=root;
+
+
+Initially, no candidate has been found, so max is -1.
+
+Step 3: Return immediately on an exact match
+if(curr.data==x){
+    max=curr.data;
+    return max;
+}
+
+
+If the current node equals x, it is the smallest value that is greater than or equal to x.
+
+Step 4: If the current node is greater than x, save it and move left
+if(curr.data>x){
+    max=curr.data;
+    curr=curr.left;
+}
+
+
+The current node is a valid answer. But a smaller valid value might exist in its left subtree, so search there.
+
+Step 5: Otherwise, move right
+else {
+    curr=curr.right;
+}
+
+
+When curr.data < x, neither the current node nor any node in its left subtree can be the ceil. Move right.
+
+Step 6: Return the best candidate
+return max;
+
+
+If the search finishes without an exact match, max stores the smallest qualifying value found. It remains -1 if no qualifying node exists.
+Dry run: x = 5
+Tree:
+        8
+       / \
+      4   12
+     / \  / \
+    2  6 10 14
+
+
+Step	curr.data	Condition	Update max	Next node
+1	8	8 > 5	8	4
+2	4	4 < 5	8	6
+3	6	6 > 5	6	null
+4	null	Loop ends	6	Stop
+
+The function returns 6.
+
+Why does the answer change from 8 to 6? Because 8 was a valid candidate, but when the algorithm found 6, it discovered a smaller valid candidate.
+Dry run: no ceil exists (x = 15)
+Current node	Condition	Action
+8	8 < 15	Go right
+12	12 < 15	Go right
+14	14 < 15	Go right
+null	Search ends	Return -1
+
+No node is greater than or equal to 15, so the answer is -1.
+Complexity
+- Time: \(O(h)\) — only one path through the tree is followed.
+- Auxiliary space: \(O(1)\) — uses a fixed number of variables and no recursion or extra data structure.
+For a balanced BST, the time is \(O(\log n)\). For a skewed BST, the worst-case time is \(O(n)\).
+
+5. Complexity comparison
+Approach	Time complexity	Auxiliary space	Uses BST property efficiently?
+1. Brute-force DFS	\(O(n)\)	\(O(h)\)	No
+2. Inorder traversal	\(O(n)\) worst case	\(O(h)\)	Uses sorted order
+3. Recursive BST search	\(O(h)\)	\(O(h)\)	Yes
+4. Iterative BST search — your code	\(O(h)\)	\(O(1)\)	Yes
+
+Here, \(n\) is the number of nodes and \(h\) is the height of the tree.
+
+Best approach for an interview: Approach 4. It uses the BST property, visits only one path, and requires constant auxiliary space.
+6. Important test cases
+Input condition	Expected result
+Empty tree	-1
+Exact match, such as x = 10	10
+x = 5 in the example tree	6
+x = 13 in the example tree	14
+x = 15, greater than every value	-1
+x = 1, smaller than every value	2
+
+7. The pattern to remember
+Think of ceil search as “save a candidate, then search left for a better one.”
+- curr.data == x → return immediately.
+- curr.data > x → save it and go left.
+- curr.data < x → go right.
+- Search ends → return the saved candidate.
+One final distinction: ceil is greater than or equal to x, not strictly greater than x. That is why your exact-match check is necessary.
+
+Your iterative code is correct for the standard GFG problem conventions, where -1 represents the absence of a ceil.
