@@ -1,0 +1,344 @@
+GFG — Floor in a BST
+We’ll cover the approaches from brute force to the most optimal solution, including Java code, dry runs, complexity analysis, and your exact iterative solution.
+1. Understand the problem
+Given the root of a Binary Search Tree and an integer k, find the floor of k in the BST.
+
+The floor is the largest value less than or equal to k.
+- If k exists in the BST, return k.
+- If k does not exist, return the largest value smaller than k.
+- If every value is greater than k, return -1.
+- If the tree is empty, return -1.
+Consider this BST:
+Example: k = 5 → floor = 4
+
+The BST values in sorted order are:
+
+2, 4, 6, 8, 10, 12, 14
+
+For k = 5, the values less than or equal to 5 are 2 and 4. The largest of them is 4.
+Key observation: BST property
+For every node:
+- Values in its left subtree are smaller.
+- Values in its right subtree are greater.
+This lets us discard unnecessary subtrees instead of visiting every node.
+
+Approach 1: Brute force — Traverse every node
+Idea
+Visit every node in the tree without using the BST property.
+
+Whenever a node's value is at most k, compare it with the best floor found so far. Keep the largest qualifying value.
+Java code
+class Solution {
+    public int findMaxFork(Node root, int k) {
+        Node[] best = new Node[1];
+        dfs(root, k, best);
+
+        return best[0] == null ? -1 : best[0].data;
+    }
+
+    private void dfs(Node root, int k, Node[] best) {
+        if (root == null) {
+            return;
+        }
+
+        if (root.data <= k &&
+            (best[0] == null || root.data > best[0].data)) {
+            best[0] = root;
+        }
+
+        dfs(root.left, k, best);
+        dfs(root.right, k, best);
+    }
+}
+
+
+best is a one-element array so that recursive calls can update the same reference. It stores the node with the largest value found so far that is less than or equal to k.
+Dry run: k = 5
+Using the example tree, the DFS visits the root, then its left subtree, followed by its right subtree.
+Node visited	Is value ≤ 5?	Best floor so far
+8	No	None (-1 in output)
+4	Yes	4
+2	Yes, but smaller than 4	4
+6	No	4
+12	No	4
+10	No	4
+14	No	4
+
+The traversal visits every node, but only values satisfying value <= k can become candidates.
+
+Answer: 4
+Complexity
+- Time: \(O(n)\), because every node is visited.
+- Auxiliary space: \(O(h)\) for the recursion stack.
+Here, \(n\) is the number of nodes and \(h\) is the height of the tree.
+
+This solution is correct, but we can do better by using the BST property.
+
+Approach 2: Inorder traversal — Use the sorted order
+Idea
+Inorder traversal visits a BST in ascending order:
+
+Left → Root → Right
+
+For our tree, the traversal order is:
+
+2 → 4 → 6 → 8 → 10 → 12 → 14
+
+The floor is the last value in this ascending sequence that is less than or equal to k.
+
+We can stop as soon as we encounter a value greater than k, because all subsequent inorder values will be at least as large.
+Java code
+import java.util.*;
+
+class Solution {
+    public int findMaxFork(Node root, int k) {
+        Stack<Node> stack = new Stack<>();
+        Node curr = root;
+        int ans = -1;
+
+        while (curr != null || !stack.isEmpty()) {
+
+            // Reach the leftmost node
+            while (curr != null) {
+                stack.push(curr);
+                curr = curr.left;
+            }
+
+            curr = stack.pop();
+
+            // Values are visited in ascending order
+            if (curr.data > k) {
+                break;
+            }
+
+            // This is a valid floor candidate
+            ans = curr.data;
+
+            curr = curr.right;
+        }
+
+        return ans;
+    }
+}
+
+
+Dry run: k = 5
+Inorder value	Check	ans after processing
+2	2 <= 5	2
+4	4 <= 5	4
+6	6 > 5	Stop; keep 4
+
+The traversal stops at 6. Since the values are sorted, no later value can be a valid floor.
+
+Answer: 4
+Complexity
+- Time: \(O(n)\) in the worst case.
+- Auxiliary space: \(O(h)\) for the stack.
+This approach benefits from sorted inorder order, but the worst-case traversal can still examine every node.
+
+Approach 3: Recursive BST search — Track the best candidate
+Idea
+Instead of traversing the whole tree, follow just one path.
+
+At each node:
+1. If root.data == k, return it immediately because it is the exact floor.
+2. If root.data < k, the current node is a valid candidate. Search the right subtree for a potentially larger valid value.
+3. If root.data > k, the current node is too large. Search the left subtree, preserving the previously found candidate.
+4. If the search reaches null, return the best candidate found.
+Java code
+class Solution {
+    public int findMaxFork(Node root, int k) {
+        Node ans = findFloor(root, k, null);
+        return ans == null ? -1 : ans.data;
+    }
+
+    private Node findFloor(Node curr, int k, Node candidate) {
+        if (curr == null) {
+            return candidate;
+        }
+
+        if (curr.data == k) {
+            return curr;
+        }
+
+        if (curr.data < k) {
+            // Current node is valid; look for a larger one.
+            return findFloor(curr.right, k, curr);
+        }
+
+        // Current node is too large; search left.
+        return findFloor(curr.left, k, candidate);
+    }
+}
+
+
+Dry run: k = 5
+        8
+       / \
+      4   12
+     / \  / \
+    2  6 10 14
+
+
+Initially, candidate = null.
+Step	Current node	Comparison	Candidate	Next step
+1	8	8 > 5	None	Go left
+2	4	4 < 5	4	Go right
+3	6	6 > 5	4	Go left
+4	null	Search ends	4	Return candidate
+
+Why don't we return 4 immediately when we first find it? Because a larger value that is still less than or equal to 5 might exist in the right subtree. For this example, the next value is 6, which is too large, so 4 remains the answer.
+
+Answer: 4
+Complexity
+- Time: \(O(h)\), because only one root-to-leaf path is explored.
+- Auxiliary space: \(O(h)\) for the recursive call stack.
+In a balanced BST, \(h = O(\log n)\). In a skewed BST, \(h = O(n)\).
+
+Approach 4: Iterative BST search — Most optimal
+This is your approach. It uses the same candidate idea as the recursive solution but removes the recursion stack.
+Your code
+class Solution {
+    public int findMaxFork(Node root, int k) {
+        // code here.
+        if(root==null){
+            return -1;
+        }
+
+        int ans=-1;
+        Node curr=root;
+        while(curr!=null){
+            if(curr.data==k){
+                ans=curr.data;
+                return ans;
+            }
+
+            if(curr.data<k){
+                ans=curr.data;
+                curr=curr.right;
+            } else {
+                curr=curr.left;
+            }
+        }
+        return ans;
+    }
+}
+
+
+Explanation of your code
+Step 1: Handle an empty tree
+if(root==null){
+    return -1;
+}
+
+
+If the tree is empty, no floor exists.
+
+Step 2: Initialize the answer and current node
+int ans=-1;
+Node curr=root;
+
+
+- curr is the node currently being examined.
+- ans stores the best floor candidate discovered so far.
+- Initially, ans = -1 indicates that no candidate has been found.
+Step 3: Return immediately when the value matches
+if(curr.data==k){
+    ans=curr.data;
+    return ans;
+}
+
+
+When curr.data == k, we have found the exact value, so there is no need to search further.
+
+Step 4: If the current value is smaller than k, save it and go right
+if(curr.data<k){
+    ans=curr.data;
+    curr=curr.right;
+}
+
+
+The current node is a valid candidate. However, a greater value that is still at most k might exist in the right subtree.
+
+For example, with k = 11, if the current node is 8, we save 8 and search right for a possible better answer.
+
+Step 5: If the current value is greater than k, go left
+else {
+    curr=curr.left;
+}
+
+
+The current node is too large to be the floor. Because every value in its right subtree is even greater, we can discard that subtree and move left.
+
+Step 6: Return the saved candidate
+return ans;
+
+
+When the loop ends, the last saved candidate is the largest value found that is at most k. If no such node exists, ans remains -1.
+Dry run 1: k = 5
+Tree:
+        8
+       / \
+      4   12
+     / \  / \
+    2  6 10 14
+
+
+Step	curr.data	Condition	ans	Next node
+1	8	8 > 5	-1	4
+2	4	4 < 5	4	6
+3	6	6 > 5	4	null
+4	null	Loop ends	4	Stop
+
+The algorithm returns 4.
+
+Notice that ans changes only when the algorithm finds a valid value. It stays at 4 when it visits 6, because 6 is greater than 5.
+Dry run 2: Exact match, k = 10
+Step	curr.data	Condition	Action
+1	8	8 < 10	Save 8; move right
+2	12	12 > 10	Move left
+3	10	10 == 10	Return 10
+
+Answer: 10
+Dry run 3: No floor exists, k = 1
+Step	curr.data	Condition	Action
+1	8	8 > 1	Move left
+2	4	4 > 1	Move left
+3	2	2 > 1	Move left
+4	null	Loop ends	Return -1
+
+Every value is greater than 1, so no floor exists.
+Complexity
+- Time: \(O(h)\) — at most one path through the BST is explored.
+- Auxiliary space: \(O(1)\) — only a few variables are used.
+A balanced BST gives \(O(\log n)\) time; a skewed BST can take \(O(n)\) time.
+
+5. Final complexity comparison
+Approach	Time	Auxiliary space
+Brute-force DFS	\(O(n)\)	\(O(h)\)
+Inorder traversal	\(O(n)\) worst case	\(O(h)\)
+Recursive BST search	\(O(h)\)	\(O(h)\)
+Iterative BST search (your code)	\(O(h)\)	\(O(1)\)
+
+Here, \(n\) is the number of nodes and \(h\) is the height of the BST.
+6. Important test cases
+Using the example BST with values 2, 4, 6, 8, 10, 12, 14:
+k	Floor	Reason
+5	4	Largest value below 5
+10	10	Exact match
+11	10	Largest value below 11
+14	14	Exact match
+20	14	Largest value below 20
+1	-1	No value at most 1
+Any value, empty tree	-1	No nodes exist
+
+7. Interview memory trick: Floor vs. Ceil
+Condition at current node	Floor in BST	Ceil in BST
+Exact match	Return current value	Return current value
+Current value is smaller than target	Save candidate; go right	Go right
+Current value is greater than target	Go left	Save candidate; go left
+
+The key difference is the direction in which you save a candidate:
+- Floor: save smaller valid values and search right for a bigger one.
+- Ceil: save larger valid values and search left for a smaller one.
+Final verdict: Your iterative findMaxFork solution is the most optimal of these approaches in auxiliary space. It uses the BST property, takes \(O(h)\) time, and requires \(O(1)\) extra space.
