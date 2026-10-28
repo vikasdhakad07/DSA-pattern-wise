@@ -1,0 +1,512 @@
+LeetCode 230 — Kth Smallest Element in a BST
+We’ll cover the meaningful approaches from brute force to space-optimized traversal, with Java code, dry runs, and complexity comparisons. We’ll also walk through your recursive solution and fix a couple of edge cases.
+1. Understand the problem
+Given the root of a Binary Search Tree (BST) and an integer k, return the kth smallest value in the tree.
+
+The key property of a BST is:
+- Every value in the left subtree is smaller than the node.
+- Every value in the right subtree is greater than the node.
+Therefore, an inorder traversal (left → root → right) visits the BST values in ascending order.
+
+Example:
+Example tree: k = 3 → answer = 3
+
+Inorder traversal gives:
+
+1 → 2 → 3 → 4 → 5 → 6
+
+The third smallest value is 3.
+
+Important: The problem asks for the kth smallest value, not the node itself. Your helper returns a TreeNode, and the main method returns its val.
+
+Approach 1: Brute force — Collect all values and sort
+Idea
+Don't use the BST property initially.
+1. Traverse the entire tree and collect all node values.
+2. Sort the list in ascending order.
+3. Return the value at index k - 1, because Java lists use zero-based indexing.
+Java code
+import java.util.*;
+
+class Solution {
+    public int kthSmallest(TreeNode root, int k) {
+        List<Integer> values = new ArrayList<>();
+        collect(root, values);
+
+        if (k < 1 || k > values.size()) {
+            return -1;
+        }
+
+        Collections.sort(values);
+        return values.get(k - 1);
+    }
+
+    private void collect(TreeNode root, List<Integer> values) {
+        if (root == null) {
+            return;
+        }
+
+        values.add(root.val);
+        collect(root.left, values);
+        collect(root.right, values);
+    }
+}
+
+
+We collect values in preorder here, but it doesn't matter because we sort them afterward.
+Dry run: k = 3
+Tree:
+        5
+       / \
+      3   6
+     / \
+    2   4
+   /
+  1
+
+
+Step 1: Collect the nodes.
+
+Preorder traversal produces:
+
+[5, 3, 2, 1, 4, 6]
+
+Step 2: Sort the list.
+
+[1, 2, 3, 4, 5, 6]
+
+Step 3: Find the kth value.
+- k = 3
+- Java index = k - 1 = 2
+- values.get(2) = 3
+Answer: 3
+Complexity
+- Time: \(O(n\log n)\) for sorting, plus \(O(n)\) for traversal.
+- Auxiliary space: \(O(n)\) for storing values, plus the recursive stack.
+This works for any binary tree, but sorting is unnecessary when we already know the input is a BST.
+
+Approach 2: Inorder traversal — Store values in a list
+Idea
+A BST's inorder traversal already produces sorted values, so we can eliminate sorting.
+1. Traverse left, then visit the current node, then traverse right.
+2. Store each value in a list.
+3. Return the value at index k - 1.
+Java code
+import java.util.*;
+
+class Solution {
+    public int kthSmallest(TreeNode root, int k) {
+        List<Integer> values = new ArrayList<>();
+        inorder(root, values);
+
+        if (k < 1 || k > values.size()) {
+            return -1;
+        }
+
+        return values.get(k - 1);
+    }
+
+    private void inorder(TreeNode root, List<Integer> values) {
+        if (root == null) {
+            return;
+        }
+
+        inorder(root.left, values);
+        values.add(root.val);
+        inorder(root.right, values);
+    }
+}
+
+
+Dry run: k = 3
+The traversal happens in this order:
+Operation	Value added	List
+Visit leftmost node	1	[1]
+Visit its parent	2	[1, 2]
+Visit node 3	3	[1, 2, 3]
+Visit node 4	4	[1, 2, 3, 4]
+Visit node 5	5	[1, 2, 3, 4, 5]
+Visit node 6	6	[1, 2, 3, 4, 5, 6]
+
+The third element is values.get(2) = 3.
+
+Answer: 3
+Complexity
+- Time: \(O(n)\), because every node is visited once.
+- Auxiliary space: \(O(n)\) for the list, plus \(O(h)\) recursion stack.
+This improves on Approach 1 by removing the sorting step. However, it still visits and stores every node even when k is small.
+
+Approach 3: Recursive inorder traversal with early stopping — Your approach
+This is the approach in your code, and it is much more efficient when the kth node is reached before visiting the entire tree.
+Idea
+Instead of storing every value, maintain a counter.
+
+During inorder traversal:
+1. Visit the left subtree.
+2. If the left subtree already found the kth node, return it immediately.
+3. Increment count when visiting the current node.
+4. If count == k, return the current node.
+5. Otherwise, search the right subtree.
+Because inorder visits values in ascending order, the moment the counter reaches k, we have the answer.
+Your code
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode() {}
+ *     TreeNode(int val) { this.val = val; }
+ *     TreeNode(int val, TreeNode left, TreeNode right) {
+ *         this.val = val;
+ *         this.left = left;
+ *         this.right = right;
+ *     }
+ * }
+ */
+class Solution {
+    int count = 0;
+
+    public TreeNode kthSmallestElement(TreeNode root, int k) {
+        if (root == null) {
+            return null;
+        }
+
+        TreeNode left = kthSmallestElement(root.left, k);
+        if (left != null) {
+            return left;
+        }
+
+        count++;
+        if (count == k) {
+            return root;
+        }
+
+        return kthSmallestElement(root.right, k);
+    }
+
+    public int kthSmallest(TreeNode root, int k) {
+        TreeNode res = kthSmallestElement(root, k);
+        if (root == null) {
+            return -1;
+        } else {
+            return res.val;
+        }
+    }
+}
+
+
+Line-by-line explanation
+1. Counter
+int count = 0;
+
+
+This keeps track of how many nodes have been visited in inorder sequence.
+
+2. Base case
+if (root == null) {
+    return null;
+}
+
+
+An empty subtree contains no answer.
+
+3. Search the left subtree
+TreeNode left = kthSmallestElement(root.left, k);
+if (left != null) {
+    return left;
+}
+
+
+If the kth node was found in the left subtree, propagate it up immediately. There's no need to visit the current node or its right subtree.
+
+4. Count the current node
+count++;
+if (count == k) {
+    return root;
+}
+
+
+The current node is visited after all nodes in its left subtree. When count becomes k, the current node is the kth smallest.
+
+5. Search the right subtree
+return kthSmallestElement(root.right, k);
+
+
+If the answer hasn't been found, continue with larger values in the right subtree.
+Dry run: k = 3
+Using the same tree:
+        5
+       / \
+      3   6
+     / \
+    2   4
+   /
+  1
+
+
+Follow the recursive calls from left to right.
+Current node	Action	count	Result
+1	Visit node 1	1	Not found yet
+2	Visit node 2	2	Not found yet
+3	Visit node 3	3	Found kth node
+5	Receives non-null result from left	3	Returns node 3 immediately
+
+At node 3, the counter reaches 3, so that node is returned. The algorithm does not visit node 4, node 5, or node 6.
+
+Answer: 3
+
+The important detail is that the result is propagated upward through:
+if (left != null) {
+    return left;
+}
+
+
+Without this check, the recursion could continue past the answer and overwrite or lose the result.
+A small robustness fix to your code
+Your solution follows the correct algorithm under LeetCode's constraints, where k is guaranteed to be valid. Two small changes make it safer:
+- Reset count before each top-level call, so a reused Solution instance doesn't carry a previous count.
+- Check whether res is null before accessing res.val.
+class Solution {
+    int count = 0;
+
+    public TreeNode kthSmallestElement(TreeNode root, int k) {
+        if (root == null) {
+            return null;
+        }
+
+        TreeNode left = kthSmallestElement(root.left, k);
+        if (left != null) {
+            return left;
+        }
+
+        count++;
+        if (count == k) {
+            return root;
+        }
+
+        return kthSmallestElement(root.right, k);
+    }
+
+    public int kthSmallest(TreeNode root, int k) {
+        count = 0;
+
+        TreeNode res = kthSmallestElement(root, k);
+        return res == null ? -1 : res.val;
+    }
+}
+
+
+Complexity
+- Time: \(O(h+k)\) — more precisely, the traversal costs at most \(O(h+k)\); worst case is \(O(n)\).
+- Auxiliary space: \(O(h)\) for the recursion stack.
+The algorithm avoids visiting nodes after the kth smallest value is found.
+
+Approach 4: Iterative inorder traversal using a stack — Best practical solution
+This approach uses the same inorder logic as your recursive solution, but replaces recursion with an explicit stack.
+
+It is often the preferred interview solution because it is easy to reason about, stops immediately at the kth node, and avoids recursion stack overhead.
+Idea
+1. Keep pushing nodes while moving left.
+2. Pop the next node. This is the next smallest value.
+3. Increment the counter.
+4. If the counter reaches k, return the current value.
+5. Otherwise, move to the current node's right child and repeat.
+Java code
+import java.util.*;
+
+class Solution {
+    public int kthSmallest(TreeNode root, int k) {
+        Stack<TreeNode> stack = new Stack<>();
+        TreeNode curr = root;
+        int count = 0;
+
+        while (curr != null || !stack.isEmpty()) {
+
+            // Push the entire left path
+            while (curr != null) {
+                stack.push(curr);
+                curr = curr.left;
+            }
+
+            // Visit the next smallest node
+            curr = stack.pop();
+            count++;
+
+            if (count == k) {
+                return curr.val;
+            }
+
+            // Process the right subtree
+            curr = curr.right;
+        }
+
+        return -1; // k is invalid or tree is empty
+    }
+}
+
+
+Dry run: k = 3
+Tree:
+        5
+       / \
+      3   6
+     / \
+    2   4
+   /
+  1
+
+
+At the beginning, the stack is empty.
+Step	Operation	Stack (bottom → top)	count
+1	Push 5, 3, 2, 1 while moving left	[5, 3, 2, 1]	0
+2	Pop and visit 1	[5, 3, 2]	1
+3	Pop and visit 2	[5, 3]	2
+4	Pop and visit 3	[5]	3
+5	count == k	Return 3	3
+
+No additional nodes need to be visited.
+
+Answer: 3
+Complexity
+- Time: \(O(h+k)\), with \(O(n)\) worst-case time.
+- Auxiliary space: \(O(h)\) for the stack.
+In a balanced BST, the height is \(O(\log n)\). When k is small, this approach often visits only a small portion of the tree.
+
+Approach 5: Morris inorder traversal — Constant auxiliary space
+When is it useful?
+Morris traversal avoids both recursion and an explicit stack by temporarily using otherwise-null right pointers to create links back to ancestor nodes.
+
+This achieves \(O(1)\) auxiliary space, but there is an important trade-off: we must restore all temporary links before finishing. Therefore, this implementation traverses the entire tree even after finding the kth value.
+Java code
+class Solution {
+    public int kthSmallest(TreeNode root, int k) {
+        TreeNode curr = root;
+        int count = 0;
+        int ans = -1;
+
+        while (curr != null) {
+            if (curr.left == null) {
+                // Visit current node
+                count++;
+
+                if (count == k) {
+                    ans = curr.val;
+                }
+
+                curr = curr.right;
+            } else {
+                // Find inorder predecessor
+                TreeNode pred = curr.left;
+
+                while (pred.right != null && pred.right != curr) {
+                    pred = pred.right;
+                }
+
+                if (pred.right == null) {
+                    // Create temporary thread to return to curr
+                    pred.right = curr;
+                    curr = curr.left;
+                } else {
+                    // Remove temporary thread and visit curr
+                    pred.right = null;
+
+                    count++;
+                    if (count == k) {
+                        ans = curr.val;
+                    }
+
+                    curr = curr.right;
+                }
+            }
+        }
+
+        return ans;
+    }
+}
+
+
+How it works
+Suppose the current node has a left subtree. Before descending left, the algorithm finds the rightmost node in that left subtree (the inorder predecessor).
+- If the predecessor's right pointer is null, temporarily set it to the current node. This allows the traversal to return to the current node later.
+- If that pointer already points to the current node, remove the temporary link, visit the current node, and continue right.
+The counter increases each time a node is visited in inorder sequence.
+Dry run: k = 3
+The nodes are still visited in this order:
+
+1 → 2 → 3 → 4 → 5 → 6
+Visited node	Counter	Action
+1	1	Continue
+2	2	Continue
+3	3	Store answer 3
+4	4	Continue restoring traversal links
+5	5	Continue restoring traversal links
+6	6	Finish traversal
+
+The stored answer is 3.
+
+Why don't we return immediately at node 3? Because doing so could leave temporary links in the tree, changing its structure. Completing the traversal restores those links.
+Complexity
+- Time: \(O(n)\), because the full traversal is completed.
+- Auxiliary space: \(O(1)\), excluding the input tree and output value.
+This is an alternative when constant extra space matters more than early termination. For a normal single kth-smallest query, the iterative stack approach is usually the better trade-off.
+
+6. Complexity comparison: All approaches
+Approach	Time complexity	Auxiliary space	Main idea
+1. Collect and sort	\(O(n\log n)\)	\(O(n)\)	Sort all node values
+2. Full inorder + list	\(O(n)\)	\(O(n)\)	Store sorted values
+3. Recursive inorder with early stop	\(O(h+k)\)	\(O(h)\)	Count visits and stop
+4. Iterative inorder with stack	\(O(h+k)\)	\(O(h)\)	Explicit stack and early stop
+5. Morris traversal	\(O(n)\)	\(O(1)\)	Temporary threaded links
+
+Here, \(n\) is the number of nodes and \(h\) is the height of the BST. The \(O(h+k)\) bound for the recursive and iterative early-stopping approaches is also bounded by \(O(n)\).
+7. Which approach should you use?
+For LeetCode 230, I recommend Approach 4: iterative inorder traversal.
+
+It combines the important advantages:
+- It uses the BST's sorted inorder property.
+- It stops as soon as the kth node is reached.
+- It doesn't store all node values.
+- It avoids recursive calls and uses only \(O(h)\) auxiliary space.
+Your recursive solution in Approach 3 is equally valid and has the same asymptotic time and space complexity. Choose it when recursive inorder traversal is more natural for you.
+8. Common mistakes to avoid
+Mistake 1: Using index k instead of k - 1.
+
+Lists are zero-indexed, so the kth element is stored at index k - 1.
+
+Mistake 2: Traversing root before left.
+
+That would be preorder traversal, not inorder traversal. In a BST, only inorder traversal guarantees ascending order.
+
+Mistake 3: Forgetting to propagate the recursive result.
+
+Your check below is essential because it stops the search immediately when the kth node is found in the left subtree.
+if (left != null) {
+    return left;
+}
+
+
+Mistake 4: Forgetting to reset the counter.
+
+For your recursive implementation, reset count = 0 at the beginning of kthSmallest. This makes repeated calls on the same Solution object safe.
+
+Mistake 5: Returning too early in Morris traversal.
+
+The temporary predecessor links must be removed before returning, or the tree can be left modified.
+
+9. Interview memory trick
+Remember:
+
+BST + kth smallest = Inorder traversal + Counter.
+Go left
+   ↓
+Visit node and increment count
+   ↓
+Is count == k?
+   ├── Yes → Return current node's value
+   └── No  → Go right
+
+
+For the example tree, inorder gives 1, 2, 3, 4, 5, 6. When k = 3, the counter reaches 3 at node 3, so the result is 3.
+
+One advanced note: if you need many kth-smallest queries on the same BST, augmenting every node with its subtree size can make each query \(O(h)\). That requires extra metadata and updating it when the tree changes, so it is not necessary for the standard LeetCode 230 solution.
