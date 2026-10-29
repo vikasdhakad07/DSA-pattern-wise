@@ -1,0 +1,613 @@
+LeetCode 98 — Validate Binary Search Tree
+We’ll go from brute force to the most efficient practical approaches, with Java code, dry runs, complexity analysis, and your exact recursive range-validation solution.
+1. Understand the problem
+Given the root of a binary tree, determine whether it is a valid Binary Search Tree (BST).
+
+A valid BST must satisfy these rules:
+- Every value in a node's left subtree must be strictly smaller than that node's value.
+- Every value in a node's right subtree must be strictly greater than that node's value.
+- These conditions must hold for every node and all its descendants, not just the immediate children.
+- Duplicate values are not allowed.
+Example 1 — Valid BST
+        8
+       / \
+      3   10
+     / \    \
+    1   6    14
+
+
+This is a valid BST, so the answer is true.
+Example 2 — Invalid BST: the important case
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+Is this a valid BST?
+
+At node 15, its left child is 7, and 7 < 15. That local comparison is correct.
+
+However, 7 is in the right subtree of 10, so it must be greater than 10. Because 7 < 10, the tree is invalid.
+
+The answer is false.
+
+Key insight: Checking only the relationship between each node and its direct children is not enough. We must validate the constraints imposed by every ancestor.
+
+Approach 1: Brute force — Find the maximum in the left subtree and minimum in the right subtree
+Idea
+At every node:
+1. Find the maximum value in its left subtree.
+2. Find the minimum value in its right subtree.
+3. Check that the left-subtree maximum is smaller than the current node and the right-subtree minimum is greater.
+4. Recursively validate the left and right subtrees.
+This approach explicitly verifies the BST condition, but it repeatedly scans subtrees.
+Java code
+class Solution {
+    public boolean isValidBST(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+
+        if (root.left != null &&
+            maxValue(root.left) >= root.val) {
+            return false;
+        }
+
+        if (root.right != null &&
+            minValue(root.right) <= root.val) {
+            return false;
+        }
+
+        return isValidBST(root.left)
+            && isValidBST(root.right);
+    }
+
+    private int maxValue(TreeNode root) {
+        if (root == null) {
+            return Integer.MIN_VALUE;
+        }
+
+        return Math.max(
+            root.val,
+            Math.max(maxValue(root.left),
+                     maxValue(root.right))
+        );
+    }
+
+    private int minValue(TreeNode root) {
+        if (root == null) {
+            return Integer.MAX_VALUE;
+        }
+
+        return Math.min(
+            root.val,
+            Math.min(minValue(root.left),
+                     minValue(root.right))
+        );
+    }
+}
+
+
+Dry run
+Use the invalid tree:
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+At the root, 10:
+Check	Result
+Maximum value in left subtree	5
+Is 5 >= 10?	No
+Minimum value in right subtree	7
+Is 7 <= 10?	Yes
+
+The right subtree contains 7, which is smaller than the root. The method returns false.
+Complexity
+- Time: \(O(n^2)\) worst case, because each node can trigger a scan of its subtrees. In a skewed tree, the repeated scans can take quadratic time.
+- Auxiliary space: \(O(h)\) for the recursive calls, where \(h\) is the tree height.
+This solution is correct, but repeatedly calculating subtree minima and maxima makes it inefficient.
+
+Approach 2: Inorder traversal — Store all values and check their order
+Idea
+A valid BST's inorder traversal visits values in strictly increasing order:
+
+Left → Root → Right
+
+For example, the valid tree produces:
+
+1, 3, 6, 8, 10, 14
+
+If any value is equal to or smaller than its predecessor, the tree is invalid.
+
+We can collect the inorder traversal into a list and then check whether the values increase strictly.
+Java code
+import java.util.*;
+
+class Solution {
+    public boolean isValidBST(TreeNode root) {
+        List<Integer> values = new ArrayList<>();
+        inorder(root, values);
+
+        for (int i = 1; i < values.size(); i++) {
+            if (values.get(i) <= values.get(i - 1)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void inorder(TreeNode root, List<Integer> values) {
+        if (root == null) {
+            return;
+        }
+
+        inorder(root.left, values);
+        values.add(root.val);
+        inorder(root.right, values);
+    }
+}
+
+
+Dry run
+For the invalid tree:
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+The inorder traversal visits:
+Step	Visited node	Values collected
+1	5	[5]
+2	10	[5, 10]
+3	7	[5, 10, 7]
+4	15	[5, 10, 7, 15]
+
+Now compare adjacent values:
+- 5 < 10 — valid so far.
+- 10 < 7 — false, because 10 >= 7.
+Therefore, the tree is invalid, and the result is false.
+Complexity
+- Time: \(O(n)\) for traversal and checking.
+- Auxiliary space: \(O(n)\) for the list, plus the recursion stack.
+This is a major improvement over brute force. We can optimize the space further by remembering only the previous inorder value instead of storing the entire list.
+
+Approach 3: Optimized inorder traversal — Store only the previous node
+Idea
+Approach 2 stores every value, but we only need to compare the current inorder value with the immediately previous one.
+
+Maintain a prev pointer:
+1. Visit the left subtree.
+2. Compare the current node with prev.
+3. If prev.val >= root.val, return false.
+4. Otherwise, update prev to the current node and visit the right subtree.
+This removes the \(O(n)\) list and stops as soon as an ordering violation is detected.
+Java code
+class Solution {
+    private TreeNode prev;
+
+    public boolean isValidBST(TreeNode root) {
+        prev = null;
+        return inorder(root);
+    }
+
+    private boolean inorder(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+
+        if (!inorder(root.left)) {
+            return false;
+        }
+
+        if (prev != null && prev.val >= root.val) {
+            return false;
+        }
+
+        prev = root;
+
+        return inorder(root.right);
+    }
+}
+
+
+Explanation of important lines
+prev = null;
+
+
+Reset the previous node at the beginning of each top-level call. This is important if the same Solution object is reused.
+if (!inorder(root.left)) {
+    return false;
+}
+
+
+If the left subtree is invalid, there is no reason to examine the rest of the tree.
+if (prev != null && prev.val >= root.val) {
+    return false;
+}
+
+
+In inorder traversal, values must strictly increase. If the previous value is greater than or equal to the current value, the BST is invalid.
+Dry run
+Again, consider:
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+Visited node	Previous node	Check	Result
+5	null	No previous node	Continue
+10	5	5 < 10	Continue
+7	10	10 >= 7	Return false
+
+The algorithm detects the violation when visiting 7. It does not need to visit 15.
+
+Result: false
+
+For the valid tree, the inorder values 1, 3, 6, 8, 10, 14 always increase, so the method returns true.
+Complexity
+- Time: \(O(n)\) worst case.
+- Auxiliary space: \(O(h)\) for recursion.
+This is a practical, optimal-time approach. However, it depends on understanding that the inorder sequence of a BST must be strictly increasing.
+
+Approach 4: Bottom-up validation — Return subtree information
+Idea
+Instead of repeatedly scanning subtrees as in Approach 1, calculate each subtree's information once.
+
+For every node, return three pieces of information:
+- Whether its subtree is a valid BST.
+- The minimum value in its subtree.
+- The maximum value in its subtree.
+After validating the left and right subtrees, a node is valid only when:
+- Both child subtrees are valid.
+- The maximum value in the left subtree is smaller than the current value.
+- The minimum value in the right subtree is greater than the current value.
+This approach combines child-subtree results instead of scanning them repeatedly.
+Java code
+class Solution {
+    static class Info {
+        boolean valid;
+        long min;
+        long max;
+
+        Info(boolean valid, long min, long max) {
+            this.valid = valid;
+            this.min = min;
+            this.max = max;
+        }
+    }
+
+    public boolean isValidBST(TreeNode root) {
+        return validate(root).valid;
+    }
+
+    private Info validate(TreeNode root) {
+        if (root == null) {
+            return new Info(
+                true,
+                Long.MAX_VALUE,
+                Long.MIN_VALUE
+            );
+        }
+
+        Info left = validate(root.left);
+        Info right = validate(root.right);
+
+        if (!left.valid || !right.valid ||
+            root.val <= left.max ||
+            root.val >= right.min) {
+            return new Info(false, 0, 0);
+        }
+
+        long min = Math.min(
+            root.val,
+            Math.min(left.min, right.min)
+        );
+
+        long max = Math.max(
+            root.val,
+            Math.max(left.max, right.max)
+        );
+
+        return new Info(true, min, max);
+    }
+}
+
+
+Why use these empty-subtree values?
+For a null subtree, we return:
+- min = Long.MAX_VALUE
+- max = Long.MIN_VALUE
+These sentinels let an empty subtree satisfy the ordering conditions automatically. We use long so the sentinels can safely lie outside the int value range.
+Dry run
+For the invalid tree:
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+Step 1: Node 5 is a leaf. Its subtree is valid, with min = 5 and max = 5.
+
+Step 2: Node 7 is also a leaf. Its subtree is valid, with min = 7 and max = 7.
+
+Step 3: Node 15 receives the information from its left subtree (7). Since 7 < 15, and its right subtree is empty, its subtree is locally valid. It reports min = 7, max = 15.
+
+Step 4: Node 10 receives:
+- Left subtree maximum = 5
+- Right subtree minimum = 7
+The condition 10 >= 7 is true, so the root fails validation.
+
+Result: false
+
+The critical difference from brute force is that every subtree's minimum and maximum are calculated only once.
+Complexity
+- Time: \(O(n)\), because each node is processed once.
+- Auxiliary space: \(O(h)\) for the recursive stack and per-call information.
+This is a linear-time alternative to the range-based method below.
+
+Approach 5: Recursive range validation — Your code, the standard optimal approach
+This is the most commonly recommended solution for LeetCode 98 because it directly checks the global constraints imposed by all ancestors.
+Core idea
+Every node must lie inside an allowed range:
+\[
+\text{min} < \text{node.val} < \text{max}
+\]
+
+Initially, the root can have any Java int value, so we start with the range:
+\[
+-\infty < \text{root.val} < +\infty
+\]
+
+As we move down the tree:
+- For the left child, keep the lower bound and set the upper bound to the current node's value.
+- For the right child, set the lower bound to the current node's value and keep the upper bound.
+- If a node falls outside its allowed range, the tree is invalid.
+This is exactly the global constraint that the earlier approaches were trying to enforce.
+Your code
+class Solution {
+    public boolean isValidBST(TreeNode root) {
+        return checkBinary(
+            root,
+            Long.MIN_VALUE,
+            Long.MAX_VALUE
+        );
+    }
+
+    public boolean checkBinary(
+        TreeNode root, long min, long max
+    ) {
+        if (root == null) {
+            return true;
+        }
+
+        if (max <= root.val || min >= root.val) {
+            return false;
+        }
+
+        return checkBinary(root.left, min, root.val)
+            && checkBinary(root.right, root.val, max);
+    }
+}
+
+
+Your code is correct. The condition
+if (max <= root.val || min >= root.val) {
+    return false;
+}
+
+
+is equivalent to:
+if (root.val <= min || root.val >= max) {
+    return false;
+}
+
+
+Both reject values that are equal to or beyond either boundary.
+Detailed explanation
+1. Initial call
+return checkBinary(root, Long.MIN_VALUE, Long.MAX_VALUE);
+
+
+The root initially has no ancestor constraints, so it receives the broadest possible bounds.
+
+We use long rather than int because a valid BST may contain Integer.MIN_VALUE or Integer.MAX_VALUE.
+
+2. Empty subtree
+if (root == null) {
+    return true;
+}
+
+
+An empty subtree is a valid BST.
+
+3. Validate the current node
+if (max <= root.val || min >= root.val) {
+    return false;
+}
+
+
+The current value must be strictly between its bounds. Equality is invalid because duplicate values are not allowed.
+
+4. Validate the left subtree
+checkBinary(root.left, min, root.val)
+
+
+Every value in the left subtree must be smaller than the current node, but it must also respect the inherited lower bound.
+
+5. Validate the right subtree
+checkBinary(root.right, root.val, max)
+
+
+Every value in the right subtree must be greater than the current node, while remaining below the inherited upper bound.
+
+The && operator short-circuits: if the left subtree is invalid, the right subtree does not need to be checked.
+Dry run: Invalid BST
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+Initially, 10 is checked against (-∞, +∞).
+Node	Allowed range	Check	Result
+10	(-∞, +∞)	10 is within range	Valid
+5	(-∞, 10)	5 < 10	Valid
+15	(10, +∞)	15 > 10	Valid
+7	(10, 15)	7 <= 10	Invalid
+
+At node 15, the left child 7 inherits the range (10, 15). Even though 7 < 15, it violates the lower bound inherited from the root.
+
+The recursive call returns false, so the final result is false.
+Dry run: Valid BST
+        8
+       / \
+      3   10
+     / \    \
+    1   6    14
+
+
+Node	Allowed range	Valid?
+8	(-∞, +∞)	Yes
+3	(-∞, 8)	Yes
+1	(-∞, 3)	Yes
+6	(3, 8)	Yes
+10	(8, +∞)	Yes
+14	(10, +∞)	Yes
+
+All nodes satisfy their inherited ranges, so the method returns true.
+Complexity
+- Time: \(O(n)\) worst case, because each node is visited at most once.
+- Auxiliary space: \(O(h)\) for the recursive stack.
+This is asymptotically optimal in time: in the worst case, a valid tree must have all its nodes checked.
+
+Approach 6: Iterative range validation — No recursion
+This approach uses the same range-validation idea as your code, but stores the pending nodes and their bounds in an explicit stack.
+
+It is useful when you want to avoid recursive calls, especially for a highly skewed tree.
+Java code
+import java.util.*;
+
+class Solution {
+    static class Frame {
+        TreeNode node;
+        long min;
+        long max;
+
+        Frame(TreeNode node, long min, long max) {
+            this.node = node;
+            this.min = min;
+            this.max = max;
+        }
+    }
+
+    public boolean isValidBST(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+
+        Deque<Frame> stack = new ArrayDeque<>();
+        stack.push(new Frame(
+            root, Long.MIN_VALUE, Long.MAX_VALUE
+        ));
+
+        while (!stack.isEmpty()) {
+            Frame frame = stack.pop();
+            TreeNode node = frame.node;
+
+            if (node.val <= frame.min ||
+                node.val >= frame.max) {
+                return false;
+            }
+
+            if (node.right != null) {
+                stack.push(new Frame(
+                    node.right, node.val, frame.max
+                ));
+            }
+
+            if (node.left != null) {
+                stack.push(new Frame(
+                    node.left, frame.min, node.val
+                ));
+            }
+        }
+
+        return true;
+    }
+}
+
+
+How it works
+Each stack entry carries three things:
+- The node to validate.
+- Its allowed minimum value.
+- Its allowed maximum value.
+Whenever a node is popped, it is checked against its range. Its children are then pushed with updated bounds.
+Dry run
+Use the same invalid tree:
+       10
+      /  \
+     5    15
+         /
+        7
+
+
+The stack initially contains node 10 with range (-∞, +∞).
+Popped node	Range	Action
+10	(-∞, +∞)	Valid; push children
+5	(-∞, 10)	Valid
+15	(10, +∞)	Valid; push its left child
+7	(10, 15)	Invalid; return false
+
+This produces the same answer as the recursive range solution.
+Complexity
+- Time: \(O(n)\) worst case.
+- Auxiliary space: \(O(h)\) for the DFS stack.
+It avoids the language call stack, but it still requires an explicit stack to keep track of the bounds.
+
+7. Complexity comparison of all approaches
+Approach	Time	Auxiliary space	Key technique
+1. Brute force	\(O(n^2)\) worst case	\(O(h)\)	Repeated subtree min/max scans
+2. Inorder + list	\(O(n)\)	\(O(n)\)	Check sorted sequence
+3. Inorder + previous node	\(O(n)\)	\(O(h)\)	Compare consecutive values
+4. Bottom-up subtree information	\(O(n)\)	\(O(h)\)	Return validity, minimum, maximum
+5. Recursive range validation	\(O(n)\)	\(O(h)\)	Enforce ancestor bounds
+6. Iterative range validation	\(O(n)\)	\(O(h)\)	Stack of nodes and bounds
+
+Here, \(n\) is the number of nodes and \(h\) is the tree height.
+8. Important edge cases
+Case	Example	Expected output
+Empty tree	root = null	true
+Single node	[5]	true
+Valid BST	[2, 1, 3]	true
+Invalid right child	[5, 1, 4]	false
+Invalid due to ancestor	Root 10, right child 15, and 7 as the left child of 15	false
+Duplicate values	Root 5, left child 5	false
+Integer boundary values	Root 0, left child Integer.MIN_VALUE, right child Integer.MAX_VALUE	true
+
+The integer-boundary example is why using Long.MIN_VALUE and Long.MAX_VALUE in the range-validation approach is important.
+9. Which approach should you use in an interview?
+Recommended: Approach 5 — Recursive range validation.
+
+It is concise, directly expresses the BST property, and runs in \(O(n)\) time with \(O(h)\) auxiliary space.
+
+Your solution is already correct and optimal in the standard asymptotic sense.
+
+Remember this pattern:
+- Left subtree: values must be within (min, root.val).
+- Right subtree: values must be within (root.val, max).
+- Any violation: return false.
+- All nodes valid: return true.
+The main lesson is that a BST is not validated by comparing each node only with its parent. Every node must satisfy the bounds set by all its ancestors.
