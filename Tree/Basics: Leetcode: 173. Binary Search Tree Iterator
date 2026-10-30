@@ -1,0 +1,802 @@
+# LeetCode 173 — Binary Search Tree Iterator
+
+We’ll cover the approaches from brute force to the most efficient practical solution, including Java code, detailed dry runs, explanations, and complexity comparisons. We’ll also explain your stack-based implementation line by line.
+
+## 1. Understand the problem
+
+Design a `BSTIterator` class that provides two operations:
+
+- `next()` — returns the next smallest value in the BST.
+- `hasNext()` — returns `true` if there are still nodes left to visit; otherwise, returns `false`.
+
+The iterator is initialized with the root of a BST.
+
+Important BST property: Inorder traversal (`left → root → right`) visits all values in ascending order.
+
+Consider this tree:
+
+```
+          7
+         / \
+        3   15
+           /  \
+          9    20
+```
+
+Its inorder traversal is:
+
+```
+3 → 7 → 9 → 15 → 20
+```
+
+Therefore, the iterator should return:
+
+| Operation   | Output |
+| ----------- | ------ |
+| `next()`    | 3      |
+| `next()`    | 7      |
+| `hasNext()` | true   |
+| `next()`    | 9      |
+| `next()`    | 15     |
+| `next()`    | 20     |
+| `hasNext()` | false  |
+
+The key challenge is to return values in sorted order without unnecessarily traversing or storing the entire tree.
+
+## Approach 1: Brute force — Store the complete inorder traversal
+
+### Idea
+
+The simplest approach is to perform a complete inorder traversal in the constructor and store all node values in an `ArrayList`.
+
+After that:
+
+- `next()` returns the next element from the list.
+- `hasNext()` checks whether the current index is smaller than the list size.
+
+This is essentially converting the BST into a sorted array.
+
+### Java code
+
+```
+import java.util.*;
+
+class BSTIterator {
+    private List<Integer> values = new ArrayList<>();
+    private int index = 0;
+
+    public BSTIterator(TreeNode root) {
+        inorder(root);
+    }
+
+    private void inorder(TreeNode root) {
+        if (root == null) {
+            return;
+        }
+
+        inorder(root.left);
+        values.add(root.val);
+        inorder(root.right);
+    }
+
+    public int next() {
+        return values.get(index++);
+    }
+
+    public boolean hasNext() {
+        return index < values.size();
+    }
+}
+```
+
+### Explanation
+
+Step 1: Store all sorted values
+
+```
+private List<Integer> values = new ArrayList<>();
+private int index = 0;
+```
+
+- `values` stores the inorder traversal.
+- `index` points to the next value to return.
+
+Step 2: Perform inorder traversal in the constructor
+
+```
+public BSTIterator(TreeNode root) {
+    inorder(root);
+}
+```
+
+The constructor visits every node and stores values in ascending order.
+
+Step 3: Implement `next()`
+
+```
+public int next() {
+    return values.get(index++);
+}
+```
+
+Return the current element and increment the index.
+
+Step 4: Implement `hasNext()`
+
+```
+public boolean hasNext() {
+    return index < values.size();
+}
+```
+
+There is another element available as long as the index is within the list.
+
+### Dry run
+
+Input tree:
+
+```
+          7
+         / \
+        3   15
+           /  \
+          9    20
+```
+
+Step 1: Constructor executes.
+
+Inorder traversal produces:
+
+```
+values = [3, 7, 9, 15, 20]
+index = 0
+```
+
+Step 2: Iterator operations
+
+| Operation   | Index before call | Output | Index after call |
+| ----------- | ----------------- | ------ | ---------------- |
+| `next()`    | 0                 | 3      | 1                |
+| `next()`    | 1                 | 7      | 2                |
+| `hasNext()` | 2                 | true   | 2                |
+| `next()`    | 2                 | 9      | 3                |
+| `next()`    | 3                 | 15     | 4                |
+| `next()`    | 4                 | 20     | 5                |
+| `hasNext()` | 5                 | false  | 5                |
+
+### Complexity
+
+| Operation       | Complexity |
+| --------------- | ---------- |
+| Constructor     | \\(O(n)\\) |
+| `next()`        | \\(O(1)\\) |
+| `hasNext()`     | \\(O(1)\\) |
+| Auxiliary space | \\(O(n)\\) |
+
+Drawback: We visit and store every node before the first `next()` call. This can waste time and memory when the caller only wants the first few elements.
+
+## Approach 2: Search from the root for every `next()` call
+
+### Idea
+
+We can avoid storing all values by using the BST property directly.
+
+Maintain:
+
+- The original `root`.
+- The value returned by the previous `next()` call.
+- A boolean indicating whether any value has been returned yet.
+
+For every `next()` call, search the BST for the smallest value greater than the previously returned value.
+
+For `hasNext()`, perform the same search without updating the iterator.
+
+### Java code
+
+```
+import java.util.*;
+
+class BSTIterator {
+    private TreeNode root;
+    private int lastValue;
+    private boolean started = false;
+
+    public BSTIterator(TreeNode root) {
+        this.root = root;
+    }
+
+    private TreeNode findNext() {
+        TreeNode curr = root;
+        TreeNode candidate = null;
+
+        while (curr != null) {
+            if (!started || curr.val > lastValue) {
+                candidate = curr;
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+
+        return candidate;
+    }
+
+    public int next() {
+        TreeNode node = findNext();
+
+        if (node == null) {
+            throw new NoSuchElementException();
+        }
+
+        lastValue = node.val;
+        started = true;
+
+        return node.val;
+    }
+
+    public boolean hasNext() {
+        return findNext() != null;
+    }
+}
+```
+
+This approach assumes the standard LeetCode BST property with distinct keys.
+
+### Explanation
+
+Step 1: Store iterator state
+
+```
+private TreeNode root;
+private int lastValue;
+private boolean started = false;
+```
+
+- `root` allows us to search the tree again.
+- `lastValue` stores the most recently returned value.
+- `started` distinguishes the initial state from a state where the previous value happens to be `Integer.MIN_VALUE`.
+
+Step 2: Search for the next greater value
+
+```
+if (!started || curr.val > lastValue) {
+    candidate = curr;
+    curr = curr.left;
+} else {
+    curr = curr.right;
+}
+```
+
+When the current node is greater than the last returned value, save it as a candidate and move left to look for a smaller valid value.
+
+Otherwise, move right because the current value and its left subtree cannot contain the next value.
+
+Step 3: Update iterator state
+
+```
+lastValue = node.val;
+started = true;
+```
+
+After returning a value, remember it so the next search finds a strictly larger value.
+
+### Dry run
+
+Tree:
+
+```
+          7
+         / \
+        3   15
+           /  \
+          9    20
+```
+
+First, the iterator has not started, so it searches for the minimum value.
+
+| Operation       | Search path                      | Candidate | Result |
+| --------------- | -------------------------------- | --------- | ------ |
+| First `next()`  | 7 → 3                            | 3         | 3      |
+| Second `next()` | 7 → 3 → null                     | 7         | 7      |
+| Third `next()`  | 7 → 15 → 9                       | 9         | 9      |
+| Fourth `next()` | 7 → 15 → 9 → null                | 15        | 15     |
+| Fifth `next()`  | 7 → 15 → 20                      | 20        | 20     |
+| `hasNext()`     | Search for value greater than 20 | None      | false  |
+
+The tree is searched again for every operation.
+
+### Complexity
+
+Let \\(h\\) be the height of the tree.
+
+| Operation       | Complexity |
+| --------------- | ---------- |
+| Constructor     | \\(O(1)\\) |
+| `next()`        | \\(O(h)\\) |
+| `hasNext()`     | \\(O(h)\\) |
+| Auxiliary space | \\(O(1)\\) |
+
+Drawback: Each operation repeats a root-to-leaf search. If we iterate through all `n` nodes, the total time can be \\(O(nh)\\), which becomes \\(O(n^2)\\) for a skewed BST.
+
+We can improve this by remembering where the traversal left off rather than starting from the root every time.
+
+## Approach 3: Lazy inorder traversal using a stack — Most optimal practical approach
+
+This is your approach and the standard solution for LeetCode 173.
+
+### Core idea
+
+Instead of storing the complete inorder traversal, maintain a stack containing only the nodes needed to produce the next smallest value.
+
+The main observation:
+
+To get the next smallest node, we only need to push the leftmost path of the remaining subtree.
+
+The stack's top always contains the next node to visit in inorder.
+
+### Your code
+
+```
+class BSTIterator {
+    private Stack<TreeNode> st = new Stack<>();
+
+    public BSTIterator(TreeNode root) {
+        pushAllLeft(root);
+    }
+
+    public int next() {
+        TreeNode root = st.pop();
+
+        pushAllLeft(root.right);
+
+        return root.val;
+    }
+
+    public boolean hasNext() {
+        return !st.isEmpty();
+    }
+
+    public void pushAllLeft(TreeNode node) {
+        while (node != null) {
+            st.push(node);
+            node = node.left;
+        }
+    }
+}
+```
+
+Your code is correct and follows the standard lazy inorder traversal approach.
+
+### Step-by-step explanation
+
+Step 1: Create a stack
+
+```
+private Stack<TreeNode> st = new Stack<>();
+```
+
+The stack stores nodes waiting to be visited.
+
+The top of the stack always represents the next smallest node in the inorder sequence.
+
+Step 2: Initialize the iterator
+
+```
+public BSTIterator(TreeNode root) {
+    pushAllLeft(root);
+}
+```
+
+When the iterator is created, we don't traverse the whole tree.
+
+We only push the root and all its left descendants.
+
+For this tree:
+
+```
+          7
+         / \
+        3   15
+           /  \
+          9    20
+```
+
+The initial stack is:
+
+```
+Bottom → [7, 3] ← Top
+```
+
+Node `3` is at the top because it is the smallest node.
+
+Step 3: Implement `pushAllLeft()`
+
+```
+public void pushAllLeft(TreeNode node) {
+    while (node != null) {
+        st.push(node);
+        node = node.left;
+    }
+}
+```
+
+This method:
+
+1. Pushes the current node.
+2. Moves to its left child.
+3. Repeats until there is no left child.
+
+Why do we push the left path?
+
+Because in inorder traversal, the leftmost node is visited first.
+
+Step 4: Implement `next()`
+
+```
+public int next() {
+    TreeNode root = st.pop();
+
+    pushAllLeft(root.right);
+
+    return root.val;
+}
+```
+
+This is the most important part.
+
+It performs three operations:
+
+1. Pop the stack's top node. This is the next smallest node.
+2. If that node has a right subtree, push the leftmost path of that right subtree.
+3. Return the popped node's value.
+
+Why do we process the right subtree?
+
+In inorder traversal:
+
+```
+Left → Root → Right
+```
+
+After visiting the current node, the next unvisited values may be in its right subtree. We push that subtree's leftmost path so its smallest value becomes the next item.
+
+Step 5: Implement `hasNext()`
+
+```
+public boolean hasNext() {
+    return !st.isEmpty();
+}
+```
+
+If the stack is not empty, there are still nodes to visit.
+
+If the stack is empty, the entire inorder traversal is complete.
+
+## Detailed dry run of your code
+
+Input:
+
+```
+          7
+         / \
+        3   15
+           /  \
+          9    20
+```
+
+Expected inorder:
+
+```
+3 → 7 → 9 → 15 → 20
+```
+
+### Step 1: Constructor executes
+
+```
+BSTIterator iterator = new BSTIterator(root);
+```
+
+The constructor calls:
+
+```
+pushAllLeft(root);
+```
+
+Execution:
+
+| Operation | Current node | Stack (bottom → top) |
+| --------- | ------------ | -------------------- |
+| Push 7    | 7            | `[7]`                |
+| Move left | 3            | `[7]`                |
+| Push 3    | 3            | `[7, 3]`             |
+| Move left | null         | `[7, 3]`             |
+
+Initial state
+
+```
+Stack: [7, 3]
+Top: 3
+```
+
+### Step 2: First `next()` call
+
+```
+iterator.next();
+```
+
+First:
+
+```
+TreeNode root = st.pop();
+```
+
+Node `3` is popped.
+
+Stack:
+
+```
+[7]
+```
+
+Next:
+
+```
+pushAllLeft(root.right);
+```
+
+Node `3` has no right child, so nothing is pushed.
+
+Return:
+
+```
+return 3;
+```
+
+Output: 3
+
+### Step 3: Second `next()` call
+
+Stack before the call:
+
+```
+[7]
+```
+
+Pop node `7`.
+
+```
+TreeNode root = st.pop();
+```
+
+Stack becomes empty.
+
+Now process its right subtree:
+
+```
+pushAllLeft(root.right);
+```
+
+The right subtree is:
+
+```
+      15
+     /  \
+    9    20
+```
+
+The method pushes:
+
+| Operation         | Stack (bottom → top) |
+| ----------------- | -------------------- |
+| Push 15           | `[15]`               |
+| Move left to 9    | `[15]`               |
+| Push 9            | `[15, 9]`            |
+| Move left to null | `[15, 9]`            |
+
+Return node `7`.
+
+Output: 7
+
+### Step 4: Third `next()` call
+
+Stack:
+
+```
+Bottom → [15, 9] ← Top
+```
+
+Pop node `9`.
+
+Node `9` has no right child.
+
+Return `9`.
+
+Output: 9
+
+Stack becomes:
+
+```
+[15]
+```
+
+### Step 5: Fourth `next()` call
+
+Pop node `15`.
+
+Its right subtree contains node `20`.
+
+Call:
+
+```
+pushAllLeft(root.right);
+```
+
+Push node `20`.
+
+Stack becomes:
+
+```
+[20]
+```
+
+Return `15`.
+
+Output: 15
+
+### Step 6: Fifth `next()` call
+
+Pop node `20`.
+
+It has no right child.
+
+Return `20`.
+
+Output: 20
+
+Stack becomes empty.
+
+### Step 7: Call `hasNext()`
+
+```
+iterator.hasNext();
+```
+
+The stack is empty:
+
+```
+return !st.isEmpty();
+```
+
+Result:
+
+Output: false
+
+### Complete execution summary
+
+| Operation   | Returned value | Stack after operation (bottom → top) |
+| ----------- | -------------- | ------------------------------------ |
+| Constructor | —              | `[7, 3]`                             |
+| `next()`    | 3              | `[7]`                                |
+| `next()`    | 7              | `[15, 9]`                            |
+| `hasNext()` | true           | `[15, 9]`                            |
+| `next()`    | 9              | `[15]`                               |
+| `next()`    | 15             | `[20]`                               |
+| `next()`    | 20             | `[]`                                 |
+| `hasNext()` | false          | `[]`                                 |
+
+The iterator produces the exact sorted order without storing all node values.
+
+## 4. Complexity analysis of your solution
+
+Let:
+
+- \\(n\\) = total number of nodes.
+- \\(h\\) = height of the BST.
+
+| Operation       | Complexity           | Explanation                            |
+| --------------- | -------------------- | -------------------------------------- |
+| Constructor     | \\(O(h)\\)           | Pushes only the leftmost path          |
+| `next()`        | Amortized \\(O(1)\\) | Each node is pushed and popped once    |
+| `hasNext()`     | \\(O(1)\\)           | Only checks whether the stack is empty |
+| Auxiliary space | \\(O(h)\\)           | Stack holds at most a tree path        |
+
+### Why is `next()` amortized \\(O(1)\\)?
+
+This is a very important interview question.
+
+Look at these operations:
+
+```
+TreeNode root = st.pop();
+pushAllLeft(root.right);
+```
+
+A single `next()` call can push multiple nodes, so its worst-case time can be \\(O(h)\\).
+
+However, across the entire iteration:
+
+- Every node is pushed exactly once.
+- Every node is popped exactly once.
+- No node is pushed or popped again.
+
+For \\(n\\) nodes, the total number of push and pop operations is \\(O(n)\\).
+
+Therefore:
+
+\\[ \text{Total time for all next() calls} = O(n) \\]
+
+\\[ \text{Amortized time per next()} = \frac{O(n)}{n} = O(1) \\]
+
+This is why LeetCode describes the `next()` operation as average \\(O(1)\\).
+
+### Is the space really \\(O(h)\\)?
+
+Yes.
+
+The stack contains nodes from the current traversal path and any pending ancestors.
+
+- Balanced BST: \\(O(\log n)\\) stack space.
+- Skewed BST: \\(O(n)\\) stack space.
+
+Unlike the first approach, we don't store all values in a separate list.
+
+## 5. Final comparison of all approaches
+
+| Approach                           | Constructor | `next()`             | `hasNext()` | Auxiliary space |
+| ---------------------------------- | ----------- | -------------------- | ----------- | --------------- |
+| 1. Store full inorder list         | \\(O(n)\\)  | \\(O(1)\\)           | \\(O(1)\\)  | \\(O(n)\\)      |
+| 2. Search BST from root every time | \\(O(1)\\)  | \\(O(h)\\)           | \\(O(h)\\)  | \\(O(1)\\)      |
+| 3. Lazy inorder using stack        | \\(O(h)\\)  | Amortized \\(O(1)\\) | \\(O(1)\\)  | \\(O(h)\\)      |
+
+
+
+Recommended
+
+&#x20;Approach 3 — Lazy inorder traversal using a stack.
+
+
+
+It provides the best practical balance between initialization time, iteration speed, and memory usage.
+
+## 6. Important interview questions
+
+Q1. Why are we pushing all left nodes initially?
+
+Because the leftmost node is the smallest element in a BST. Pushing the complete left path makes it available at the top of the stack.
+
+Q2. Why do we push the left path of the right subtree after popping a node?
+
+After visiting a node, inorder traversal must process its right subtree. The smallest value in that subtree is its leftmost node.
+
+Q3. Why not simply push all nodes into the stack?
+
+That would use \\(O(n)\\) space. The lazy approach stores only the nodes needed for the next inorder operation, giving \\(O(h)\\) auxiliary space.
+
+Q4. Can `next()` be called when `hasNext()` is false?
+
+The LeetCode problem guarantees that `next()` calls are valid. Calling it on an empty stack would cause an exception. In a production implementation, you could add an explicit empty-stack check.
+
+Q5. Does this iterator modify the original BST?
+
+No. It only stores references to existing nodes in a stack. The tree remains unchanged.
+
+## 7. Interview memory trick
+
+Remember this simple pattern:
+
+```
+Constructor:
+    Push the complete left path.
+
+next():
+    Pop one node.
+    Push the complete left path of its right subtree.
+    Return the popped node's value.
+
+hasNext():
+    Check whether the stack is empty.
+```
+
+Final verdict: Your solution is the standard optimal practical solution for LeetCode 173. It provides \\(O(h)\\) initialization, amortized \\(O(1)\\) `next()`, \\(O(1)\\) `hasNext()`, and \\(O(h)\\) auxiliary space.
+
+The key pattern to remember is Lazy Inorder Traversal using a Stack. This same pattern is also useful for implementing BST-based ascending and descending iterators, merging two BSTs, and solving problems that require retrieving the kth smallest element.
