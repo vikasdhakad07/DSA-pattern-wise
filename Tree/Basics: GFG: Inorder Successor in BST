@@ -1,0 +1,780 @@
+# GFG — Inorder Successor in BST
+
+We’ll cover the approaches from brute force to the most optimal solution, including Java code, detailed dry runs, explanations, and complexity comparisons. We’ll also explain your exact iterative BST solution.
+
+## 1. Understand the problem
+
+Given the root of a Binary Search Tree (BST) and a node `k`, find its inorder successor.
+
+The inorder successor of a node is the node with the smallest value strictly greater than `k.data`.
+
+Remember:
+
+- Successor means the next greater value, not greater than or equal to.
+- If `k` has a right subtree, its successor is the smallest node in that right subtree.
+- If no greater value exists, return `-1`.
+
+Consider this BST:
+
+```
+             20
+            /  \
+           8    22
+          / \
+         4   12
+            /  \
+           10  14
+```
+
+Its inorder traversal is:
+
+`4 → 8 → 10 → 12 → 14 → 20 → 22`
+
+Examples:
+
+| Given node `k` | Inorder successor | Reason             |
+| -------------- | ----------------- | ------------------ |
+| 8              | 10                | Next greater value |
+| 10             | 12                | Next greater value |
+| 12             | 14                | Next greater value |
+| 14             | 20                | Next greater value |
+| 20             | 22                | Next greater value |
+| 22             | -1                | No greater value   |
+
+Important observation: Inorder traversal of a BST gives values in sorted ascending order. The successor is simply the next value in that order.
+
+## Approach 1: Brute force — Traverse the entire tree
+
+### Idea
+
+Ignore the BST property and visit every node.
+
+For each node, check whether its value is greater than `k.data`. Among all such values, keep the smallest one.
+
+We use a `Node` reference for the answer instead of `Integer.MAX_VALUE`, so even the maximum possible `int` value can be a valid successor.
+
+### Java code
+
+```
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+        Node[] ans = new Node[1];
+
+        findSuccessor(root, k.data, ans);
+
+        return ans[0] == null ? -1 : ans[0].data;
+    }
+
+    private void findSuccessor(
+        Node root, int key, Node[] ans
+    ) {
+        if (root == null) {
+            return;
+        }
+
+        // Current node is a possible successor.
+        if (root.data > key) {
+            if (ans[0] == null ||
+                root.data < ans[0].data) {
+                ans[0] = root;
+            }
+        }
+
+        findSuccessor(root.left, key, ans);
+        findSuccessor(root.right, key, ans);
+    }
+}
+```
+
+### Explanation
+
+Step 1: Maintain the best answer
+
+```
+Node[] ans = new Node[1];
+```
+
+Initially, no successor has been found, so `ans[0]` is `null`.
+
+Step 2: Visit every node
+
+```
+if (root.data > key)
+```
+
+A successor must be strictly greater than the given node's value.
+
+Step 3: Keep the smallest valid value
+
+```
+if (ans[0] == null || root.data < ans[0].data) {
+    ans[0] = root;
+}
+```
+
+If the current node is a valid successor and smaller than our previous candidate, update the answer.
+
+Step 4: Explore both subtrees
+
+```
+findSuccessor(root.left, key, ans);
+findSuccessor(root.right, key, ans);
+```
+
+Because this approach ignores the BST property, it visits every node.
+
+### Dry run: `k = 12`
+
+Tree:
+
+```
+             20
+            /  \
+           8    22
+          / \
+         4   12
+            /  \
+           10  14
+```
+
+| Node visited | Is value greater than 12? | Best successor |
+| ------------ | ------------------------- | -------------- |
+| 20           | Yes                       | 20             |
+| 8            | No                        | 20             |
+| 4            | No                        | 20             |
+| 12           | No (equal)                | 20             |
+| 10           | No                        | 20             |
+| 14           | Yes, smaller than 20      | 14             |
+| 22           | Yes, but larger than 14   | 14             |
+
+The final answer is 14.
+
+### Complexity
+
+- Time: \\(O(n)\\), because every node is visited.
+- Auxiliary space: \\(O(h)\\) for the recursive stack.
+
+This approach is correct, but it doesn't use the BST property to eliminate unnecessary searches.
+
+## Approach 2: Inorder traversal — Store values in a list
+
+### Idea
+
+Since inorder traversal of a BST produces sorted values, we can:
+
+1. Perform inorder traversal and store all values.
+2. Find the given node's value in the list.
+3. Return the next value.
+
+If the given node is the last value, return `-1`.
+
+### Java code
+
+```
+import java.util.*;
+
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+        List<Integer> values = new ArrayList<>();
+
+        inorder(root, values);
+
+        for (int i = 0; i < values.size(); i++) {
+            if (values.get(i) == k.data) {
+
+                if (i + 1 < values.size()) {
+                    return values.get(i + 1);
+                }
+
+                return -1;
+            }
+        }
+
+        return -1;
+    }
+
+    private void inorder(Node root, List<Integer> values) {
+        if (root == null) {
+            return;
+        }
+
+        inorder(root.left, values);
+        values.add(root.data);
+        inorder(root.right, values);
+    }
+}
+```
+
+### Explanation
+
+The helper method performs:
+
+```
+inorder(root.left, values);
+values.add(root.data);
+inorder(root.right, values);
+```
+
+This guarantees that values are collected in ascending order.
+
+Afterward:
+
+```
+if (values.get(i) == k.data) {
+    return values.get(i + 1);
+}
+```
+
+We return the value immediately after `k.data`, provided such a value exists.
+
+### Dry run: `k = 12`
+
+Step 1: Inorder traversal
+
+The list becomes:
+
+```
+[4, 8, 10, 12, 14, 20, 22]
+```
+
+Step 2: Find `12`
+
+| Index | Value | Match with 12? |
+| ----- | ----- | -------------- |
+| 0     | 4     | No             |
+| 1     | 8     | No             |
+| 2     | 10    | No             |
+| 3     | 12    | Yes            |
+
+Step 3: Return the next element
+
+```
+values.get(3 + 1)
+= values.get(4)
+= 14
+```
+
+Answer: `14`
+
+### Complexity
+
+- Time: \\(O(n)\\) for traversal and searching.
+- Auxiliary space: \\(O(n)\\) for the list, plus \\(O(h)\\) recursive stack.
+
+This works, but we don't actually need to store the entire inorder traversal.
+
+## Approach 3: Inorder traversal with early stopping
+
+### Idea
+
+Instead of storing all values, directly find the first node whose value is greater than `k.data` during inorder traversal.
+
+Why does this work?
+
+Because inorder traversal produces sorted ascending values.
+
+For example:
+
+```
+4 → 8 → 10 → 12 → 14 → 20 → 22
+```
+
+For `k = 12`, the first value strictly greater than `12` is `14`. That is exactly the successor.
+
+We can use an iterative stack and stop as soon as we find it.
+
+### Java code
+
+```
+import java.util.*;
+
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+        Stack<Node> stack = new Stack<>();
+        Node curr = root;
+
+        while (curr != null || !stack.isEmpty()) {
+
+            // Go to the leftmost node
+            while (curr != null) {
+                stack.push(curr);
+                curr = curr.left;
+            }
+
+            // Visit the next node in inorder
+            curr = stack.pop();
+
+            if (curr.data > k.data) {
+                return curr.data;
+            }
+
+            // Explore the right subtree
+            curr = curr.right;
+        }
+
+        return -1;
+    }
+}
+```
+
+### Explanation
+
+Step 1: Move to the leftmost node
+
+```
+while (curr != null) {
+    stack.push(curr);
+    curr = curr.left;
+}
+```
+
+This prepares the smallest remaining node for processing.
+
+Step 2: Visit the next inorder node
+
+```
+curr = stack.pop();
+```
+
+The popped node is the next value in ascending order.
+
+Step 3: Check whether it is the successor
+
+```
+if (curr.data > k.data) {
+    return curr.data;
+}
+```
+
+The first value greater than `k.data` is the successor, so we return immediately.
+
+Step 4: Move right
+
+```
+curr = curr.right;
+```
+
+If the current value is not greater than `k.data`, continue inorder traversal.
+
+### Dry run: `k = 12`
+
+| Step | Visited node | Comparison     | Action    |
+| ---- | ------------ | -------------- | --------- |
+| 1    | 4            | `4 > 12`? No   | Continue  |
+| 2    | 8            | `8 > 12`? No   | Continue  |
+| 3    | 10           | `10 > 12`? No  | Continue  |
+| 4    | 12           | `12 > 12`? No  | Continue  |
+| 5    | 14           | `14 > 12`? Yes | Return 14 |
+
+Answer: `14`
+
+For `k = 22`, the traversal visits every node and never finds a greater value, so it returns `-1`.
+
+### Complexity
+
+- Time: \\(O(n)\\) worst case.
+- Auxiliary space: \\(O(h)\\) for the explicit stack.
+
+This is more space-efficient than Approach 2 and can stop early, but it may still visit many nodes. We can do better by directly exploiting the BST property.
+
+## Approach 4: BST property — Check the right subtree or find the successor ancestor
+
+This is another standard way to understand the inorder successor.
+
+### Two cases
+
+Case 1: The given node has a right subtree.
+
+Its successor is the leftmost node in that right subtree.
+
+Example:
+
+```
+       12
+      /  \
+     10   14
+             \
+              16
+```
+
+For node `12`, the successor is `14`, because `14` is the smallest value in its right subtree.
+
+Case 2: The given node does not have a right subtree.
+
+Its successor is the nearest ancestor whose value is greater than `k.data` and for which the given node lies in that ancestor's left subtree.
+
+Example:
+
+```
+          20
+         /
+        8
+         \
+          12
+         /
+        10
+```
+
+For node `12`, there is no right subtree. Move upward:
+
+- `8` is smaller than `12`, so it cannot be the successor.
+- `20` is greater than `12`, and `12` lies in its left subtree.
+
+Therefore, the successor is `20`.
+
+### Java code
+
+```
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+
+        // Case 1: Right subtree exists
+        if (k.right != null) {
+            return findMinimum(k.right).data;
+        }
+
+        // Case 2: Find the closest greater ancestor
+        Node successor = null;
+        Node curr = root;
+
+        while (curr != null && curr != k) {
+
+            if (k.data < curr.data) {
+                successor = curr;
+                curr = curr.left;
+            } else {
+                curr = curr.right;
+            }
+        }
+
+        return successor == null ? -1 : successor.data;
+    }
+
+    private Node findMinimum(Node root) {
+        while (root.left != null) {
+            root = root.left;
+        }
+
+        return root;
+    }
+}
+```
+
+### Explanation
+
+When a right subtree exists:
+
+```
+if (k.right != null) {
+    return findMinimum(k.right).data;
+}
+```
+
+All values in the right subtree are greater than `k`. Its smallest value is the leftmost node.
+
+When there is no right subtree:
+
+```
+Node successor = null;
+Node curr = root;
+```
+
+Start searching from the root because the ancestors are not stored in the given `Node`.
+
+```
+if (k.data < curr.data) {
+    successor = curr;
+    curr = curr.left;
+}
+```
+
+The current node is greater than `k`, so it is a possible successor. Save it and search left for a closer, smaller successor.
+
+```
+else {
+    curr = curr.right;
+}
+```
+
+If the current node is smaller than `k`, it cannot be the successor. Move right.
+
+### Dry run: `k = 12`
+
+In the example tree, node `12` has a right child `14`.
+
+```
+       12
+      /  \
+     10   14
+```
+
+- `k.right` is not `null`.
+- Call `findMinimum(14)`.
+- Node `14` has no left child.
+- Return `14`.
+
+Answer: `14`
+
+### Dry run: `k = 14`
+
+Node `14` has no right subtree.
+
+Start from root `20`:
+
+| Current node | Comparison | Successor candidate | Next node  |
+| ------------ | ---------- | ------------------- | ---------- |
+| 20           | `14 < 20`  | 20                  | Left → 8   |
+| 8            | `14 > 8`   | 20                  | Right → 12 |
+| 12           | `14 > 12`  | 20                  | Right → 14 |
+
+The target node is reached. The saved successor is `20`.
+
+Answer: `20`
+
+### Complexity
+
+- Time: \\(O(h)\\) — find the minimum in the right subtree or follow a root-to-node path.
+- Auxiliary space: \\(O(1)\\) — iterative traversal only.
+
+This approach is useful when the given node's right subtree is available and you want to understand the two structural cases behind successor finding. It assumes `k` is an actual node in the BST.
+
+## Approach 5: Iterative BST search with a candidate — Your code (most optimal)
+
+Your code uses the BST ordering directly. Instead of separately checking whether the node has a right subtree, it searches from the root and maintains the best possible successor.
+
+### Your code
+
+```
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+        // code here
+        int ans = -1;
+
+        while (root != null) {
+            if (k.data >= root.data) {
+                root = root.right;
+            } else {
+                ans = root.data;
+                root = root.left;
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+Your code is correct for the standard GFG problem, assuming distinct BST keys and that `k` is a node in the tree.
+
+### Core idea
+
+Maintain a variable `ans` that stores the smallest value greater than `k.data` found so far.
+
+There are only two possible conditions.
+
+Condition 1: Current node's value is less than or equal to `k.data`.
+
+```
+if (k.data >= root.data) {
+    root = root.right;
+}
+```
+
+The current node cannot be the successor because the successor must be strictly greater than `k`.
+
+Also, its entire left subtree contains values smaller than the current node, so none of those values can be the successor either.
+
+Therefore, move right.
+
+Condition 2: Current node's value is greater than `k.data`.
+
+```
+else {
+    ans = root.data;
+    root = root.left;
+}
+```
+
+The current node is a valid successor candidate.
+
+But a smaller value greater than `k.data` might exist in its left subtree. Save the current value and move left to search for a better candidate.
+
+Finally:
+
+```
+return ans;
+```
+
+When the search reaches `null`, `ans` contains the smallest value greater than `k.data`, or `-1` if no such value exists.
+
+### Detailed dry run 1: `k = 12`
+
+Tree:
+
+```
+             20
+            /  \
+           8    22
+          / \
+         4   12
+            /  \
+           10  14
+```
+
+Initially:
+
+```
+ans = -1
+root = 20
+k.data = 12
+```
+
+| Step | `root.data` | Condition  | `ans` | Next node |
+| ---- | ----------- | ---------- | ----- | --------- |
+| 1    | 20          | `12 < 20`  | 20    | 8         |
+| 2    | 8           | `12 >= 8`  | 20    | 12        |
+| 3    | 12          | `12 >= 12` | 20    | 14        |
+| 4    | 14          | `12 < 14`  | 14    | `null`    |
+
+The loop ends and returns `14`.
+
+Answer: `14`
+
+Notice how the candidate improves from `20` to `14`. Node `14` is a smaller value that is still greater than `12`.
+
+### Detailed dry run 2: `k = 14`
+
+Initially:
+
+```
+ans = -1
+root = 20
+```
+
+| Step | `root.data` | Condition  | `ans` | Next node |
+| ---- | ----------- | ---------- | ----- | --------- |
+| 1    | 20          | `14 < 20`  | 20    | 8         |
+| 2    | 8           | `14 >= 8`  | 20    | 12        |
+| 3    | 12          | `14 >= 12` | 20    | 14        |
+| 4    | 14          | `14 >= 14` | 20    | `null`    |
+
+The algorithm returns `20`.
+
+Answer: `20`
+
+### Detailed dry run 3: `k = 22` — No successor
+
+| Step | `root.data` | Condition  | `ans` | Next node |
+| ---- | ----------- | ---------- | ----- | --------- |
+| 1    | 20          | `22 >= 20` | -1    | 22        |
+| 2    | 22          | `22 >= 22` | -1    | `null`    |
+
+The loop stops with `ans = -1`.
+
+Answer: `-1`
+
+### Complexity
+
+- Time: \\(O(h)\\), since we follow only one path through the BST.
+- Auxiliary space: \\(O(1)\\), because we use only a few variables.
+
+For a balanced BST, the time complexity is \\(O(\log n)\\). For a skewed BST, it can be \\(O(n)\\).
+
+This is the most efficient of the approaches above in terms of auxiliary space while using the BST property directly.
+
+## 6. Final complexity comparison
+
+| Approach                               | Time complexity       | Auxiliary space | Technique                            |
+| -------------------------------------- | --------------------- | --------------- | ------------------------------------ |
+| 1. Brute-force DFS                     | \\(O(n)\\)            | \\(O(h)\\)      | Check every node                     |
+| 2. Inorder + list                      | \\(O(n)\\)            | \\(O(n)\\)      | Store sorted values                  |
+| 3. Inorder + early stopping            | \\(O(n)\\) worst case | \\(O(h)\\)      | Find first value greater than `k`    |
+| 4. Right subtree / ancestor            | \\(O(h)\\)            | \\(O(1)\\)      | Use successor's two structural cases |
+| 5. Iterative BST candidate (your code) | \\(O(h)\\)            | \\(O(1)\\)      | Save candidate and move left/right   |
+
+Here:
+
+- `n` = total number of nodes.
+- `h` = height of the BST.
+
+For a balanced BST, \\(h = O(\log n)\\). For a skewed BST, \\(h = O(n)\\).
+
+## 7. Important edge cases
+
+Using the example tree:
+
+```
+             20
+            /  \
+           8    22
+          / \
+         4   12
+            /  \
+           10  14
+```
+
+| Test case                          | Expected result                |
+| ---------------------------------- | ------------------------------ |
+| Successor of 8                     | 10                             |
+| Successor of 12                    | 14                             |
+| Successor of 14                    | 20                             |
+| Successor of 20                    | 22                             |
+| Successor of 22                    | -1                             |
+| Single-node BST, successor of root | -1                             |
+| Node with right subtree            | Leftmost node of right subtree |
+| Node with no right subtree         | Closest greater ancestor       |
+
+## 8. Inorder Successor vs. Inorder Predecessor
+
+This is a common interview comparison.
+
+| Condition            | Inorder Successor             | Inorder Predecessor            |
+| -------------------- | ----------------------------- | ------------------------------ |
+| Meaning              | Next greater value            | Next smaller value             |
+| Right subtree exists | Minimum of right subtree      | Not applicable                 |
+| Left subtree exists  | Not applicable                | Maximum of left subtree        |
+| Otherwise            | Closest greater ancestor      | Closest smaller ancestor       |
+| Candidate search     | Greater value → save, go left | Smaller value → save, go right |
+
+Memory trick:
+
+- Successor = next bigger value.
+- Predecessor = previous smaller value.
+- Successor search: if current node is greater than `k`, save it and go left.
+- Predecessor search: if current node is smaller than `k`, save it and go right.
+
+## 9. Interview takeaway
+
+Your solution is the recommended approach for this problem:
+
+```
+class Solution {
+    public int inOrderSuccessor(Node root, Node k) {
+        int ans = -1;
+
+        while (root != null) {
+            if (k.data >= root.data) {
+                root = root.right;
+            } else {
+                ans = root.data;
+                root = root.left;
+            }
+        }
+
+        return ans;
+    }
+}
+```
+
+Why is it optimal?
+
+1. It uses the BST property to eliminate unnecessary subtrees.
+2. It visits only one root-to-leaf path.
+3. It does not need recursion, a stack, or an inorder list.
+4. It takes \\(O(h)\\) time and \\(O(1)\\) auxiliary space.
+
+One useful detail: your code searches for the smallest value strictly greater than `k.data`. It does not verify that `k` is physically present in the tree. That is fine under the standard GFG assumption that the given node belongs to the BST.
+
+Final pattern to remember:
+
+> Successor = smallest value greater than the given node. Save a greater candidate and continue searching left for a better one.
