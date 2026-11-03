@@ -1,0 +1,1187 @@
+# LeetCode 994 — Rotting Oranges
+
+We’ll cover the approaches from brute force to the most optimal solution, including Java code, detailed dry runs, explanations, and complexity comparisons. We’ll also explain your exact multi-source BFS implementation line by line.
+
+## 1. Understand the problem
+
+You are given an `m × n` grid where each cell represents an orange:
+
+| Value | Meaning       |
+| ----- | ------------- |
+| `0`   | Empty cell    |
+| `1`   | Fresh orange  |
+| `2`   | Rotten orange |
+
+Every minute, each rotten orange makes its adjacent fresh oranges rotten.
+
+Only four directions are allowed:
+
+- Up: `(-1, 0)`
+- Right: `(0, 1)`
+- Down: `(1, 0)`
+- Left: `(0, -1)`
+
+Return the minimum number of minutes needed to make every fresh orange rotten.
+
+If it is impossible to rot every fresh orange, return `-1`.
+
+### Example
+
+Input:
+
+```
+grid = [
+    [2, 1, 1],
+    [1, 1, 0],
+    [0, 1, 1]
+]
+```
+
+Initial grid:
+
+```
+2  1  1
+1  1  0
+0  1  1
+```
+
+After 1 minute:
+
+```
+2  2  1
+2  1  0
+0  1  1
+```
+
+After 2 minutes:
+
+```
+2  2  2
+2  2  0
+0  1  1
+```
+
+After 3 minutes:
+
+```
+2  2  2
+2  2  0
+0  2  1
+```
+
+After 4 minutes:
+
+```
+2  2  2
+2  2  0
+0  2  2
+```
+
+All fresh oranges are now rotten.
+
+Output: 4
+
+### Key observation
+
+All initially rotten oranges spread infection simultaneously.
+
+This means we must start the traversal from every initially rotten orange, not just one of them.
+
+This is called Multi-Source BFS.
+
+## Approach 1: Brute force — Simulate the spread minute by minute
+
+### Idea
+
+We can directly simulate what happens every minute.
+
+1. Scan the entire grid.
+2. For every rotten orange, check its four neighbors.
+3. If a neighbor is fresh, mark it as newly rotten.
+4. Do not allow newly rotten oranges to spread infection during the same minute.
+5. After scanning the grid, convert all newly rotten oranges into rotten oranges.
+6. Repeat until no new orange becomes rotten.
+7. If any fresh orange remains, return `-1`; otherwise, return the number of minutes.
+
+To distinguish newly rotten oranges from oranges that were already rotten at the beginning of a minute, we temporarily use the value `3`.
+
+- `2` means rotten before the current minute.
+- `3` means became rotten during the current minute.
+
+### Java code
+
+```
+class Solution {
+    public int orangesRotting(int[][] grid) {
+        int m = grid.length;
+        int n = grid[0].length;
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+        int time = 0;
+
+        while (true) {
+            boolean changed = false;
+
+            // Spread infection from oranges already rotten
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+
+                    if (grid[i][j] == 2) {
+
+                        for (int d = 0; d < 4; d++) {
+                            int nr = i + dr[d];
+                            int nc = j + dc[d];
+
+                            if (nr >= 0 && nr < m &&
+                                nc >= 0 && nc < n &&
+                                grid[nr][nc] == 1) {
+
+                                // Newly rotten this minute
+                                grid[nr][nc] = 3;
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // No new orange became rotten
+            if (!changed) {
+                break;
+            }
+
+            // Activate all newly rotten oranges
+            for (int i = 0; i < m; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (grid[i][j] == 3) {
+                        grid[i][j] = 2;
+                    }
+                }
+            }
+
+            time++;
+        }
+
+        // Check whether fresh oranges remain
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grid[i][j] == 1) {
+                    return -1;
+                }
+            }
+        }
+
+        return time;
+    }
+}
+```
+
+### Explanation of important lines
+
+1\. Direction arrays
+
+```
+int[] dr = {-1, 0, 1, 0};
+int[] dc = {0, 1, 0, -1};
+```
+
+These represent up, right, down, and left.
+
+For example, from `(i, j)`:
+
+- Up: `(i - 1, j)`
+- Right: `(i, j + 1)`
+- Down: `(i + 1, j)`
+- Left: `(i, j - 1)`
+
+2\. Detect an already-rotten orange
+
+```
+if (grid[i][j] == 2)
+```
+
+Only oranges that were rotten at the beginning of the current minute can spread infection.
+
+3\. Mark newly rotten oranges
+
+```
+grid[nr][nc] = 3;
+changed = true;
+```
+
+We use `3` instead of `2` so that an orange which becomes rotten during this minute cannot spread infection until the next minute.
+
+4\. Activate newly rotten oranges
+
+```
+if (grid[i][j] == 3) {
+    grid[i][j] = 2;
+}
+```
+
+At the end of the minute, all newly rotten oranges become active sources for the next minute.
+
+5\. Check for unreachable fresh oranges
+
+```
+if (grid[i][j] == 1) {
+    return -1;
+}
+```
+
+If fresh oranges remain after the process stops, they cannot be reached by any rotten orange.
+
+### Dry run
+
+Input:
+
+```
+2  1  1
+1  1  0
+0  1  1
+```
+
+Initially:
+
+```
+time = 0
+```
+
+Minute 1: The initial rotten orange at `(0,0)` infects `(0,1)` and `(1,0)`.
+
+During the scan, they are marked `3`, then converted to `2`.
+
+```
+2  2  1
+2  1  0
+0  1  1
+```
+
+`time = 1`
+
+Minute 2: The rotten oranges infect `(0,2)` and `(1,1)`.
+
+```
+2  2  2
+2  2  0
+0  1  1
+```
+
+`time = 2`
+
+Minute 3: The rotten orange at `(1,1)` infects `(2,1)`.
+
+```
+2  2  2
+2  2  0
+0  2  1
+```
+
+`time = 3`
+
+Minute 4: The rotten orange at `(2,1)` infects `(2,2)`.
+
+```
+2  2  2
+2  2  0
+0  2  2
+```
+
+`time = 4`
+
+No fresh oranges remain.
+
+Answer: `4`
+
+### Complexity
+
+Let `m` be the number of rows and `n` the number of columns.
+
+- Time: \\(O((mn)^2)\\) worst case. Each minute scans the whole grid, and infection can take up to \\(O(mn)\\) minutes to spread through a long path.
+- Auxiliary space: \\(O(1)\\), because we use only a few variables and direction arrays.
+
+Drawback: We repeatedly scan every cell, even when most cells are empty or already rotten. We can do better with BFS.
+
+## Approach 2: Multi-source BFS using a queue and time — Your code (optimal)
+
+This is the standard and most efficient solution for Rotting Oranges.
+
+### Core idea
+
+Instead of scanning the entire grid again and again, use a queue to process rotten oranges in the order they spread infection.
+
+Why multi-source BFS?
+
+Suppose the initial grid is:
+
+```
+2  1  2
+1  1  1
+1  1  1
+```
+
+There are two initially rotten oranges.
+
+Both start spreading infection at minute `0`. If we start BFS from only one of them, we would not correctly account for simultaneous infection.
+
+Therefore:
+
+1. Insert all initially rotten oranges into the queue.
+2. Give each of them an initial time of `0`.
+3. Count all initially fresh oranges.
+4. Process each rotten orange and infect its fresh neighbors.
+5. Mark each newly infected orange immediately and add it to the queue with `time + 1`.
+6. Track the maximum time.
+7. Compare the number of initially fresh oranges with the number that became rotten.
+
+This is called Multi-Source BFS because BFS starts simultaneously from multiple source cells.
+
+### Your code
+
+```
+class Pair {
+    int row;
+    int col;
+    int step;
+
+    public Pair(int row, int col, int step) {
+        this.row = row;
+        this.col = col;
+        this.step = step;
+    }
+}
+
+class Solution {
+    public int orangesRotting(int[][] grid) {
+        int m = grid.length;
+        int n = grid[0].length;
+
+        int count = 0;
+        Queue<Pair> q = new LinkedList<>();
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grid[i][j] == 2) {
+                    q.offer(new Pair(i, j, 0));
+                } else if (grid[i][j] == 1) {
+                    count++;
+                }
+            }
+        }
+
+        int cnt = 0;
+        int time = 0;
+
+        int nr[] = {-1, 0, 1, 0};
+        int nc[] = {0, 1, 0, -1};
+
+        while (!q.isEmpty()) {
+            Pair p = q.poll();
+
+            int r = p.row;
+            int c = p.col;
+            int s = p.step;
+
+            time = Math.max(time, s);
+
+            for (int i = 0; i < 4; i++) {
+                int rn = r + nr[i];
+                int cn = c + nc[i];
+
+                if (rn >= 0 && rn < m &&
+                    cn >= 0 && cn < n &&
+                    grid[rn][cn] == 1) {
+
+                    q.offer(new Pair(rn, cn, s + 1));
+
+                    grid[rn][cn] = 2;
+                    cnt++;
+                }
+            }
+        }
+
+        if (count != cnt) {
+            return -1;
+        }
+
+        return time;
+    }
+}
+```
+
+Your approach is correct and optimal. Let's understand every part.
+
+### Line-by-line explanation
+
+Step 1: Calculate grid dimensions
+
+```
+int m = grid.length;
+int n = grid[0].length;
+```
+
+- `m` represents the number of rows.
+- `n` represents the number of columns.
+
+Step 2: Initialize the fresh-orange count and queue
+
+```
+int count = 0;
+Queue<Pair> q = new LinkedList<>();
+```
+
+- `count` stores the total number of initially fresh oranges.
+- The queue stores rotten orange positions along with the time at which they become rotten.
+
+The `Pair` class contains:
+
+```
+int row;
+int col;
+int step;
+```
+
+For example:
+
+```
+new Pair(0, 1, 2)
+```
+
+means the orange at row `0`, column `1` became rotten at minute `2`.
+
+Step 3: Scan the complete grid
+
+```
+for (int i = 0; i < m; i++) {
+    for (int j = 0; j < n; j++) {
+        if (grid[i][j] == 2) {
+            q.offer(new Pair(i, j, 0));
+        } else if (grid[i][j] == 1) {
+            count++;
+        }
+    }
+}
+```
+
+There are two cases:
+
+- If the cell contains `2`, it is initially rotten. Insert it into the queue with time `0`.
+- If the cell contains `1`, increase the count of fresh oranges.
+
+Why do we insert all rotten oranges initially?
+
+Because all of them spread infection simultaneously.
+
+Why do they all have step `0`?
+
+Because they are already rotten at the beginning, before any time has elapsed.
+
+Step 4: Initialize converted count and time
+
+```
+int cnt = 0;
+int time = 0;
+```
+
+- `cnt` counts the number of initially fresh oranges that have become rotten.
+- `time` stores the maximum time required to rot a reachable orange.
+
+At the end, we compare:
+
+```
+count == cnt
+```
+
+If they are equal, every fresh orange has become rotten.
+
+Step 5: Define four directions
+
+```
+int nr[] = {-1, 0, 1, 0};
+int nc[] = {0, 1, 0, -1};
+```
+
+These arrays represent:
+
+| Direction | Row change | Column change |
+| --------- | ---------- | ------------- |
+| Up        | -1         | 0             |
+| Right     | 0          | 1             |
+| Down      | 1          | 0             |
+| Left      | 0          | -1            |
+
+For a cell `(r, c)`, a neighbor is calculated as:
+
+```
+int rn = r + nr[i];
+int cn = c + nc[i];
+```
+
+Step 6: Process the queue
+
+```
+while (!q.isEmpty()) {
+    Pair p = q.poll();
+```
+
+Remove the next rotten orange from the queue.
+
+```
+int r = p.row;
+int c = p.col;
+int s = p.step;
+```
+
+Get its row, column, and infection time.
+
+```
+time = Math.max(time, s);
+```
+
+Update the maximum time.
+
+This is important because different oranges can become rotten at different minutes.
+
+Step 7: Check all four neighbors
+
+```
+for (int i = 0; i < 4; i++) {
+    int rn = r + nr[i];
+    int cn = c + nc[i];
+```
+
+Calculate the coordinates of each neighbor.
+
+Step 8: Check valid boundaries and fresh-orange condition
+
+```
+if (rn >= 0 && rn < m &&
+    cn >= 0 && cn < n &&
+    grid[rn][cn] == 1)
+```
+
+Three conditions must be satisfied:
+
+1. The neighbor's row must be within the grid.
+2. The neighbor's column must be within the grid.
+3. The neighbor must contain a fresh orange.
+
+Step 9: Make the neighbor rotten and insert it into the queue
+
+```
+q.offer(new Pair(rn, cn, s + 1));
+
+grid[rn][cn] = 2;
+cnt++;
+```
+
+This is the most important part.
+
+- The neighboring orange becomes rotten after one additional minute, so its time is `s + 1`.
+- It is marked as `2` immediately.
+- `cnt` is incremented.
+
+Why mark it as rotten immediately?
+
+To avoid inserting the same fresh orange into the queue multiple times when multiple rotten oranges are adjacent to it.
+
+Step 10: Check whether all fresh oranges have rotted
+
+```
+if (count != cnt) {
+    return -1;
+}
+```
+
+If initially there were `6` fresh oranges but only `5` were reachable, then one fresh orange remains.
+
+In that case, return `-1`.
+
+Otherwise:
+
+```
+return time;
+```
+
+Return the maximum infection time.
+
+## Detailed dry run of your code
+
+Input:
+
+```
+grid = new int[][] {
+    {2, 1, 1},
+    {1, 1, 0},
+    {0, 1, 1}
+};
+```
+
+Initial grid:
+
+```
+2  1  1
+1  1  0
+0  1  1
+```
+
+### Step 1: Initialize the queue
+
+Scan every cell.
+
+- Initially rotten orange: `(0,0)`.
+- Initially fresh oranges: `(0,1)`, `(0,2)`, `(1,0)`, `(1,1)`, `(2,1)`, `(2,2)`.
+
+There are six fresh oranges.
+
+Initial state:
+
+```
+Queue   = [(0,0,0)]
+count   = 6
+cnt     = 0
+time    = 0
+```
+
+### Step 2: Process `(0,0,0)`
+
+Current orange:
+
+```
+row = 0
+col = 0
+step = 0
+```
+
+Check its neighbors:
+
+| Direction | Neighbor | Condition     | Action      |
+| --------- | -------- | ------------- | ----------- |
+| Up        | `(-1,0)` | Out of bounds | Ignore      |
+| Right     | `(0,1)`  | Fresh         | Make rotten |
+| Down      | `(1,0)`  | Fresh         | Make rotten |
+| Left      | `(0,-1)` | Out of bounds | Ignore      |
+
+Both newly rotten oranges get time `1`.
+
+Queue:
+
+```
+[(0,1,1), (1,0,1)]
+```
+
+Updated grid:
+
+```
+2  2  1
+2  1  0
+0  1  1
+```
+
+Variables:
+
+```
+count = 6
+cnt   = 2
+time  = 0
+```
+
+### Step 3: Process `(0,1,1)`
+
+Current orange becomes processed at step `1`.
+
+Neighbors:
+
+| Direction | Neighbor | Condition      | Action      |
+| --------- | -------- | -------------- | ----------- |
+| Up        | `(-1,1)` | Out of bounds  | Ignore      |
+| Right     | `(0,2)`  | Fresh          | Make rotten |
+| Down      | `(1,1)`  | Fresh          | Make rotten |
+| Left      | `(0,0)`  | Already rotten | Ignore      |
+
+Both newly rotten oranges get time `2`.
+
+Queue:
+
+```
+[(1,0,1), (0,2,2), (1,1,2)]
+```
+
+Grid:
+
+```
+2  2  2
+2  2  0
+0  1  1
+```
+
+Variables:
+
+```
+count = 6
+cnt   = 4
+time  = 1
+```
+
+### Step 4: Process `(1,0,1)`
+
+Its neighbors are:
+
+- `(0,0)` — already rotten.
+- `(1,1)` — already marked rotten.
+- `(2,0)` — empty.
+- `(1,-1)` — out of bounds.
+
+No fresh orange is infected.
+
+Queue:
+
+```
+[(0,2,2), (1,1,2)]
+```
+
+Grid remains:
+
+```
+2  2  2
+2  2  0
+0  1  1
+```
+
+### Step 5: Process `(0,2,2)`
+
+Neighbors:
+
+- Up `(−1,2)` — out of bounds.
+- Right `(0,3)` — out of bounds.
+- Down `(1,2)` — empty.
+- Left `(0,1)` — already rotten.
+
+No change.
+
+Queue:
+
+```
+[(1,1,2)]
+```
+
+### Step 6: Process `(1,1,2)`
+
+Neighbors:
+
+| Direction | Neighbor | Condition | Action      |
+| --------- | -------- | --------- | ----------- |
+| Up        | `(0,1)`  | Rotten    | Ignore      |
+| Right     | `(1,2)`  | Empty     | Ignore      |
+| Down      | `(2,1)`  | Fresh     | Make rotten |
+| Left      | `(1,0)`  | Rotten    | Ignore      |
+
+New orange `(2,1)` gets time `3`.
+
+Queue:
+
+```
+[(2,1,3)]
+```
+
+Grid:
+
+```
+2  2  2
+2  2  0
+0  2  1
+```
+
+Variables:
+
+```
+count = 6
+cnt   = 5
+time  = 2
+```
+
+### Step 7: Process `(2,1,3)`
+
+Neighbors:
+
+- Up `(1,1)` — rotten.
+- Right `(2,2)` — fresh.
+- Down `(3,1)` — out of bounds.
+- Left `(2,0)` — empty.
+
+Make `(2,2)` rotten and enqueue it with time `4`.
+
+Queue:
+
+```
+[(2,2,4)]
+```
+
+Grid:
+
+```
+2  2  2
+2  2  0
+0  2  2
+```
+
+Variables:
+
+```
+count = 6
+cnt   = 6
+time  = 3
+```
+
+### Step 8: Process `(2,2,4)`
+
+No fresh neighbors remain.
+
+Update:
+
+```
+time = Math.max(3, 4);
+```
+
+So:
+
+```
+time = 4
+```
+
+The queue is now empty.
+
+Final condition:
+
+```
+if (count != cnt)
+```
+
+```
+6 == 6
+```
+
+All initially fresh oranges became rotten.
+
+Final answer: 4
+
+## Approach 3: Multi-source BFS using level-by-level traversal
+
+Your solution stores the infection time inside every `Pair`:
+
+```
+new Pair(rn, cn, s + 1)
+```
+
+We can simplify this by processing the queue one level at a time.
+
+Every BFS level represents one minute of infection.
+
+### Idea
+
+1. Insert all initially rotten oranges into the queue.
+2. Count all initially fresh oranges.
+3. Process exactly the number of elements currently in the queue.
+4. Infect their fresh neighbors and enqueue them.
+5. If at least one new orange became rotten in this level, increase the minute counter.
+6. Continue until the queue is empty or all fresh oranges have rotted.
+
+This removes the `step` variable from the `Pair` class.
+
+### Java code
+
+```
+import java.util.*;
+
+class Solution {
+    public int orangesRotting(int[][] grid) {
+        int m = grid.length;
+        int n = grid[0].length;
+
+        Queue<int[]> q = new ArrayDeque<>();
+        int fresh = 0;
+
+        // Add all initially rotten oranges
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (grid[i][j] == 2) {
+                    q.offer(new int[]{i, j});
+                } else if (grid[i][j] == 1) {
+                    fresh++;
+                }
+            }
+        }
+
+        if (fresh == 0) {
+            return 0;
+        }
+
+        int[] dr = {-1, 0, 1, 0};
+        int[] dc = {0, 1, 0, -1};
+
+        int minutes = 0;
+
+        while (!q.isEmpty() && fresh > 0) {
+
+            int size = q.size();
+            boolean rotted = false;
+
+            // Process only the current BFS level
+            for (int i = 0; i < size; i++) {
+                int[] curr = q.poll();
+
+                int r = curr[0];
+                int c = curr[1];
+
+                for (int d = 0; d < 4; d++) {
+                    int nr = r + dr[d];
+                    int nc = c + dc[d];
+
+                    if (nr >= 0 && nr < m &&
+                        nc >= 0 && nc < n &&
+                        grid[nr][nc] == 1) {
+
+                        grid[nr][nc] = 2;
+                        fresh--;
+                        rotted = true;
+
+                        q.offer(new int[]{nr, nc});
+                    }
+                }
+            }
+
+            // One minute passed if at least one orange rotted
+            if (rotted) {
+                minutes++;
+            }
+        }
+
+        return fresh == 0 ? minutes : -1;
+    }
+}
+```
+
+### Important explanation
+
+1\. Count fresh oranges and enqueue rotten oranges
+
+```
+if (grid[i][j] == 2) {
+    q.offer(new int[]{i, j});
+} else if (grid[i][j] == 1) {
+    fresh++;
+}
+```
+
+All initially rotten oranges become the starting BFS level.
+
+2\. Capture the current level size
+
+```
+int size = q.size();
+```
+
+This is crucial.
+
+Suppose the queue currently contains:
+
+```
+[(0,1), (1,0)]
+```
+
+These are the oranges that are already rotten at the beginning of this minute.
+
+We process exactly these two oranges. Any newly rotten oranges are added to the queue but won't be processed until the next minute.
+
+3\. Decrease the fresh count immediately
+
+```
+grid[nr][nc] = 2;
+fresh--;
+```
+
+The newly infected orange is marked immediately so it cannot be enqueued by another rotten neighbor.
+
+4\. Increase minutes only if infection spreads
+
+```
+if (rotted) {
+    minutes++;
+}
+```
+
+This avoids increasing the time for a final BFS level in which no fresh orange becomes rotten.
+
+### Dry run: Same example
+
+```
+2  1  1
+1  1  0
+0  1  1
+```
+
+Initially:
+
+```
+Queue = [(0,0)]
+fresh = 6
+minutes = 0
+```
+
+| Minute | Queue before processing | Newly rotten cells | Fresh remaining |
+| ------ | ----------------------- | ------------------ | --------------- |
+| 1      | `[(0,0)]`               | `(0,1), (1,0)`     | 4               |
+| 2      | `[(0,1), (1,0)]`        | `(0,2), (1,1)`     | 2               |
+| 3      | `[(0,2), (1,1)]`        | `(2,1)`            | 1               |
+| 4      | `[(2,1)]`               | `(2,2)`            | 0               |
+
+Now `fresh == 0`, so the algorithm returns:
+
+Answer: `4`
+
+### Complexity
+
+- Time: \\(O(mn)\\), because every cell enters the queue at most once and each cell checks at most four neighbors.
+- Auxiliary space: \\(O(mn)\\) for the queue.
+
+This approach has the same optimal time complexity as your Pair-based BFS.
+
+## 4. What happens when some fresh oranges cannot rot?
+
+Consider:
+
+```
+grid = [
+    [2, 1, 1],
+    [0, 1, 1],
+    [1, 0, 1]
+]
+```
+
+Visual representation:
+
+```
+2  1  1
+0  1  1
+1  0  1
+```
+
+The orange at `(2,0)` is separated from the initial rotten orange by empty cells.
+
+BFS spreads as far as possible, but that orange can never be reached.
+
+In your code:
+
+```
+if (count != cnt) {
+    return -1;
+}
+```
+
+Suppose:
+
+```
+Initially fresh = 6
+Fresh converted = 5
+```
+
+Because:
+
+```
+count != cnt
+```
+
+The answer is `-1`.
+
+This is why counting fresh oranges initially and counting how many become rotten is important.
+
+## 5. Complexity comparison of all approaches
+
+Let \\(m\\) be the number of rows and \\(n\\) the number of columns.
+
+| Approach                               | Time complexity | Auxiliary space | Main idea                             |
+| -------------------------------------- | --------------- | --------------- | ------------------------------------- |
+| 1. Minute-by-minute simulation         | \\(O((mn)^2)\\) | \\(O(1)\\)      | Repeatedly scan the grid              |
+| 2. Multi-source BFS with Pair and step | \\(O(mn)\\)     | \\(O(mn)\\)     | Store infection time per cell         |
+| 3. Multi-source BFS by levels          | \\(O(mn)\\)     | \\(O(mn)\\)     | One queue level represents one minute |
+
+
+
+Recommended
+
+&#x20;Approach 2 or Approach 3 — Multi-source BFS.
+
+
+
+Both achieve optimal \\(O(mn)\\) time and \\(O(mn)\\) worst-case auxiliary space.
+
+Your Pair-based solution is especially useful when you want to remember the individual infection time of each cell. The level-based version is often simpler when every BFS level represents exactly one minute.
+
+## 6. Important edge cases
+
+| Input           | Expected output | Explanation                         |
+| --------------- | --------------- | ----------------------------------- |
+| `[[0]]`         | 0               | No oranges                          |
+| `[[1]]`         | -1              | Fresh orange with no rotten source  |
+| `[[2]]`         | 0               | Already rotten                      |
+| `[[2,1]]`       | 1               | One minute to rot                   |
+| `[[1,2]]`       | 1               | Spread works in the other direction |
+| `[[2,1,1]]`     | 2               | Infection moves one cell per minute |
+| `[[2,0,1]]`     | -1              | Empty cell blocks infection         |
+| `[[0,0],[0,0]]` | 0               | No fresh oranges                    |
+
+Note that LeetCode guarantees a non-empty rectangular grid. For reusable production code, add a guard for a null or empty grid before accessing `grid[0]`.
+
+Also remember that both your code and the alternative BFS implementation modify the input grid by changing fresh oranges from `1` to `2`.
+
+## 7. Why BFS and not DFS?
+
+This is a common interview question.
+
+The problem asks for the minimum time needed for all oranges to become rotten.
+
+Each movement from one cell to an adjacent cell takes exactly one minute.
+
+BFS explores cells in increasing order of their distance from the initially rotten oranges:
+
+```
+Distance 0 → Initially rotten oranges
+Distance 1 → Oranges reached after 1 minute
+Distance 2 → Oranges reached after 2 minutes
+Distance 3 → Oranges reached after 3 minutes
+```
+
+Because BFS visits cells in increasing distance order, it finds the earliest possible infection time for each reachable cell.
+
+DFS does not guarantee this order. It might follow a long path first, even if a shorter infection path exists.
+
+Therefore, multi-source BFS is the natural and optimal graph traversal for this problem.
+
+## 8. Interview memory trick
+
+Remember this reusable multi-source BFS template:
+
+```
+1. Scan the entire grid.
+2. Add all initial sources to the queue.
+3. Count all target cells.
+4. While the queue is not empty:
+      Remove a source.
+      Check all four directions.
+      If a valid target is found:
+          Mark it visited immediately.
+          Add it to the queue.
+          Update its distance / time.
+5. Check whether all target cells were visited.
+6. Return the maximum distance or -1.
+```
+
+Final verdict: Your solution is correct and optimal for LeetCode 994.
+
+The most important pattern to remember is:
+
+Grid + simultaneous spreading + minimum time = Multi-Source BFS.
+
+This pattern also appears in other problems involving distance from multiple sources, including 01 Matrix, Walls and Gates, As Far from Land as Possible, and nearest-source grid problems.
